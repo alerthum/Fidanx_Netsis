@@ -207,9 +207,15 @@ npm run build
 ```
 
 ### Adım 4: Frontend'i PM2 ile Başlatın
-Next.js uygulamasını 3000 portunda başlatmak için:
+Next.js uygulamasını 3000 portunda başlatmak için Windows'ta şu komutu kullanın:
 ```powershell
-pm2 start npm --name fidanx-client -- run start
+pm2 start "npm run start" --name fidanx-client
+pm2 save
+```
+
+🚀 **Alternatif (Eğer üstteki hata verirse):**
+```powershell
+pm2 start node_modules/next/dist/bin/next --name fidanx-client -- start
 pm2 save
 ```
 
