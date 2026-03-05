@@ -181,3 +181,46 @@ npm install
 npm run build
 pm2 restart fidanx-api
 ```
+
+---
+
+## BÖLÜM G: FRONTEND'i MÜŞTERİ SUNUCUSUNDA ÇALIŞTIRMA (Lokal Test İçin)
+
+Eğer projeyi (Vercel haricinde) doğrudan müşterinin sunucusunda çalıştırıp lokal ağı üzerinden (örneğin diğer bilgisayarlardan tarayıcıdan test etmek için) açmak isterseniz, Next.js uygulamasını da PM2 ile API'nin yanına kurabilirsiniz.
+
+### Adım 1: Frontend Kurulumu (Müşteri sunucusunda)
+```powershell
+cd C:\inetpub\fidanx\client
+npm install
+```
+
+### Adım 2: .env Dosyasını Oluşturun
+`C:\inetpub\fidanx\client\.env.production` dosyasını oluşturun veya kopyalayın. İçeriği sadece şu olmalı:
+```env
+# API sunucusu aynı bilgisayarda olduğu için localhost kullanabilirsiniz (veya 192.168.1.100)
+NEXT_PUBLIC_API_URL=http://localhost:3201/api
+```
+
+### Adım 3: Frontend Build Alın
+```powershell
+npm run build
+```
+
+### Adım 4: Frontend'i PM2 ile Başlatın
+Next.js uygulamasını 3000 portunda başlatmak için:
+```powershell
+pm2 start npm --name fidanx-client -- run start
+pm2 save
+```
+
+### Adım 5: Doğrulama
+Müşteri bilgisayarında tarayıcıyı açın ve şu adrese gidin:
+```
+http://localhost:3000
+```
+Müşteri ağındaki diğer bilgisayarlardan projeye girmek için ise:
+```
+http://192.168.1.100:3000
+```
+yazarak lokal olarak test gerçekleştirebilirsiniz. Dışarıya yayın yine Vercel (Adım C) üzerinden yapılmaya devam eder.
+
