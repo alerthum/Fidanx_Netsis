@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.next/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Firebase credentials (NEVER push)
+firebase-admin.json
+server/firebase-admin.json
+
+# Build outputs
+client/.next/
+client/out/
+server/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+*.swp
+*.swo

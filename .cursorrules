@@ -1,0 +1,5 @@
+# FidanX Project Rules
+
+1. NEVER use `window.alert()` for user notifications. The project uses a global alert interceptor (`GlobalModal`), and you should continue to trigger `window.alert('SUCCESS: ...')` or `window.alert('ERROR: ...')` OR create a new custom modal if required. Do not use raw browser popups visually.
+2. The user has explicitly granted background execution authority. Use `SafeToAutoRun: true` in your tool calls and minimize asking for user verification unless highly destructive or unknown changes are applied to the Netsis live DB.
+3. Keep the frontend using modern Tailwind blocks (glassmorphism/elegant borders/gradients). Avoid plain basic designs.

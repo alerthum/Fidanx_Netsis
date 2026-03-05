@@ -1,0 +1,28 @@
+---
+description: Reçete modülünde süs bitkileri için saksı, toprak ve bitki ilacı bilgileri
+globs: **/recipes/**/*.ts,**/recipes/**/*.tsx,**/reçete*
+alwaysApply: false
+---
+
+# Reçete Modülü – Süs Bitkileri Gereksinimleri
+
+Reçete tarafında aşağıdaki bilgilerin yer alması gerekiyor (süs bitkileri ana ürün; bitkiler saksılara konur):
+
+## Zorunlu / Planlanan Alanlar
+
+1. **Saksı**
+   - Kaynak: Netsis stok kartında **S_YEDEK1** (TBLSTSABIT).
+   - Stok listesinde "Saksı" sütunu buradan gelir; reçetede de hangi saksıda olduğu tutulacak.
+   - Saksılar satınalmada **saksı grubu** stoklarından alınır.
+
+2. **Toprak türü ve miktar**
+   - Hangi toprak türünden ne kadar kullanıldığı reçetede yer alacak.
+
+3. **Bitki ilacı**
+   - Kullanılan bitki koruma / ilaç bilgisi reçetede yer alacak.
+
+## Dokümantasyon
+
+Detaylı plan: `docs/RECIPE_SUBITKILERI_SAKSI.md`
+
+Reçete şeması veya API genişletilirken bu üç alan (saksı, toprak türü/miktar, bitki ilacı) süs bitkileri reçeteleri için dikkate alınmalıdır.
