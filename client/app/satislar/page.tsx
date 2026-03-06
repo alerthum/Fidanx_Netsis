@@ -12,8 +12,17 @@ export default function SatislarPage() {
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isSelectCustomerModalOpen, setIsSelectCustomerModalOpen] = useState(false);
+    const [customerSearchQuery, setCustomerSearchQuery] = useState('');
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
+    const [productSearchQuery, setProductSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('TÜMÜ');
+    const [tempItem, setTempItem] = useState({
+        materialId: '',
+        amount: 1,
+        unitPrice: 0
+    });
     const [newCustomer, setNewCustomer] = useState({
         id: '',
         name: '',
@@ -57,8 +66,9 @@ export default function SatislarPage() {
                 id: s.StokKodu,
                 name: s.StokAdi,
                 currentStock: s.Bakiye,
-                wholesalePrice: 0, // Netsis'ten fiyat bilgisi gelmiyorsa 0 veya sabit
-                type: 'CUTTING'
+                wholesalePrice: s.SatisFiyat1 || 0, // Netsis satış fiyatı varsa alınır
+                type: 'CUTTING',
+                category: s.GrupIsim || s.Tip || 'Diğer'
             })) : [];
             setStocks(mapped);
         } catch (err) { }
@@ -190,14 +200,20 @@ export default function SatislarPage() {
     };
 
     // Cart Logic
-    const addToCart = (product: any) => {
-        const existing = cart.find(c => c.id === product.id);
+    const addToCart = () => {
+        if (!tempItem.materialId || tempItem.amount <= 0) return alert('Lütfen malzeme ve miktar seçin.');
+
+        const product = stocks.find(s => s.id === tempItem.materialId);
+        if (!product) return;
+
+        const existing = cart.find(c => c.id === tempItem.materialId);
         if (existing) {
-            setCart(cart.map(c => c.id === product.id ? { ...c, qty: c.qty + 1 } : c));
+            setCart(cart.map(c => c.id === tempItem.materialId ? { ...c, qty: c.qty + tempItem.amount, price: tempItem.unitPrice } : c));
         } else {
-            setCart([...cart, { id: product.id, name: product.name, qty: 1, price: product.wholesalePrice || 0 }]);
+            setCart([...cart, { id: product.id, name: product.name, qty: tempItem.amount, price: tempItem.unitPrice }]);
         }
         setIsProductModalOpen(false);
+        setTempItem({ materialId: '', amount: 1, unitPrice: 0 });
     };
 
     const handleCompleteOrder = async () => {
@@ -314,16 +330,17 @@ export default function SatislarPage() {
                             <div className="lg:col-span-2 space-y-8">
                                 <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Müşteri Seçimi</label>
-                                    <select
-                                        value={selectedCustomerId}
-                                        onChange={(e) => setSelectedCustomerId(e.target.value)}
-                                        className="w-full p-4 border border-slate-200 rounded-2xl bg-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-slate-700"
-                                    >
-                                        <option value="">Bir Müşteri Seçin...</option>
-                                        {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name} ({c.phone || 'Tel Yok'})</option>
-                                        ))}
-                                    </select>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1 p-4 border border-slate-200 rounded-2xl bg-white font-bold text-slate-700">
+                                            {selectedCustomerId ? (customers.find(c => c.id === selectedCustomerId)?.name || 'Bilinmiyor') : 'Müşteri Seçilmedi'}
+                                        </div>
+                                        <button
+                                            onClick={() => setIsSelectCustomerModalOpen(true)}
+                                            className="bg-emerald-600 text-white px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-emerald-700 transition"
+                                        >
+                                            🔍 SEÇ
+                                        </button>
+                                    </div>
                                 </section>
                                 <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                                     <div className="flex justify-between items-center">
@@ -351,7 +368,10 @@ export default function SatislarPage() {
                                 </section>
                                 <section className="grid grid-cols-2 gap-4">
                                     <button
-                                        onClick={() => setIsProductModalOpen(true)}
+                                        onClick={() => {
+                                            setTempItem({ materialId: '', amount: 1, unitPrice: 0 });
+                                            setIsProductModalOpen(true);
+                                        }}
                                         className="h-28 bg-white border-2 border-dashed border-emerald-200 text-emerald-700 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-emerald-50 hover:border-emerald-300 transition-all group"
                                     >
                                         <span className="text-3xl font-bold group-hover:scale-110 transition-transform">+</span>
@@ -602,32 +622,139 @@ export default function SatislarPage() {
                 )}
                 {/* Product Modal */}
                 {isProductModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 max-h-[80vh] overflow-hidden flex flex-col">
-                            <h3 className="text-xl font-bold mb-6">Ürün / Stok Seçimi</h3>
-                            <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                                {stocks.map(s => (
-                                    <div key={s.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-emerald-300 transition-all group">
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-2xl">{s.type === 'MOTHER_TREE' ? '🌳' : '🌱'}</span>
-                                            <div>
-                                                <p className="font-bold text-slate-800">{s.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kalan Stok: {s.currentStock || 0}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-6">
-                                            <p className="font-bold text-emerald-600 font-mono">₺{s.wholesalePrice || 0}</p>
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
+                        <div className="bg-white rounded-t-3xl sm:rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[95vh] overflow-y-auto">
+                            <h4 className="font-bold text-slate-800 mb-4">Ürün / Stok Seçimi</h4>
+
+                            <div className="space-y-4">
+                                {/* Category Filter */}
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ürün Grubu Filtresi</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['TÜMÜ', ...Array.from(new Set(stocks.map(s => s.category).filter(Boolean)))].map(cat => (
                                             <button
-                                                onClick={() => addToCart(s)}
-                                                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition"
+                                                key={cat}
+                                                onClick={() => setSelectedCategory(cat as string)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${selectedCategory === cat
+                                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                    }`}
                                             >
-                                                + SEPETE EKLE
+                                                {cat as string}
                                             </button>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
+                                </div>
+
+                                {/* Search Filter */}
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="🔍 Ürün Adı veya Kodu İle Ara..."
+                                        value={productSearchQuery}
+                                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                                        className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm font-bold"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Stok Kartı / Malzeme</label>
+                                    <select
+                                        value={tempItem.materialId}
+                                        onChange={(e) => {
+                                            const selectedStock = stocks.find(s => s.id === e.target.value);
+                                            setTempItem({ ...tempItem, materialId: e.target.value, unitPrice: selectedStock?.wholesalePrice || 0 });
+                                        }}
+                                        className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm"
+                                        size={5}
+                                    >
+                                        {stocks
+                                            .filter(s => selectedCategory === 'TÜMÜ' || s.category === selectedCategory)
+                                            .filter(s => s.name?.toLowerCase().includes(productSearchQuery.toLowerCase()) || s.id?.toLowerCase().includes(productSearchQuery.toLowerCase()))
+                                            .map(s => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.name} (Stok: {s.currentStock || 0} Adet) | Fiyat: ₺{s.wholesalePrice || 0}
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Miktar</label>
+                                        <input
+                                            type="number"
+                                            value={tempItem.amount}
+                                            onChange={(e) => setTempItem({ ...tempItem, amount: Number(e.target.value) })}
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm font-bold"
+                                            min="1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Birim Fiyat (TL)</label>
+                                        <input
+                                            type="number"
+                                            value={tempItem.unitPrice}
+                                            onChange={(e) => setTempItem({ ...tempItem, unitPrice: Number(e.target.value) })}
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm font-bold font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex gap-3">
+                                    <button onClick={() => { setIsProductModalOpen(false); setTempItem({ materialId: '', amount: 1, unitPrice: 0 }); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-200">Vazgeç</button>
+                                    <button onClick={addToCart} className="flex-1 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 shadow-md">+ LİSTEYE EKLE</button>
+                                </div>
                             </div>
-                            <button onClick={() => setIsProductModalOpen(false)} className="mt-6 w-full py-4 font-black text-xs uppercase bg-slate-100 rounded-xl text-slate-500 tracking-widest">Kapat</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Select Customer Modal */}
+                {isSelectCustomerModalOpen && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[70]">
+                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 max-h-[90vh] overflow-hidden flex flex-col">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold">Müşteri Seçimi</h3>
+                                <button onClick={() => setIsSelectCustomerModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl font-black">×</button>
+                            </div>
+
+                            <div className="mb-4">
+                                <input
+                                    type="text"
+                                    placeholder="🔍 Müşteri Adı, VKN veya Telefon ile arayın..."
+                                    value={customerSearchQuery}
+                                    onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                                    className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-slate-700"
+                                />
+                            </div>
+
+                            <div className="overflow-y-auto flex-1 space-y-2 border border-slate-100 rounded-xl p-2 bg-slate-50">
+                                {customers
+                                    .filter(c =>
+                                        c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                                        c.phone?.includes(customerSearchQuery) ||
+                                        c.taxId?.includes(customerSearchQuery)
+                                    )
+                                    .map(c => (
+                                        <button
+                                            key={c.id}
+                                            onClick={() => { setSelectedCustomerId(c.id); setIsSelectCustomerModalOpen(false); }}
+                                            className="w-full flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50 transition-all text-left"
+                                        >
+                                            <div>
+                                                <p className="font-bold text-slate-800">{c.name}</p>
+                                                <p className="text-[10px] text-slate-500 mt-1 uppercase">VKN/TC: {c.taxId || 'Yok'} | Tel: {c.phone || 'Yok'}</p>
+                                            </div>
+                                            <div className="text-emerald-600 font-black text-xl">
+                                                ›
+                                            </div>
+                                        </button>
+                                    ))}
+                                {customers.length > 0 && customers.filter(c => c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) || c.phone?.includes(customerSearchQuery) || c.taxId?.includes(customerSearchQuery)).length === 0 && (
+                                    <div className="p-8 text-center text-slate-400 italic font-medium">Aramanızla eşleşen müşteri bulunamadı.</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
