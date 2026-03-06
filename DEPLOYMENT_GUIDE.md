@@ -230,3 +230,24 @@ http://192.168.1.100:3000
 ```
 yazarak lokal olarak test gerçekleştirebilirsiniz. Dışarıya yayın yine Vercel (Adım C) üzerinden yapılmaya devam eder.
 
+---
+
+## BÖLÜM H: SİSTEM GÜNCELLEME PROSEDÜRÜ VE SENKRONİZASYON
+
+Geliştirici bilgisayarında (Local) herhangi bir kod değişikliği yapılıp GitHub'a gönderildiğinde (push), uygulamanın doğru çalışması için önyüz (Vercel) ile arka yüzün (Müşteri Sunucusu/API) uyumlu olması şarttır.
+
+**Temel Kural:** Yeniliklerde **her zaman önce müşteri sunucusundaki API**, ardından önyüz güncellenir. Aksi halde yeni arayüz hatalı (eski veya eksik) verilerle çalışmaya çalışacağı için çökmeler yaşanabilir.
+
+Bunu en basit hale getirmek için projenin içerisine `guncelle.bat` adında çift tıklanabilir bir Windows scripti eklenmiştir.
+
+### Nasıl Güncellenir?
+1. Kendi bilgisayarınızda (Local) kodları GitHub'a gönderin (Commit & Push).
+2. O arada Vercel kendi kendine önyüzü (Client) güncellerken (1-2 dakika sürer), siz hemen Müşteri Sunucusuna (Uzak Masaüstü / AnyDesk vb. ile) bağlanın.
+3. Projenin bulunduğu `C:\inetpub\fidanx` klasörünün (veya kopyaladığınız Masaüstü kısayolunun) içindeki **`guncelle.bat`** dosyasına çift tıklayın!
+
+### .bat Dosyası Ne Yapar? (Merak Edenler İçin)
+* GitHub şifresi **sormaz!** İlk kurulumda Windows Kimlik Yöneticisi yetkiyi zaten kaydettiği için sessizce çalışır.
+* Ayarlarınızı (`.env` dosyalarını) **bozmaz/değiştirmez!** Çünkü `.env` dosyaları GitHub'da yoktur, yerel bilgisayarınızın (ör: bilgiislem10) ayarlarıyla Müşterinin (ör: 192.168.1.100) ayarları kesinlikle karışmaz.
+* Son GitHub kodlarını indirir (`git pull`), Hem API'yi hem Client'ı derler (`npm run build`), ve PM2 hizmetini yeniden başlatarak sistemi temiz bir şekilde ayağa kaldırır (`pm2 restart all`).
+
+Ekranda *"GUNCELLEME BASARILI!"* yazısını gördüğünüzde; müşteri tarafında hem yeni veritabanı yolları/mantıkları aktifleşmiş olacak, hem de Vercel'deki önyüzle senkronize çalışmış olacaktır.
