@@ -8,7 +8,7 @@ import { ModalWrapper } from '@/components/uretim/Modals';
 
 export default function SatinalmaPage() {
     const [isLoading, setIsLoading] = useState(true);
-    // ... rest of the state ...
+    const [fetchError, setFetchError] = useState<string | null>(null);
     const [orders, setOrders] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stocks, setStocks] = useState<any[]>([]);
@@ -59,19 +59,32 @@ export default function SatinalmaPage() {
         fetchData();
     }, []);
 
+    const safeFetch = async (url: string, timeoutMs = 15000): Promise<Response> => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { signal: controller.signal });
+        } finally {
+            clearTimeout(timer);
+        }
+    };
+
     const fetchData = async () => {
         setIsLoading(true);
+        setFetchError(null);
         try {
-            const [ordersRes, customersRes, stocksRes, tabsRes] = await Promise.all([
-                fetch(`${API_URL}/netsis/invoices?faturaTuru=2`),
-                fetch(`${API_URL}/netsis/customers`),
-                fetch(`${API_URL}/netsis/stocks/list`),
-                fetch(`${API_URL}/netsis/invoices/tab-categories`)
+            const [ordersRes, customersRes, stocksRes, tabsRes] = await Promise.allSettled([
+                safeFetch(`${API_URL}/netsis/invoices?faturaTuru=2&pageSize=500`),
+                safeFetch(`${API_URL}/netsis/customers`),
+                safeFetch(`${API_URL}/netsis/stocks/list`),
+                safeFetch(`${API_URL}/netsis/invoices/tab-categories`)
             ]);
 
-            if (ordersRes.ok) {
-                const data = await ordersRes.json();
-                const mappedOrders = (data.items || []).map((o: any) => ({
+            const errors: string[] = [];
+
+            if (ordersRes.status === 'fulfilled' && ordersRes.value.ok) {
+                const data = await ordersRes.value.json().catch(() => ({ items: [] }));
+                const mappedOrders = (Array.isArray(data.items) ? data.items : []).map((o: any) => ({
                     id: o.BelgeNo,
                     supplier: o.CariAdi,
                     supplierId: o.CariKodu,
@@ -83,18 +96,24 @@ export default function SatinalmaPage() {
                     KalemSayisi: o.KalemSayisi
                 }));
                 setOrders(mappedOrders);
+            } else {
+                errors.push('Faturalar yüklenemedi');
             }
-            if (customersRes.ok) {
-                const data = await customersRes.json();
-                const filtered = (data.items || data).filter((c: any) => (c.id || c.CariKodu)?.startsWith('320'));
+
+            if (customersRes.status === 'fulfilled' && customersRes.value.ok) {
+                const data = await customersRes.value.json().catch(() => []);
+                const arr = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+                const filtered = arr.filter((c: any) => (c.id || c.CariKodu)?.startsWith('320'));
                 setCustomers(filtered.map((c: any) => ({
                     id: c.CariKodu || c.id,
                     name: c.CariAdi || c.name
                 })));
             }
-            if (stocksRes.ok) {
-                const data = await stocksRes.json();
-                const mappedStocks = (data.items || data || []).map((s: any) => ({
+
+            if (stocksRes.status === 'fulfilled' && stocksRes.value.ok) {
+                const data = await stocksRes.value.json().catch(() => []);
+                const arr = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+                const mappedStocks = arr.map((s: any) => ({
                     id: s.StokKodu || s.id,
                     name: s.StokAdi || s.name,
                     category: s.category || s.Tip || 'DİĞER',
@@ -104,12 +123,21 @@ export default function SatinalmaPage() {
                 }));
                 setStocks(mappedStocks);
             }
-            if (tabsRes.ok) {
-                const data = await tabsRes.json();
-                if (data && data.length > 0) setInvoiceTabLabels(data);
+
+            if (tabsRes.status === 'fulfilled' && tabsRes.value.ok) {
+                const data = await tabsRes.value.json().catch(() => []);
+                if (Array.isArray(data) && data.length > 0) {
+                    const sorted = data.sort((a: any, b: any) => a.id === 'TÜMÜ' ? -1 : b.id === 'TÜMÜ' ? 1 : 0);
+                    setInvoiceTabLabels(sorted);
+                }
+            }
+
+            if (errors.length > 0) {
+                setFetchError(errors.join('. ') + '. API sunucusuna erişilemiyor olabilir.');
             }
         } catch (err) {
             console.error("Fetch error:", err);
+            setFetchError('Veriler yüklenirken hata oluştu. API sunucusuna bağlantı kontrol edin.');
         } finally {
             setIsLoading(false);
         }
@@ -235,6 +263,16 @@ export default function SatinalmaPage() {
                 </div>
 
                 <div className="flex-1 p-4 lg:p-8">
+                    {fetchError && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-3">
+                            <span className="text-xl">⚠️</span>
+                            <div>
+                                <p className="font-bold">Veri yükleme hatası</p>
+                                <p className="text-xs mt-1">{fetchError}</p>
+                            </div>
+                            <button onClick={fetchData} className="ml-auto px-4 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-xs font-bold transition">Tekrar Dene</button>
+                        </div>
+                    )}
                     <div className="fx-card !p-0 overflow-hidden">
                         <table className="w-full text-left border-collapse" id="purchase-table">
                             <thead className="bg-[var(--fx-sidebar-hover)] fx-text-secondary uppercase text-[10px] font-black border-b fx-border">
@@ -249,6 +287,17 @@ export default function SatinalmaPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
+                                {orders.filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab).length === 0 && !isLoading && (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-16 text-center">
+                                            <div className="text-4xl mb-3">📋</div>
+                                            <p className="font-bold text-slate-500">Bu kategoride fatura bulunamadı</p>
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                {orders.length === 0 ? 'Netsis veritabanından henüz fatura verisi alınamadı.' : `Toplam ${orders.length} fatura var, seçili sekme için sonuç yok.`}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                )}
                                 {orders
                                     .filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab)
                                     .map((order, idx) => (
