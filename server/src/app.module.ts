@@ -17,6 +17,7 @@ import { NetsisModule } from './netsis/netsis.module';
 import { SeedController } from './seed/seed.controller';
 import { PurchasesModule } from './purchases/purchases.module';
 import { SupportModule } from './support/support.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SupportModule } from './support/support.module';
     PurchasesModule,
     SupportModule,
     NetsisModule,
+    AiModule,
   ],
   controllers: [AppController, SeedController],
   providers: [AppService],

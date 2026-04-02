@@ -13,15 +13,15 @@ export class NetsisFinanceService {
         const sql = `
       SELECT 
           sbt.NETHESKODU AS HesapKodu, 
-          ISNULL((SELECT SUM(TUTAR) FROM TBLBNKHESTRA WITH (NOLOCK) WHERE NETHESKODU = sbt.NETHESKODU AND BA = 'B'), 0) AS ToplamBorc, 
-          ISNULL((SELECT SUM(TUTAR) FROM TBLBNKHESTRA WITH (NOLOCK) WHERE NETHESKODU = sbt.NETHESKODU AND BA = 'A'), 0) AS ToplamAlacak, 
-          0 AS BorcBakiye, 
-          0 AS AlacakBakiye, 
+          ISNULL(SUM(CASE WHEN tra.BA = 'B' THEN tra.TUTAR ELSE 0 END), 0) AS BorcBakiye, 
+          ISNULL(SUM(CASE WHEN tra.BA = 'A' THEN tra.TUTAR ELSE 0 END), 0) AS AlacakBakiye, 
           sbt.DOVIZTIPI AS DovizTipi, 
           dbo.TRK(sbt.ACIKLAMA) AS BankaHesapAdi,
           dbo.TRK(bnk.BANKAADI) AS AnaBankaAdi
       FROM TBLBNKHESSABIT sbt WITH (NOLOCK)
       LEFT JOIN TBLBNKSABIT bnk WITH (NOLOCK) ON sbt.NETBANKAKODU = bnk.NETBANKAKODU
+      LEFT JOIN TBLBNKHESTRA tra WITH (NOLOCK) ON sbt.NETHESKODU = tra.NETHESKODU
+      GROUP BY sbt.NETHESKODU, sbt.DOVIZTIPI, sbt.ACIKLAMA, bnk.BANKAADI
       ORDER BY sbt.NETHESKODU
     `;
         return this.db.query(sql);
@@ -103,7 +103,8 @@ export class NetsisFinanceService {
           mc.SC_NO AS BelgeNo,
           mc.VADETRH AS VadeTarihi,
           dbo.TRK(mc.ACIKLAMA1) AS Aciklama,
-          dbo.TRK(c.CARI_ISIM) AS CariAdi,
+          dbo.TRK(c_veren.CARI_ISIM) AS VerenCari,
+          NULL AS CiroCari,
           mc.TUTAR AS Tutar,
           mc.DOVTIP AS DovizTuru,
           CASE mc.SC_YERI
@@ -111,10 +112,11 @@ export class NetsisFinanceService {
               WHEN 'T' THEN 'Tahsil'
               WHEN 'C' THEN 'Ciro'
               WHEN 'B' THEN 'Bankada'
+              WHEN 'I' THEN 'İade'
               ELSE mc.SC_YERI
           END AS Durum
       FROM TBLMCEK mc WITH (NOLOCK)
-      LEFT JOIN TBLCASABIT c WITH (NOLOCK) ON LTRIM(RTRIM(mc.SC_VERENK)) = LTRIM(RTRIM(c.CARI_KOD))
+      LEFT JOIN TBLCASABIT c_veren WITH (NOLOCK) ON LTRIM(RTRIM(mc.SC_VERENK)) = LTRIM(RTRIM(c_veren.CARI_KOD))
       WHERE ${where}
       ORDER BY mc.VADETRH ASC
     `;
@@ -127,12 +129,42 @@ export class NetsisFinanceService {
           bc.SC_NO AS BelgeNo,
           bc.VADETRH AS VadeTarihi,
           dbo.TRK(bc.ACIKLAMA1) AS Aciklama,
-          dbo.TRK(c.CARI_ISIM) AS CariAdi,
+          dbo.TRK(c.CARI_ISIM) AS VerilenCari,
           bc.TUTAR AS Tutar,
-          bc.DOVTIP AS DovizTuru
+          bc.DOVTIP AS DovizTuru,
+          CASE bc.SC_YERI
+              WHEN 'P' THEN 'Cüzdan'
+              WHEN 'V' THEN 'Verildi'
+              WHEN 'O' THEN 'Ödendi'
+              ELSE bc.SC_YERI
+          END AS Durum
       FROM TBLBCEK bc WITH (NOLOCK)
       LEFT JOIN TBLCASABIT c WITH (NOLOCK) ON LTRIM(RTRIM(bc.SC_VERENK)) = LTRIM(RTRIM(c.CARI_KOD))
       ORDER BY bc.VADETRH ASC
+    `;
+        return this.db.query(sql);
+    }
+
+    async getFinanceProjection() {
+        const sql = `
+      SELECT 
+          'ALACAK' AS Tip,
+          MONTH(VADE_TARIHI) AS Ay,
+          YEAR(VADE_TARIHI) AS Yil,
+          SUM(ALACAK - BORC) AS Tutar
+      FROM TBLCAHAR WITH (NOLOCK)
+      WHERE LEFT(CARI_KOD, 3) = '120' AND VADE_TARIHI >= GETDATE()
+      GROUP BY YEAR(VADE_TARIHI), MONTH(VADE_TARIHI)
+      UNION ALL
+      SELECT 
+          'BORC' AS Tip,
+          MONTH(VADE_TARIHI) AS Ay,
+          YEAR(VADE_TARIHI) AS Yil,
+          SUM(BORC - ALACAK) AS Tutar
+      FROM TBLCAHAR WITH (NOLOCK)
+      WHERE LEFT(CARI_KOD, 3) = '320' AND VADE_TARIHI >= GETDATE()
+      GROUP BY YEAR(VADE_TARIHI), MONTH(VADE_TARIHI)
+      ORDER BY Yil, Ay
     `;
         return this.db.query(sql);
     }

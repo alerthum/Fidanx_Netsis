@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import ThemeSelector from './ThemeSelector';
 
 export default function BottomNavigation() {
     const pathname = usePathname();
@@ -81,6 +82,9 @@ export default function BottomNavigation() {
                     <div className="absolute bottom-0 left-0 right-0 bg-slate-50 rounded-t-[2rem] max-h-[85vh] overflow-y-auto flex flex-col shadow-2xl animate-slide-up pb-24 border-t border-slate-200/50">
                         <div className="flex justify-center pt-3 pb-1 cursor-pointer" onClick={() => setIsMenuOpen(false)}>
                             <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
+                        </div>
+                        <div className="px-6 py-4 flex flex-col gap-2">
+                            <ThemeSelector />
                         </div>
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-slate-800">Uygulama Menüsü</h3>

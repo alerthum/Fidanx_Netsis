@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./themes.css";
 import NotificationCenter from "@/components/NotificationCenter";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export const metadata: Metadata = {
 
 import { Providers } from "@/components/Providers";
 import BottomNavigation from "@/components/BottomNavigation";
+import AiAssistant from "@/components/AiAssistant";
 
 export default function RootLayout({
   children,
@@ -50,11 +52,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 dark:bg-slate-900 min-h-screen w-full pb-20 lg:pb-0 transition-colors duration-300`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full pb-20 lg:pb-0 transition-colors duration-300 fx-page`}
       >
         <Providers>
           {children}
           <BottomNavigation />
+          <AiAssistant />
         </Providers>
         <script
           dangerouslySetInnerHTML={{

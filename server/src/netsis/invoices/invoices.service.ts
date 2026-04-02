@@ -160,4 +160,62 @@ export class NetsisInvoicesService {
     `;
         return this.db.query(sql, { startDate, endDate });
     }
+
+    async updateInvoice(belgeNo: string, cariKodu: string, faturaTuru: string, items: any[], totals: any) {
+        this.logger.log(`Netsis Fatura Güncelleniyor: ${belgeNo} (${faturaTuru === '1' ? 'Satış' : 'Alış'})`);
+
+        try {
+            // 1. TBLSTHAR: Kalemleri döngü ile güncelle
+            for (const item of items) {
+                // Not: Eğer item.isNew veya yeni kalem eklendiyse INSERT gerektirir. 
+                // Buradaki basit mantık olanları günceller.
+                await this.db.query(`
+                    UPDATE TBLSTHAR 
+                    SET STHAR_GCMIK = @miktar, STHAR_NF = @fiyat, STHAR_BF = @fiyat
+                    WHERE RTRIM(FISNO) = RTRIM(@belgeNo) AND STHAR_FTIRSIP = @faturaTuru AND RTRIM(STOK_KODU) = RTRIM(@stokKodu)
+                `, {
+                    miktar: item.amount,
+                    fiyat: item.unitPrice,
+                    belgeNo,
+                    faturaTuru,
+                    stokKodu: item.StokKodu || item.materialId || item.id
+                });
+            }
+
+            // 2. TBLFATUIRS: Toplam Tutarları güncelle
+            await this.db.query(`
+                UPDATE tblFATUIRS
+                SET BRUTTUTAR = @subTotal, GENELTOPLAM = @total
+                WHERE RTRIM(FATIRS_NO) = RTRIM(@belgeNo) AND FTIRSIP = @faturaTuru
+            `, {
+                belgeNo,
+                faturaTuru,
+                subTotal: totals.subTotal,
+                total: totals.total
+            });
+
+            // 3. TBLCAHAR: Açık Cari hareketini bul ve tutarını düzelt
+            if (faturaTuru === '1') {
+                // Satış faturası, müşteri borçlandı
+                await this.db.query(`
+                    UPDATE TBLCAHAR 
+                    SET BORC = @total 
+                    WHERE RTRIM(BELGE_NO) = RTRIM(@belgeNo) AND RTRIM(CARI_KOD) = RTRIM(@cariKodu)
+                `, { total: totals.total, belgeNo, cariKodu });
+            } else if (faturaTuru === '2') {
+                // Alış faturası, tedarikçi alacaklandı
+                await this.db.query(`
+                    UPDATE TBLCAHAR 
+                    SET ALACAK = @total 
+                    WHERE RTRIM(BELGE_NO) = RTRIM(@belgeNo) AND RTRIM(CARI_KOD) = RTRIM(@cariKodu)
+                `, { total: totals.total, belgeNo, cariKodu });
+            }
+
+            return { success: true, message: 'Fatura başarıyla Netsis üzerinde güncellendi.' };
+
+        } catch (err) {
+            this.logger.error('Netsis Fatura güncellenirken hata oluştu', err);
+            throw new Error('Fatura güncellenirken Netsis üzerinde hata oluştu.');
+        }
+    }
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function LoadingScreen() {
+export default function LoadingScreen({ message = 'Veriler Yükleniyor...' }: { message?: string }) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 font-sans z-50 fixed inset-0">
             <div className="flex flex-col items-center animate-pulse">
@@ -10,7 +10,7 @@ export default function LoadingScreen() {
                     <span className="text-emerald-400 font-black text-5xl leading-none">X</span>
                 </div>
                 <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-emerald-700 font-bold text-lg tracking-widest uppercase">Veriler Yükleniyor...</p>
+                <p className="text-emerald-700 font-bold text-lg tracking-widest uppercase">{message}</p>
             </div>
         </div>
     );

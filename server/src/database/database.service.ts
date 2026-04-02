@@ -27,9 +27,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
             password: this.configService.get<string>('DB_PASS') || '',
             database: this.configService.get<string>('DB_NAME') || '',
             port: parseInt(this.configService.get<string>('DB_PORT') || '1433'),
+            connectionTimeout: 30000,
             options: {
                 encrypt: false,
                 trustServerCertificate: true,
+                requestTimeout: 30000
             },
             pool: {
                 max: 10,

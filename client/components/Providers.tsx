@@ -5,7 +5,12 @@ import GlobalModal from './GlobalModal';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="fidanx"
+            themes={['fidanx', 'light', 'midnight', 'nature', 'royal', 'steel']}
+            enableSystem={false}
+        >
             {children}
             <GlobalModal />
         </ThemeProvider>

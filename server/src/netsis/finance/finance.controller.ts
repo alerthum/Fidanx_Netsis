@@ -49,4 +49,9 @@ export class NetsisFinanceController {
     async getPaymentSummary() {
         return this.financeService.getPaymentSummary();
     }
+
+    @Get('projection')
+    async getFinanceProjection() {
+        return this.financeService.getFinanceProjection();
+    }
 }

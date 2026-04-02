@@ -108,16 +108,22 @@ export default function DashboardPage() {
       }
       setRegionalSales(salesByRegion);
 
-      // Sıcaklık: production/temperature-logs API (veritabanı)
+      // Sıcaklık: production/sicaklik API (veritabanı)
       try {
-        const tempRes = await fetch(`${API_URL}/production/temperature-logs?tenantId=demo-tenant`);
+        const tempRes = await fetch(`${API_URL}/production/sicaklik?tenantId=demo-tenant`);
         if (tempRes.ok) {
           const tempLogs = await tempRes.json();
+          // Group by date to show daily or average? 
+          // The current UI shows bars for different months/periods.
+          // Let's just show the last 12 individual logs with their period.
           const mapped = (Array.isArray(tempLogs) ? tempLogs.slice(0, 12) : []).map((l: any) => ({
-            sabah: l.seraIci?.sabah ?? l.SeraIciSabah ?? '-',
-            ogle: l.seraIci?.ogle ?? l.SeraIciOgle ?? '-',
-            aksam: l.seraIci?.aksam ?? l.SeraIciAksam ?? '-',
-            month: l.date ? new Date(l.date).toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' }) : '-'
+            sabah: l.periyot === 'SABAH' ? l.icSicaklik : 0,
+            ogle: l.periyot === 'OGLE' ? l.icSicaklik : 0,
+            aksam: l.periyot === 'AKSAM' ? l.icSicaklik : 0,
+            month: l.date ? new Date(l.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-',
+            fullDate: l.date ? new Date(l.date).toLocaleDateString() : '',
+            periyot: l.periyot,
+            temp: l.icSicaklik
           }));
           setTempStats(mapped);
         } else {
@@ -133,7 +139,7 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
+    <div className="flex flex-col lg:flex-row min-h-screen fx-bg">
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
@@ -174,15 +180,15 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Bölgesel Satış Analizi (Türkiye Haritası) */}
-            <div className="xl:col-span-2 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8 flex flex-col min-h-[500px]">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-5">
+            <div className="xl:col-span-2 fx-card !p-8 space-y-8 flex flex-col min-h-[500px]">
+              <div className="flex justify-between items-center border-b fx-border pb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">Bölgesel Satış</h2>
-                  <p className="text-xs text-slate-400 mt-1 uppercase font-black tracking-widest">Genel Dağılım</p>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight">BÖLGESEL SATIŞ ANALİZİ</h2>
+                  <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Türkiye Genel Dağılım</p>
                 </div>
               </div>
-              <div className="flex-1 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center overflow-hidden relative group">
-                <div className="w-full h-full max-w-[800px] p-4 scale-90 origin-center">
+              <div className="flex-1 bg-slate-50/50 rounded-3xl border fx-border flex items-center justify-center overflow-hidden relative group">
+                <div className="w-full h-full max-w-[800px] p-4 scale-90 origin-center transition-transform group-hover:scale-95 duration-700">
                   <TurkeyMap data={regionalSales} />
                 </div>
               </div>
@@ -190,28 +196,28 @@ export default function DashboardPage() {
 
             {/* Sağlık & Hızlı İşlemler */}
             <div className="space-y-8">
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-[11px] font-black text-slate-400 uppercase mb-8 tracking-[0.2em]">Fidan Sağlık Durumu</h3>
-                <div className="space-y-6">
+              <div className="fx-card !p-8">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase mb-8 tracking-[0.2em] border-b fx-border pb-4">FİDAN SAĞLIK DURUMU</h3>
+                <div className="space-y-8">
                   {healthStatus.healthy === 0 && healthStatus.observation === 0 && healthStatus.critical === 0 ? (
                     <p className="text-slate-400 text-sm italic">Veri bulunamadı.</p>
                   ) : (
                     <>
-                      <HealthBar label="Sağlıklı" percentage={healthStatus.healthy} color="bg-emerald-500" />
-                      <HealthBar label="Gözlem Altında" percentage={healthStatus.observation} color="bg-amber-500" />
+                      <HealthBar label="Sağlıklı" percentage={healthStatus.healthy} color="bg-indigo-500" />
+                      <HealthBar label="Gözlem Altında" percentage={healthStatus.observation} color="bg-amber-400" />
                       <HealthBar label="Kritik (Hastalık Riski)" percentage={healthStatus.critical} color="bg-rose-500" />
                     </>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-[11px] font-black text-slate-400 uppercase mb-6 tracking-[0.2em]">Hızlı Operasyonlar</h3>
+              <div className="fx-card !p-8">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase mb-6 tracking-[0.2em] border-b fx-border pb-4">HIZLI OPERASYONLAR</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <QuickAction icon="🚜" label="Gübreleme" href="/operasyon" />
                   <QuickAction icon="💧" label="Sulama" href="/operasyon" />
                   <QuickAction icon="📦" label="Sayım" href="/stoklar" />
-                  <QuickAction icon="🚚" label="Sevkiyat Onay" href="/satislar" />
+                  <QuickAction icon="🚚" label="Sevkiyat" href="/satislar" />
                 </div>
               </div>
             </div>
@@ -219,71 +225,83 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {/* Sera İklim Analizi (Yeni Konum - Sol) */}
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-5">
+            <div className="fx-card !p-8 space-y-6">
+              <div className="flex justify-between items-center border-b fx-border pb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">Sera İklim Analizi</h2>
-                  <p className="text-xs text-slate-400 mt-1 uppercase font-black tracking-widest">En Yüksek Sıcaklıklar (Sabah / Öğle / Akşam)</p>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight">SERA İKLİM ANALİZİ</h2>
+                  <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest leading-relaxed">Ortalama İç Sıcaklık Takibi (°C)</p>
                 </div>
-                <Link href="/sera" className="text-emerald-600 text-xs font-black uppercase tracking-widest hover:underline">Detaylı Rapor</Link>
+                <Link href="/sera" className="bg-slate-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors">Detaylı Rapor</Link>
               </div>
 
               {tempStats.length > 0 ? (
-                <div className="flex items-end justify-between gap-4 h-64 w-full pt-4">
-                  {tempStats.map((stat, idx) => (
+                <div className="flex items-end justify-between gap-1 lg:gap-3 h-64 w-full pt-4">
+                  {tempStats.slice().reverse().map((stat, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                       {/* Tooltip */}
-                      <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] p-2 rounded-lg whitespace-nowrap z-10 pointer-events-none">
-                        Sabah: {stat.sabah}° <br /> Öğle: {stat.ogle}° <br /> Akşam: {stat.aksam}°
+                      <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 bg-slate-900 shadow-2xl text-white text-[10px] p-3 rounded-2xl whitespace-nowrap z-10 pointer-events-none text-center">
+                        <span className="font-black opacity-50 uppercase tracking-widest block mb-1">{stat.fullDate}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                          <span className="font-bold">{stat.periyot}: {stat.temp}°C</span>
+                        </div>
                       </div>
 
-                      {/* Bars Container */}
-                      <div className="relative w-full max-w-[50px] h-full flex items-end justify-center bg-slate-50 rounded-xl overflow-hidden gap-[2px] p-1">
-                        {/* Sabah (Blue) */}
-                        <div className="w-1/3 bg-blue-300 hover:bg-blue-400 transition-all rounded-t-sm relative group/bar" style={{ height: `${Math.min(100, (parseFloat(stat.sabah) / 45) * 100)}%` }}></div>
-                        {/* Öğle (Orange/Red) */}
-                        <div className="w-1/3 bg-orange-400 hover:bg-orange-500 transition-all rounded-t-sm relative group/bar" style={{ height: `${Math.min(100, (parseFloat(stat.ogle) / 45) * 100)}%` }}></div>
-                        {/* Akşam (Indigo) */}
-                        <div className="w-1/3 bg-indigo-300 hover:bg-indigo-400 transition-all rounded-t-sm relative group/bar" style={{ height: `${Math.min(100, (parseFloat(stat.aksam) / 45) * 100)}%` }}></div>
+                      {/* Bar Container */}
+                      <div className="relative w-full h-[85%] flex items-end justify-center bg-slate-50 rounded-2xl overflow-hidden p-1 group-hover:bg-indigo-50/30 transition-all">
+                        <div
+                          className={`w-full rounded-xl transition-all duration-700 hover:brightness-110 shadow-sm ${stat.periyot === 'SABAH' ? 'bg-indigo-300' :
+                            stat.periyot === 'OGLE' ? 'bg-indigo-600' :
+                              'bg-indigo-400'
+                            }`}
+                          style={{ height: `${Math.min(100, (parseFloat(stat.temp) / 45) * 100)}%` }}
+                        ></div>
                       </div>
 
                       <div className="mt-4 text-center">
-                        <span className="block text-xs font-bold text-slate-700">{stat.month}</span>
+                        <span className="block text-[9px] font-black text-slate-500 uppercase tracking-tighter">{stat.month}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-slate-300">
-                  <span className="text-4xl mb-2">🌡️</span>
-                  <p className="text-sm italic">Veri bulunamadı.</p>
+                  <span className="text-4xl mb-4 grayscale opacity-20">🌡️</span>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Veri bulunamadı</p>
                 </div>
               )}
             </div>
 
             {/* Son Aktiviteler (Yeni Konum - Sağ) */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
-              <div className="px-8 py-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Son Sistem Kayıtları</h2>
-                <button className="text-emerald-600 text-xs font-black uppercase tracking-widest hover:underline">Tümünü Gör</button>
+            <div className="fx-card overflow-hidden flex flex-col h-full !p-0">
+              <div className="px-8 py-6 border-b fx-border flex justify-between items-center bg-slate-50/50">
+                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SON SİSTEM KAYITLARI</h2>
+                <button className="bg-white px-4 py-2 rounded-xl text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 border fx-border transition-colors">Tümünü Gör</button>
               </div>
-              <div className="divide-y divide-slate-100 overflow-y-auto max-h-[350px]">
+              <div className="divide-y divide-slate-100 overflow-y-auto max-h-[450px] custom-scrollbar">
                 {activities.map((item, i) => (
-                  <div key={item.id || i} className="flex items-center gap-6 px-8 py-5 hover:bg-slate-50/80 transition cursor-pointer group">
-                    <div className={`w-12 h-12 ${item.color || 'bg-slate-50'} rounded-xl flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform`}>{item.icon || '📝'}</div>
+                  <div key={item.id || i} className="flex items-center gap-6 px-8 py-6 hover:bg-slate-50/80 transition-all cursor-pointer group">
+                    <div className={`w-14 h-14 ${item.color || 'bg-slate-50'} rounded-2xl flex items-center justify-center text-3xl shadow-sm group-hover:scale-110 transition-transform`}>{item.icon || '📝'}</div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-700 mb-0.5">{item.title}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none">
-                        {item.action} • {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      <p className="text-sm font-black text-slate-800 mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{item.title}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none bg-slate-100 px-2 py-1 rounded-md">
+                          {item.action}
+                        </span>
+                        <span className="text-[10px] text-slate-300 font-bold">
+                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-slate-300 group-hover:text-emerald-500 transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                    <div className="text-slate-200 group-hover:text-indigo-500 transition-colors transform group-hover:translate-x-1 duration-300">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
                     </div>
                   </div>
                 ))}
                 {activities.length === 0 && (
-                  <p className="p-8 text-center text-slate-400 italic">Henüz sistem kaydı bulunmuyor.</p>
+                  <div className="p-16 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Henüz sistem kaydı bulunmuyor</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -296,11 +314,11 @@ export default function DashboardPage() {
 
 function StatCard({ title, value, change, positive, neutral, smallerText }: any) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-200 transition-colors">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2">{title}</p>
+    <div className="fx-card !p-8 group cursor-default">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 border-b fx-border pb-3 group-hover:text-indigo-600 transition-colors leading-none">{title}</p>
       <div className="flex justify-between items-end">
-        <h3 className={`${smallerText ? 'text-lg' : 'text-2xl'} font-bold text-slate-800 tracking-tight`}>{value}</h3>
-        <span className={`text-[9px] font-black px-2 py-1.5 rounded-lg uppercase tracking-widest ${neutral ? 'bg-slate-100 text-slate-500' :
+        <h3 className={`${smallerText ? 'text-lg' : 'text-3xl'} font-black text-slate-900 tracking-tighter`}>{value}</h3>
+        <span className={`text-[9px] font-black px-2.5 py-1.5 rounded-xl uppercase tracking-widest shadow-xs ${neutral ? 'bg-slate-50 text-slate-400 border border-slate-100' :
           positive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
           }`}>
           {change}
@@ -313,12 +331,12 @@ function StatCard({ title, value, change, positive, neutral, smallerText }: any)
 function HealthBar({ label, percentage, color }: any) {
   return (
     <div>
-      <div className="flex justify-between text-[10px] font-black mb-2 text-slate-500 uppercase tracking-widest">
+      <div className="flex justify-between text-[10px] font-black mb-3 text-slate-800 uppercase tracking-[0.2em]">
         <span>{label}</span>
-        <span>%{percentage}</span>
+        <span className="bg-slate-50 px-2 py-0.5 rounded text-slate-500">%{percentage}</span>
       </div>
-      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-        <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${percentage}%` }}></div>
+      <div className="w-full h-2.5 bg-slate-50 rounded-full overflow-hidden border fx-border p-0.5">
+        <div className={`h-full ${color} rounded-full transition-all duration-1000 shadow-sm`} style={{ width: `${percentage}%` }}></div>
       </div>
     </div>
   );
@@ -326,9 +344,10 @@ function HealthBar({ label, percentage, color }: any) {
 
 function QuickAction({ icon, label, href }: any) {
   return (
-    <Link href={href} className="flex flex-col items-center justify-center p-5 bg-slate-50 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all duration-300 border border-slate-100 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-200 group">
-      <span className="text-3xl mb-2 group-hover:scale-125 transition-transform">{icon}</span>
-      <span className="text-[10px] font-black uppercase tracking-widest text-center">{label}</span>
+    <Link href={href} className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2rem] hover:bg-white hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 border-2 border-transparent hover:border-indigo-100 group relative overflow-hidden">
+      <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/[0.02] transition-colors"></div>
+      <span className="text-4xl mb-3 group-hover:scale-125 transition-transform duration-500 block relative z-10">{icon}</span>
+      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-indigo-600 transition-all relative z-10">{label}</span>
     </Link>
   );
 }

@@ -42,7 +42,7 @@ export default function RaporlarPage() {
                 fetch(`${API_URL}/netsis/invoices/summary`),
                 fetch(`${API_URL}/netsis/invoices?faturaTuru=1`),
                 fetch(`${API_URL}/netsis/invoices?faturaTuru=2`),
-                fetch(`${API_URL}/production/temperature-logs?tenantId=demo-tenant`),
+                fetch(`${API_URL}/production/sicaklik?tenantId=demo-tenant`),
                 fetch(`${API_URL}/production/fertilizer-logs?tenantId=demo-tenant`)
             ]);
 

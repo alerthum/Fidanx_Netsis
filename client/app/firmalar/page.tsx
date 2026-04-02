@@ -1,16 +1,19 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
+import ExportButton from '@/components/ExportButton';
 
 export default function FirmalarPage() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
     const [newCompany, setNewCompany] = useState({
         name: '',
-        taxNumber: '', // Code in ERP terms
-        type: '320', // Default to Supplier (320)
+        taxNumber: '',
+        type: '320',
         address: '',
         city: 'Yalova',
         country: 'Türkiye',
@@ -19,13 +22,16 @@ export default function FirmalarPage() {
         phone: ''
     });
 
+    const [filterType, setFilterType] = useState<'ALL' | '120' | '320'>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [onlyWithBalance, setOnlyWithBalance] = useState(false);
+
     const [isMovementsModalOpen, setIsMovementsModalOpen] = useState(false);
     const [movements, setMovements] = useState<any[]>([]);
     const [selectedCariKod, setSelectedCariKod] = useState('');
     const [selectedCariName, setSelectedCariName] = useState('');
     const [invoiceDetails, setInvoiceDetails] = useState<any[] | null>(null);
     const [invoiceDetailBelgeNo, setInvoiceDetailBelgeNo] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -36,22 +42,20 @@ export default function FirmalarPage() {
     const fetchCompanies = async () => {
         setIsLoading(true);
         try {
-            // Netsis Carileri (Müşteri/Tedarikçi) çekiyoruz
             const res = await fetch(`${API_URL}/netsis/customers`);
             if (!res.ok) throw new Error('Cari verileri alınamadı');
             const data = await res.json();
 
-            // Netsis verilerini firma modeline eşliyoruz
             const mappedData = Array.isArray(data) ? data.map((c: any) => ({
                 id: c.CariKodu,
                 name: c.CariAdi,
-                taxNumber: c.CariKodu, // ERP'de kod genellikle VKN yerine geçer
+                taxNumber: c.CariKodu,
                 address: c.CariAdres,
                 city: c.CariIl,
                 country: c.Ulke,
                 email: c.Email,
                 phone: c.Telefon,
-                balance: c.BakiyeTl // Ekstra alan: Bakiye
+                balance: c.BakiyeTl
             })) : [];
 
             setCompanies(mappedData);
@@ -167,6 +171,13 @@ export default function FirmalarPage() {
         });
     };
 
+    const filteredCompanies = companies.filter(c => {
+        const matchesType = filterType === 'ALL' || (filterType === '120' ? c.id?.startsWith('120') : c.id?.startsWith('320'));
+        const matchesSearch = c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || c.taxNumber?.includes(searchQuery);
+        const matchesBalance = !onlyWithBalance || Math.abs(Number(c.balance)) > 1;
+        return matchesType && matchesSearch && matchesBalance;
+    });
+
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 font-sans">
             <Sidebar />
@@ -176,44 +187,84 @@ export default function FirmalarPage() {
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800">Firma Yönetimi</h1>
                         <p className="text-xs lg:text-sm text-slate-500">Müşteri ve tedarikçi profillerini yönetin.</p>
                     </div>
-                    <button
-                        onClick={() => { closeModal(); setIsModalOpen(true); }}
-                        className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 shadow-md transition active:scale-95"
-                    >
-                        + Yeni Firma Kaydı
-                    </button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <ExportButton title="Firmalar" tableId="companies-table" />
+                        <button
+                            onClick={() => { closeModal(); setIsModalOpen(true); }}
+                            className="flex-1 sm:flex-none bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 shadow-md transition active:scale-95"
+                        >
+                            + Yeni Firma
+                        </button>
+                    </div>
                 </header>
 
-                {/* Type Filter / Selection for creation */}
-                <div className="px-4 md:px-8 mt-6">
-                    <div className="flex bg-white p-1 rounded-xl border border-slate-200 w-fit shadow-sm">
-                        <button
-                            onClick={() => fetchCompanies()}
-                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition"
-                        >
-                            🔄 Listeyi Yenile
-                        </button>
+                <div className="px-4 md:px-8 mt-6 space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                            <button
+                                onClick={() => setFilterType('ALL')}
+                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition ${filterType === 'ALL' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                Hepsi
+                            </button>
+                            <button
+                                onClick={() => setFilterType('120')}
+                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition ${filterType === '120' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                Müşteriler (120)
+                            </button>
+                            <button
+                                onClick={() => setFilterType('320')}
+                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition ${filterType === '320' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                Tedarikçiler (320)
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <div className="relative flex-1 sm:w-64">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                                <input
+                                    type="text"
+                                    placeholder="Firma adı veya kod ile ara..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 shadow-sm"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setOnlyWithBalance(!onlyWithBalance)}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition ${onlyWithBalance ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-inner' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                            >
+                                {onlyWithBalance ? '✓ Bakiyeli Olanlar' : 'Bakiyelileri Filtrele'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex-1 p-4 md:p-8">
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-full">
-                        {/* Desktop Table */}
-                        <table className="hidden lg:table w-full text-left border-collapse">
+                        <table className="hidden lg:table w-full text-left border-collapse" id="companies-table">
                             <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200">
                                 <tr>
                                     <th className="px-6 py-4">Firma Ünvanı / VKN / E-posta</th>
+                                    <th className="px-6 py-4 text-center">Tür</th>
                                     <th className="px-6 py-4">Konum</th>
                                     <th className="px-6 py-4 text-right">Firma Bakiyesi</th>
                                     <th className="px-6 py-4 text-right">İşlemler</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
-                                {Array.isArray(companies) && companies.map((company: any) => (
+                                {filteredCompanies.map((company: any) => (
                                     <tr key={company.id} className="hover:bg-slate-50 transition">
                                         <td className="px-6 py-4">
                                             <p className="font-bold text-slate-700">{company.name}</p>
                                             <p className="text-[10px] text-slate-400 font-mono">VKN: {company.taxNumber || '-'}{company.email ? ` · ${String(company.email).toLowerCase()}` : ''}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${company.id?.startsWith('120') ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {company.id?.startsWith('120') ? 'Müşteri' : 'Tedarikçi'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
@@ -223,6 +274,7 @@ export default function FirmalarPage() {
                                         <td className="px-6 py-4 text-right">
                                             <span className={`font-bold ${Number(company.balance) > 0 ? 'text-rose-600' : Number(company.balance) < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
                                                 {company.balance != null ? `₺${Number(company.balance).toLocaleString('tr-TR')}` : '-'}
+                                                {Number(company.balance) > 0 ? ' (B)' : Number(company.balance) < 0 ? ' (A)' : ''}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -239,20 +291,14 @@ export default function FirmalarPage() {
                                                 >
                                                     DÜZENLE
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(company.id)}
-                                                    className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-rose-100 transition"
-                                                >
-                                                    SİL
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
-                                {(!Array.isArray(companies) || companies.length === 0) && (
+                                {filteredCompanies.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="py-20 text-center text-slate-400 italic font-medium">
-                                            {!Array.isArray(companies) ? 'Veri alınamadı, sunucu kontrol ediliyor...' : 'Kayıtlı firma bulunamadı.'}
+                                        <td colSpan={5} className="py-20 text-center text-slate-400 italic font-medium">
+                                            Kayıtlı firma bulunamadı.
                                         </td>
                                     </tr>
                                 )}
@@ -261,161 +307,138 @@ export default function FirmalarPage() {
 
                         {/* Mobile Card View */}
                         <div className="lg:hidden divide-y divide-slate-100">
-                            {Array.isArray(companies) && companies.map((company: any) => (
+                            {filteredCompanies.map((company: any) => (
                                 <div key={company.id} className="p-4">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <h3 className="font-bold text-slate-800 text-sm">{company.name}</h3>
                                             <p className="text-[10px] text-slate-400 font-mono">VKN: {company.taxNumber || '-'}{company.email ? ` · ${String(company.email).toLowerCase()}` : ''}</p>
                                         </div>
-                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                                            {company.city}
+                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${company.id?.startsWith('120') ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {company.id?.startsWith('120') ? '120' : '320'}
                                         </span>
                                     </div>
 
-                                    <div className="text-xs text-slate-500 space-y-1 mb-3">
-                                        <p><span className="font-bold">Bakiye:</span>{' '}
-                                            <span className={Number(company.balance) > 0 ? 'text-rose-600' : Number(company.balance) < 0 ? 'text-emerald-600' : ''}>
+                                    <div className="text-xs text-slate-500 space-y-1 mb-3 flex justify-between items-center">
+                                        <p><span className="font-bold uppercase text-[9px] text-slate-400 block mb-0.5">Bakiye</span>
+                                            <span className={`font-black ${Number(company.balance) > 0 ? 'text-rose-600' : Number(company.balance) < 0 ? 'text-emerald-600' : ''}`}>
                                                 {company.balance != null ? `₺${Number(company.balance).toLocaleString('tr-TR')}` : '-'}
+                                                {Number(company.balance) > 0 ? ' (B)' : Number(company.balance) < 0 ? ' (A)' : ''}
                                             </span>
                                         </p>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => fetchMovements(company.id, company.name)}
-                                            className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-lg text-xs font-bold active:scale-95 transition"
-                                        >
-                                            HAREKET
-                                        </button>
-                                        <button
-                                            onClick={() => openEditModal(company)}
-                                            className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg text-xs font-bold active:scale-95 transition"
-                                        >
-                                            DÜZENLE
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(company.id)}
-                                            className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-lg text-xs font-bold active:scale-95 transition"
-                                        >
-                                            SİL
-                                        </button>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => fetchMovements(company.id, company.name)} className="bg-slate-100 text-slate-600 p-2 rounded-lg text-xs font-bold">Ekstre</button>
+                                            <button onClick={() => openEditModal(company)} className="bg-blue-50 text-blue-600 p-2 rounded-lg text-xs font-bold">Düzenle</button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
-                            {(!Array.isArray(companies) || companies.length === 0) && (
-                                <div className="py-12 text-center text-slate-400 italic font-medium">
-                                    {!Array.isArray(companies) ? 'Veri alınamadı.' : 'Kayıtlı firma bulunamadı.'}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Modal */}
-                {
-                    isModalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
-                                <h3 className="text-xl font-bold text-slate-800 mb-6 tracking-tight">
-                                    {editMode ? 'Firma Bilgilerini Düzenle' : 'Yeni Firma Kaydı'}
-                                </h3>
-                                <form onSubmit={handleAddCompany} className="grid grid-cols-2 gap-5">
-                                    <div className="col-span-2">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Firma Ticari Ünvanı</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={newCompany.name}
-                                            onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
-                                            placeholder="Örn: Fidanx Tarım Ltd. Şti."
-                                        />
-                                    </div>
-                                    <div className="col-span-2 grid grid-cols-2 gap-4 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50">
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5">Cari Tipi (ERP)</label>
-                                            <select
-                                                value={newCompany.type}
-                                                onChange={(e) => setNewCompany({ ...newCompany, type: e.target.value })}
-                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm bg-white"
-                                            >
-                                                <option value="120">Müşteri (120)</option>
-                                                <option value="320">Tedarikçi (320)</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5">ERP Cari Kodu</label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={newCompany.taxNumber}
-                                                    onChange={(e) => setNewCompany({ ...newCompany, taxNumber: e.target.value })}
-                                                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm font-mono"
-                                                    placeholder="Örn: 320-001"
-                                                />
-                                                {!editMode && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={generateNextCode}
-                                                        className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black hover:bg-emerald-700 transition"
-                                                        title="Sıradaki Kodu Üret"
-                                                    >
-                                                        OTO
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                {isModalOpen && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+                            <h3 className="text-xl font-bold text-slate-800 mb-6 tracking-tight">
+                                {editMode ? 'Firma Bilgilerini Düzenle' : 'Yeni Firma Kaydı'}
+                            </h3>
+                            <form onSubmit={handleAddCompany} className="grid grid-cols-2 gap-5">
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Firma Ticari Ünvanı</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={newCompany.name}
+                                        onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
+                                        placeholder="Örn: Fidanx Tarım Ltd. Şti."
+                                    />
+                                </div>
+                                <div className="col-span-2 grid grid-cols-2 gap-4 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50">
+                                    <div>
+                                        <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5">Cari Tipi (ERP)</label>
+                                        <select
+                                            value={newCompany.type}
+                                            onChange={(e) => setNewCompany({ ...newCompany, type: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm bg-white"
+                                        >
+                                            <option value="120">Müşteri (120)</option>
+                                            <option value="320">Tedarikçi (320)</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">İlgili Kişi</label>
+                                        <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5">ERP Cari Kodu</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newCompany.taxNumber}
+                                                onChange={(e) => setNewCompany({ ...newCompany, taxNumber: e.target.value })}
+                                                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm font-mono"
+                                                placeholder="Örn: 320-001"
+                                            />
+                                            {!editMode && (
+                                                <button
+                                                    type="button"
+                                                    onClick={generateNextCode}
+                                                    className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black hover:bg-emerald-700 transition"
+                                                    title="Sıradaki Kodu Üret"
+                                                >
+                                                    OTO
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">İlgili Kişi</label>
+                                    <input
+                                        type="text"
+                                        value={newCompany.contactPerson}
+                                        onChange={(e) => setNewCompany({ ...newCompany, contactPerson: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Açık Adres</label>
+                                    <textarea
+                                        rows={2}
+                                        value={newCompany.address}
+                                        onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm resize-none"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 col-span-2">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">E-Posta</label>
                                         <input
-                                            type="text"
-                                            value={newCompany.contactPerson}
-                                            onChange={(e) => setNewCompany({ ...newCompany, contactPerson: e.target.value })}
+                                            type="email"
+                                            value={newCompany.email}
+                                            onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
                                             className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
                                         />
                                     </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Açık Adres</label>
-                                        <textarea
-                                            rows={2}
-                                            value={newCompany.address}
-                                            onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm resize-none"
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Telefon</label>
+                                        <input
+                                            type="tel"
+                                            value={newCompany.phone}
+                                            onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 col-span-2">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">E-Posta</label>
-                                            <input
-                                                type="email"
-                                                value={newCompany.email}
-                                                onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
-                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Telefon</label>
-                                            <input
-                                                type="tel"
-                                                value={newCompany.phone}
-                                                onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
-                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 flex gap-4 mt-6">
-                                        <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition">İptal</button>
-                                        <button type="submit" className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-lg hover:bg-emerald-700 transition active:scale-95">
-                                            {editMode ? 'Değişiklikleri Kaydet' : 'Firmayı Kaydet'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                </div>
+                                <div className="col-span-2 flex gap-4 mt-6">
+                                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition">İptal</button>
+                                    <button type="submit" className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-lg hover:bg-emerald-700 transition active:scale-95">
+                                        {editMode ? 'Değişiklikleri Kaydet' : 'Firmayı Kaydet'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    )
-                }
+                    </div>
+                )}
 
                 {/* Movements Modal */}
                 {isMovementsModalOpen && (
@@ -452,14 +475,14 @@ export default function FirmalarPage() {
                                                     {m.VadeTarihi ? new Date(m.VadeTarihi).toLocaleDateString() : '-'}
                                                 </td>
                                                 <td className="px-6 py-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => fetchInvoiceDetails(m.BelgeNo || '')}
-                                                className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline text-left"
-                                            >
-                                                {m.BelgeNo || m.HareketTuru}
-                                            </button>
-                                        </td>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => fetchInvoiceDetails(m.BelgeNo || '')}
+                                                        className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline text-left"
+                                                    >
+                                                        {m.BelgeNo || m.HareketTuru}
+                                                    </button>
+                                                </td>
                                                 <td className="px-6 py-3 text-slate-600 max-w-[200px] truncate" title={m.Aciklama}>{m.Aciklama}</td>
                                                 <td className="px-6 py-3 text-right font-bold text-rose-600">
                                                     {m.Borc > 0 ? `₺${m.Borc.toLocaleString()}` : '-'}
@@ -528,7 +551,7 @@ export default function FirmalarPage() {
                         </div>
                     </div>
                 )}
-            </main >
-        </div >
+            </main>
+        </div>
     );
 }

@@ -311,13 +311,13 @@ export default function AyarlarPage() {
     };
 
     return (
-        <div className="flex min-h-screen bg-[#f8fafc]">
+        <div className="flex min-h-screen fx-page">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+                <header className="fx-card !rounded-none !border-0 !border-b fx-border px-8 py-5 flex justify-between items-center sticky top-0 z-30 shadow-sm">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Sistem Ayarları</h1>
-                        <p className="text-sm text-slate-500 font-medium">Kullanıcı yönetimi, roller ve parametreler.</p>
+                        <h1 className="text-2xl font-bold fx-text-primary tracking-tight">Sistem Ayarları</h1>
+                        <p className="text-sm fx-text-secondary font-medium">Kullanıcı yönetimi, roller ve parametreler.</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsGuideOpen(true)} className="bg-indigo-50 text-indigo-700 font-bold px-5 py-2.5 rounded-lg border border-indigo-200 hover:bg-indigo-100 hover:text-indigo-800 transition shadow-sm flex items-center gap-2">
@@ -336,30 +336,38 @@ export default function AyarlarPage() {
 
                 <div className="p-4 md:p-8 grid grid-cols-1 xl:grid-cols-2 gap-8">
                     {/* Tema Ayarları */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 xl:col-span-2 dark:bg-slate-800 dark:border-slate-700">
+                    <div className="fx-card p-6 space-y-4 xl:col-span-2">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
-                                <h3 className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] dark:text-slate-400">Görünüm & Tema</h3>
-                                <p className="text-xs text-slate-400 font-medium mt-1">Uygulamanın renk temasını seçin. (Bazı alanlar henüz Beta)</p>
+                                <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em]">Görünüm & Tema</h3>
+                                <p className="text-xs fx-text-secondary font-medium mt-1">Sistem çapında genel bir arayüz ve renk teması belirleyin.</p>
                             </div>
-                            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl w-full sm:w-auto">
-                                {['light', 'dark', 'system'].map((t) => (
+                            <div className="flex flex-wrap bg-slate-100 dark:bg-slate-900 p-1.5 rounded-xl w-full sm:w-auto gap-1">
+                                {[
+                                    { id: 'fidanx', label: '🌱 FidanX', desc: 'Varsayılan klasik yeşil tonlar' },
+                                    { id: 'light', label: '⚪ Minimalist', desc: 'Modern aydınlık' },
+                                    { id: 'midnight', label: '🌑 Midnight', desc: 'Tam siyah yüksek kontrast' },
+                                    { id: 'nature', label: '🌿 Nature', desc: 'Yumuşak yeşil orman' },
+                                    { id: 'royal', label: '👑 Royal', desc: 'Kurumsal indigo' },
+                                    { id: 'steel', label: '⚙️ Steel', desc: 'Endüstriyel gri metalik' }
+                                ].map((t) => (
                                     <button
-                                        key={t}
-                                        onClick={() => setTheme(t)}
-                                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === t
-                                            ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400'
-                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                        key={t.id}
+                                        onClick={() => setTheme(t.id)}
+                                        title={t.desc}
+                                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === t.id
+                                            ? 'bg-white text-emerald-600 shadow-md dark:bg-slate-700 dark:text-emerald-400 scale-105 z-10'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-white/50 dark:text-slate-400 dark:hover:text-slate-300'}`}
                                     >
-                                        {t === 'light' ? '☀️ Aydınlık' : t === 'dark' ? '🌙 Karanlık' : '💻 Sistem'}
+                                        {t.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em]">Kullanıcı & Erişim Yönetimi</h3>
+                    <div className="fx-card !p-0 overflow-hidden flex flex-col">
+                        <div className="p-6 border-b fx-border flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em]">Kullanıcı & Erişim Yönetimi</h3>
                             <button
                                 onClick={() => setIsUserModalOpen(true)}
                                 className="text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition"
@@ -369,19 +377,19 @@ export default function AyarlarPage() {
                         </div>
                         <div className="flex-1">
                             <table className="w-full text-left text-sm border-collapse">
-                                <thead className="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-100">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 fx-text-secondary text-[9px] font-black uppercase tracking-widest border-b fx-border">
                                     <tr>
                                         <th className="px-6 py-3">Kullanıcı Bilgisi</th>
                                         <th className="px-6 py-3">Yetki Seviyesi</th>
                                         <th className="px-6 py-3 text-right">Eylem</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-[var(--fx-border)]">
                                     {users.map((user, i) => (
-                                        <tr key={i} className="hover:bg-slate-50/80 transition group">
+                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
                                             <td className="px-6 py-4">
-                                                <p className="font-bold text-slate-700 leading-tight">{user.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium">{user.email}</p>
+                                                <p className="font-bold fx-text-primary leading-tight">{user.name}</p>
+                                                <p className="text-[10px] fx-text-secondary font-medium">{user.email}</p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${user.role === 'Süper Yetkili' || user.role === 'Admin' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -411,8 +419,8 @@ export default function AyarlarPage() {
 
                     {/* Parametreler */}
                     <div className="space-y-8">
-                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                            <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Üretim Safhaları (Dinamik Şaşırtma)</h3>
+                        <div className="fx-card p-8 space-y-6">
+                            <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Üretim Safhaları (Dinamik Şaşırtma)</h3>
                             <div className="flex flex-wrap gap-2">
                                 {productionStages.map(s => (
                                     <span key={s} className="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold border border-emerald-100 flex items-center gap-2 group hover:border-emerald-300 transition-all">
@@ -425,7 +433,7 @@ export default function AyarlarPage() {
                                 <input
                                     id="new-stage-input"
                                     type="text"
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 shadow-sm transition"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-emerald-500 transition"
                                     placeholder="Örn: 1. Şaşırtma"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
@@ -443,8 +451,8 @@ export default function AyarlarPage() {
                             <p className="text-[10px] text-slate-400 font-medium italic">Taşıma (Şaşırtma) butonuna basıldığında bu safhalar sırasıyla önerilecektir.</p>
                         </div>
 
-                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                            <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Stok Kategorileri</h3>
+                        <div className="fx-card p-8 space-y-6">
+                            <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Stok Kategorileri</h3>
                             <div className="flex flex-wrap gap-2">
                                 {categories.map(c => (
                                     <span key={c} className="bg-slate-50 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold border border-slate-100 flex items-center gap-2 group hover:border-emerald-200 hover:bg-emerald-50 transition-all">
@@ -459,7 +467,7 @@ export default function AyarlarPage() {
                                     value={newCategory}
                                     onChange={(e) => setNewCategory(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); }}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 shadow-sm transition"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-emerald-500 transition"
                                     placeholder="Örn: Zeytin Fidanı"
                                 />
                                 <button
@@ -472,8 +480,8 @@ export default function AyarlarPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Üretim Konumları (Sera/Bahçe)</h3>
+                    <div className="fx-card p-8 space-y-6">
+                        <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Üretim Konumları (Sera/Bahçe)</h3>
                         <div className="flex flex-wrap gap-2">
                             {locations.map(l => (
                                 <span key={l} className="bg-amber-50 text-amber-700 px-3 py-2 rounded-xl text-xs font-bold border border-amber-100 flex items-center gap-2 group hover:border-amber-300 transition-all">
@@ -488,7 +496,7 @@ export default function AyarlarPage() {
                                 value={newLocation}
                                 onChange={(e) => setNewLocation(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddLocation(); }}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-500 shadow-sm transition"
+                                className="flex-1 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-[var(--fx-accent)] transition"
                                 placeholder="Örn: Sera 1, Bahçe A, Depo"
                             />
                             <button
@@ -500,8 +508,8 @@ export default function AyarlarPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Gider Kalemleri</h3>
+                    <div className="fx-card p-8 space-y-6">
+                        <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Gider Kalemleri</h3>
                         <div className="flex flex-wrap gap-2">
                             {expenseTypes.map(e => (
                                 <span key={e} className="bg-indigo-50 text-indigo-700 px-3 py-2 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 group hover:border-indigo-300 transition-all">
@@ -516,7 +524,7 @@ export default function AyarlarPage() {
                                 value={newExpenseType}
                                 onChange={(e) => setNewExpenseType(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddExpenseType(); }}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500 shadow-sm transition"
+                                className="flex-1 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-[var(--fx-accent)] transition"
                                 placeholder="Örn: Nakliye, İşçilik"
                             />
                             <button
@@ -528,8 +536,8 @@ export default function AyarlarPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Ortam Ölçüm Parametreleri</h3>
+                    <div className="fx-card p-8 space-y-6">
+                        <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Ortam Ölçüm Parametreleri</h3>
                         <div className="flex flex-wrap gap-2">
                             {measurementParams.map(m => (
                                 <span key={m} className="bg-sky-50 text-sky-700 px-3 py-2 rounded-xl text-xs font-bold border border-sky-100 flex items-center gap-2 group hover:border-sky-300 transition-all">
@@ -544,7 +552,7 @@ export default function AyarlarPage() {
                                 value={newMeasurementParam}
                                 onChange={(e) => setNewMeasurementParam(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddMeasurementParam(); }}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-sky-500 shadow-sm transition"
+                                className="flex-1 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-[var(--fx-accent)] transition"
                                 placeholder="Örn: CO2, Toprak Nemi"
                             />
                             <button
@@ -556,9 +564,9 @@ export default function AyarlarPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-4">Fatura Kategorileri (Satınalma)</h3>
-                        <p className="text-xs text-slate-500">Satınalma fatura modalında Kategori dropdown’unda listelenecek değerler. Boş bırakılırsa Netsis tab kategorileri kullanılır.</p>
+                    <div className="fx-card p-8 space-y-6">
+                        <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Fatura Kategorileri (Satınalma)</h3>
+                        <p className="text-xs fx-text-secondary">Satınalma fatura modalında Kategori dropdown’unda listelenecek değerler. Boş bırakılırsa Netsis tab kategorileri kullanılır.</p>
                         <div className="flex flex-wrap gap-2">
                             {invoiceCategories.map(c => (
                                 <span key={c.id} className="bg-violet-50 text-violet-700 px-3 py-2 rounded-xl text-xs font-bold border border-violet-100 flex items-center gap-2">
@@ -573,7 +581,7 @@ export default function AyarlarPage() {
                                 value={newInvoiceCatId}
                                 onChange={(e) => setNewInvoiceCatId(e.target.value)}
                                 placeholder="Kod (örn: 150-01)"
-                                className="w-28 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-500"
+                                className="w-28 px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-[var(--fx-accent)]"
                             />
                             <input
                                 type="text"
@@ -581,7 +589,7 @@ export default function AyarlarPage() {
                                 onChange={(e) => setNewInvoiceCatLabel(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddInvoiceCategory(); }}
                                 placeholder="Etiket (örn: Gıda)"
-                                className="flex-1 min-w-[120px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-500"
+                                className="flex-1 min-w-[120px] px-4 py-2.5 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary text-sm outline-none focus:border-[var(--fx-accent)]"
                             />
                             <button
                                 onClick={handleAddInvoiceCategory}
@@ -592,10 +600,10 @@ export default function AyarlarPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden flex flex-col justify-center items-center py-12">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl mb-4">💾</div>
-                        <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em] mb-2">Veritabanı Yedekleme</h3>
-                        <p className="text-xs text-slate-500 font-medium text-center max-w-sm">Sistem canlı Netsis veritabanına bağlı olduğu için yedekleme ve geri yükleme işlemleri doğrudan sunucu üzerinden yapılmaktadır.</p>
+                    <div className="fx-card !flex flex-col justify-center items-center py-12">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-2xl mb-4">💾</div>
+                        <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-2">Veritabanı Yedekleme</h3>
+                        <p className="text-xs fx-text-secondary font-medium text-center max-w-sm">Sistem canlı Netsis veritabanına bağlı olduğu için yedekleme ve geri yükleme işlemleri doğrudan sunucu üzerinden yapılmaktadır.</p>
                     </div>
 
 
@@ -606,38 +614,38 @@ export default function AyarlarPage() {
                 {/* User Creation Modal */}
                 {
                     isUserModalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-slate-200">
-                                <h3 className="text-xl font-bold text-slate-800 mb-6 tracking-tight">Yeni Kullanıcı Hesabı</h3>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div className="fx-card shadow-2xl w-full max-w-md p-8">
+                                <h3 className="text-xl font-bold fx-text-primary mb-6 tracking-tight">Yeni Kullanıcı Hesabı</h3>
                                 <form onSubmit={handleAddUser} className="space-y-5">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tam Adı</label>
+                                        <label className="block text-[10px] font-black fx-text-secondary uppercase tracking-widest mb-1.5">Tam Adı</label>
                                         <input
                                             required
                                             type="text"
                                             value={newUser.name}
                                             onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm transition"
+                                            className="w-full px-4 py-3 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary outline-none focus:border-[var(--fx-accent)] text-sm transition"
                                             placeholder="Örn: Ahmet Yılmaz"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">E-Posta Adresi</label>
+                                        <label className="block text-[10px] font-black fx-text-secondary uppercase tracking-widest mb-1.5">E-Posta Adresi</label>
                                         <input
                                             required
                                             type="email"
                                             value={newUser.email}
                                             onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm transition"
+                                            className="w-full px-4 py-3 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary outline-none focus:border-[var(--fx-accent)] text-sm transition"
                                             placeholder="ahmet@fidanx.com"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Erişim Yetkisi</label>
+                                        <label className="block text-[10px] font-black fx-text-secondary uppercase tracking-widest mb-1.5">Erişim Yetkisi</label>
                                         <select
                                             value={newUser.role}
                                             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm transition appearance-none bg-slate-50"
+                                            className="w-full px-4 py-3 rounded-xl border fx-border bg-[var(--fx-bg)] fx-text-primary outline-none focus:border-[var(--fx-accent)] text-sm transition appearance-none"
                                         >
                                             <option value="Admin">Süper Yetkili (Admin)</option>
                                             <option value="Personel">Saha Personeli</option>

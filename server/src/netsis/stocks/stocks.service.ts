@@ -35,13 +35,14 @@ export class NetsisStocksService {
           DBO.TRK(sbt.STOK_ADI) as StokAdi,
           DBO.TRK(stgrup.GRUP_ISIM) as GrupIsim,
           CASE	
-              WHEN sbt.STOK_KODU LIKE '150%' THEN '0- HAMMADDE'
-              WHEN sbt.STOK_KODU LIKE '151%' THEN '1- YARIMAMUL' 
-              WHEN sbt.STOK_KODU LIKE '152%' THEN '2- MAMUL' 
-              WHEN sbt.STOK_KODU LIKE '153%' THEN '3- TİCARİ' 
-              WHEN sbt.STOK_KODU LIKE '157%' THEN '4-YARD.MALZEME'
-              ELSE '5-DIGER' 
-          END as Tip,
+              WHEN sbt.STOK_KODU LIKE '150%' THEN '150-01 İLK MADDE'
+              WHEN sbt.STOK_KODU LIKE '151%' THEN '151-01 YARIMAMUL' 
+              WHEN sbt.STOK_KODU LIKE '152%' THEN '152-01 MAMUL' 
+              WHEN sbt.STOK_KODU LIKE '153%' THEN '153-01 TİCARİ' 
+              WHEN sbt.STOK_KODU LIKE '600%' OR DBO.TRK(stgrup.GRUP_ISIM) LIKE '%SÜS%' THEN 'SÜS BİTKİLERİ'
+              WHEN sbt.STOK_KODU LIKE '157%' OR DBO.TRK(stgrup.GRUP_ISIM) LIKE '%SAKSI%' THEN 'SAKSILAR'
+              ELSE 'DİĞER' 
+          END as category,
           ISNULL(har.GIRIS_MIKTARI, 0) as GirisMiktari,
           ISNULL(har.CIKIS_MIKTARI, 0) as CikisMiktari,
           (ISNULL(har.GIRIS_MIKTARI, 0) - ISNULL(har.CIKIS_MIKTARI, 0)) as Bakiye,
