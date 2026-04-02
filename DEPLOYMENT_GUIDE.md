@@ -98,7 +98,7 @@ npm run build
 npm install -g pm2
 
 cd C:\inetpub\fidanx\server
-pm2 start dist/main.js --name fidanx-api
+pm2 start dist/src/main.js --name fidanx-api
 pm2 save
 ```
 

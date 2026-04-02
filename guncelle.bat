@@ -47,7 +47,7 @@ pm2 describe fidanx-api >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo   fidanx-api bulunamadi, olusturuluyor...
     cd /d %FIDANX_ROOT%\server
-    call pm2 start dist\main.js --name fidanx-api
+    call pm2 start dist\src\main.js --name fidanx-api
 ) else (
     call pm2 restart fidanx-api
 )

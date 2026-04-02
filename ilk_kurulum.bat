@@ -60,9 +60,9 @@ echo   npm install yapiliyor...
 call npm install >> "%LOGFILE%" 2>&1
 echo   npm run build yapiliyor...
 call npm run build >> "%LOGFILE%" 2>&1
-if not exist "dist\main.js" (
+if not exist "dist\src\main.js" (
     echo [HATA] API build basarisiz! Detay icin %LOGFILE% dosyasina bakin.
-    echo [HATA] dist\main.js bulunamadi >> "%LOGFILE%"
+    echo [HATA] dist\src\main.js bulunamadi >> "%LOGFILE%"
     goto :BITTI
 )
 echo [OK] API build tamam.
@@ -117,7 +117,7 @@ echo.
 echo [5/7] PM2 SERVISLERI BASLATILIYOR...
 echo [5/7] PM2 servis baslat >> "%LOGFILE%"
 cd /d "%FIDANX_ROOT%\server"
-call pm2 start dist\main.js --name fidanx-api >> "%LOGFILE%" 2>&1
+call pm2 start dist\src\main.js --name fidanx-api >> "%LOGFILE%" 2>&1
 cd /d "%FIDANX_ROOT%\client"
 call pm2 start node_modules\next\dist\bin\next --name fidanx-client -- start >> "%LOGFILE%" 2>&1
 call pm2 save >> "%LOGFILE%" 2>&1
