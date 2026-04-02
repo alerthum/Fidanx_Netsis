@@ -1,0 +1,22 @@
+---
+description: API URL her zaman /api olmalı, ortam değişkeni kullanılmamalı
+globs: client/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# API URL Kuralı
+
+API çağrıları her zaman `/api` prefix'i ile yapılmalı. Next.js rewrite kuralları hem local hem Vercel ortamında doğru sunucuya yönlendirme yapar.
+
+```typescript
+// ❌ YASAK - mixed content (HTTPS→HTTP) ve ortam tutarsızlığı yaratır
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+// ❌ YASAK - Vercel'de çalışmaz
+const API_URL = 'http://localhost:3201/api';
+
+// ✅ DOĞRU - her zaman relative path kullan
+const API_URL = '/api';
+```
+
+Next.js rewrite (`next.config.ts`) tüm `/api/*` isteklerini doğru backend'e yönlendirir.

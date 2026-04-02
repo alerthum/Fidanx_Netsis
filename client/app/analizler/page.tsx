@@ -8,7 +8,7 @@ export default function AnalizlerPage() {
     const [sales, setSales] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         fetchData();

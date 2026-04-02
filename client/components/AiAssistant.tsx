@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3201/api";
+const API_URL = '/api';
 
 type AiMessage = {
     role: "user" | "assistant";

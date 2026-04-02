@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_URL = '/api';
 const TENANT_ID = 'demo-tenant';
 
 interface BatchDetail {

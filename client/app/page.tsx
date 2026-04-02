@@ -10,7 +10,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [healthStatus, setHealthStatus] = useState({ healthy: 0, observation: 0, critical: 0 });
   const [regionalSales, setRegionalSales] = useState<Record<string, number>>({});
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+  const API_URL = '/api';
 
   const [tempStats, setTempStats] = useState<any[]>([]);
 

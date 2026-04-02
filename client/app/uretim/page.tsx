@@ -31,7 +31,7 @@ export default function UretimPage() {
         faturaNo: ''
     });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
     const tenantId = 'demo-tenant'; // Auth sonrası değişecek
 
     const stages = [

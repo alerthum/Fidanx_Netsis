@@ -20,7 +20,7 @@ export default function RaporlarPage() {
         tabParam === 'cost' || tabParam === 'maliyet' ? 'cost' : tabParam === 'monthly' ? 'monthly' : tabParam === 'operations' ? 'operations' : 'overview'
     );
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         if (tabParam === 'cost' || tabParam === 'maliyet') setActiveSection('cost');

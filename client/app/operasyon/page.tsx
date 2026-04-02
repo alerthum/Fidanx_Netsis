@@ -20,7 +20,7 @@ export default function OperationsPage() {
         operationDate: new Date().toISOString().split('T')[0]
     });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         fetchData();

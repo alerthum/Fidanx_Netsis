@@ -31,7 +31,7 @@ export default function AyarlarPage() {
     const [isRestoring, setIsRestoring] = useState(false);
     const [backupName, setBackupName] = useState('');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         setMounted(true);

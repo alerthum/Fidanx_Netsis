@@ -8,7 +8,7 @@ export default function VeriYuklePage() {
     const [logs, setLogs] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     // Şablon Oluşturma ve İndirme
     const handleDownloadTemplate = () => {

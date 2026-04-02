@@ -69,7 +69,7 @@ export default function SatislarPage() {
         zipCode: ''
     });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     React.useEffect(() => {
         fetchCustomers();

@@ -34,7 +34,7 @@ export default function RecipesPage() {
     // Item Input State
     const [currentItem, setCurrentItem] = useState<RecipeItem>({ materialId: '', name: '', amount: 0, unit: 'kg' });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         fetchRecipes();

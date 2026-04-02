@@ -7,7 +7,7 @@ export default function DestekPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newTicket, setNewTicket] = useState({ customer: '', subject: '', content: '', status: 'Açık' });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+    const API_URL = '/api';
 
     useEffect(() => {
         fetchTickets();
