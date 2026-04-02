@@ -60,9 +60,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
             const request = this.pool.request();
 
-            // Parametreleri ekle
             Object.entries(params).forEach(([key, value]) => {
-                request.input(key, value);
+                if (typeof value === 'string') {
+                    request.input(key, mssql.NVarChar, value);
+                } else if (typeof value === 'number') {
+                    request.input(key, Number.isInteger(value) ? mssql.Int : mssql.Decimal(18, 4), value);
+                } else if (value instanceof Date) {
+                    request.input(key, mssql.DateTime, value);
+                } else if (typeof value === 'boolean') {
+                    request.input(key, mssql.Bit, value);
+                } else {
+                    request.input(key, value);
+                }
             });
 
             const result = await request.query(sql);

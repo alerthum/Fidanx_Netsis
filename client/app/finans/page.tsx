@@ -58,31 +58,32 @@ export default function FinansPage() {
             ]);
 
             const [salesData, purchData, banks, cashBoxes, payments, paySummary, musteriCekleri, borcCekleri, projection, expensesData] = await Promise.all([
-                salesRes.json().catch(() => ({ items: [] })),
-                purchRes.json().catch(() => ({ items: [] })),
-                bankRes.json().catch(() => []),
-                cashRes.json().catch(() => []),
-                payRes.json().catch(() => []),
-                paySumRes.json().catch(() => []),
-                musteriRes.json().catch(() => []),
-                borcRes.json().catch(() => []),
-                projRes.json().catch(() => []),
-                expRes.json().catch(() => [])
+                salesRes.ok ? salesRes.json().catch(() => ({ items: [] })) : { items: [] },
+                purchRes.ok ? purchRes.json().catch(() => ({ items: [] })) : { items: [] },
+                bankRes.ok ? bankRes.json().catch(() => []) : [],
+                cashRes.ok ? cashRes.json().catch(() => []) : [],
+                payRes.ok ? payRes.json().catch(() => []) : [],
+                paySumRes.ok ? paySumRes.json().catch(() => []) : [],
+                musteriRes.ok ? musteriRes.json().catch(() => []) : [],
+                borcRes.ok ? borcRes.json().catch(() => []) : [],
+                projRes.ok ? projRes.json().catch(() => []) : [],
+                expRes.ok ? expRes.json().catch(() => []) : []
             ]);
 
-            const sItems = salesData.items || salesData || [];
-            const pItems = purchData.items || purchData || [];
+            const toArray = (d: any) => Array.isArray(d) ? d : [];
+            const sItems = toArray(salesData?.items) || toArray(salesData);
+            const pItems = toArray(purchData?.items) || toArray(purchData);
 
             setSales(sItems);
             setPurchases(pItems);
-            setBankBalances(banks);
-            setCashBalances(cashBoxes);
-            setPayments(payments);
-            setPaymentSummary(paySummary);
-            setMusteriCekleri(musteriCekleri);
-            setBorcCekleri(borcCekleri);
-            setProjection(projection);
-            setExpenses(expensesData);
+            setBankBalances(toArray(banks));
+            setCashBalances(toArray(cashBoxes));
+            setPayments(toArray(payments));
+            setPaymentSummary(toArray(paySummary));
+            setMusteriCekleri(toArray(musteriCekleri));
+            setBorcCekleri(toArray(borcCekleri));
+            setProjection(toArray(projection));
+            setExpenses(toArray(expensesData));
 
             // AI Insight generation with fresh data
             const Totals = {
