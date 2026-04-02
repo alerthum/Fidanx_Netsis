@@ -352,6 +352,142 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                             </div>
                         </section>
 
+                        {/* Yol Haritası & Faz Durumu */}
+                        <section>
+                            <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-6 flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-lg">🗓️</span>
+                                Yol Haritası (Fazlar)
+                            </h4>
+                            <div className="space-y-4">
+                                {[
+                                    {
+                                        faz: 'Faz A', title: 'Üretim Çekirdeği', status: 'done', color: 'emerald',
+                                        items: [
+                                            'Parti oluşturma, listeleme, detay',
+                                            'Günlük işlemler (toplu gider dağıtımı)',
+                                            'Şaşırtma (safha değişimi, alt LOT)',
+                                            'Fire/kayıp takibi + maliyet etkisi',
+                                            'Satış kaydı (FidanX tarafı)',
+                                            'Birikimli maliyet hesaplama',
+                                            'Konum transferi',
+                                            'Sıcaklık & sera kayıtları (konum bazlı)',
+                                        ]
+                                    },
+                                    {
+                                        faz: 'Faz B', title: 'Reçete & Operasyon', status: 'pending', color: 'blue',
+                                        items: [
+                                            'Şaşırtma reçetesi (saksı + toprak otomatik maliyet)',
+                                            'Reçete-stok bağlantısı (Netsis stok kodu)',
+                                            'Operasyon & Hareket sayfası iyileştirme',
+                                            'Maliyet & Analiz tab (pasta grafik, kârlılık)',
+                                        ]
+                                    },
+                                    {
+                                        faz: 'Faz C', title: 'Netsis Yazma Entegrasyonu', status: 'pending', color: 'amber',
+                                        items: [
+                                            'Satış faturası → Netsis (tblFATUIRS + TBLSTHAR)',
+                                            'Cari hesap hareketi (TBLCAHAR)',
+                                            'Stok sarf hareketi (saksı/gübre düşümü)',
+                                        ]
+                                    },
+                                    {
+                                        faz: 'Faz D', title: 'Barkod & Mobil', status: 'pending', color: 'violet',
+                                        items: [
+                                            'Gerçek kamera ile barkod/QR okutma',
+                                            'Barkod etiket basımı (PDF)',
+                                            'PWA (Progressive Web App) dönüşümü',
+                                            'Offline satış desteği',
+                                        ]
+                                    },
+                                    {
+                                        faz: 'Faz E', title: 'Raporlama & Analiz', status: 'pending', color: 'rose',
+                                        items: [
+                                            'Parti maliyet detay raporu (PDF/Excel)',
+                                            'Bitki şeceresi (tam izlenebilirlik)',
+                                            'Sera verimlilik raporu',
+                                            'Kârlılık analizi dashboard',
+                                        ]
+                                    },
+                                ].map((faz) => (
+                                    <div key={faz.faz} className={`p-5 rounded-2xl border ${faz.status === 'done' ? `bg-${faz.color}-50 border-${faz.color}-200` : 'bg-white border-slate-200'}`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h5 className={`text-xs font-black uppercase tracking-widest ${faz.status === 'done' ? `text-${faz.color}-600` : 'text-slate-500'}`}>
+                                                {faz.faz} – {faz.title}
+                                            </h5>
+                                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
+                                                faz.status === 'done' ? 'bg-emerald-100 text-emerald-700' :
+                                                faz.status === 'active' ? 'bg-blue-100 text-blue-700 animate-pulse' :
+                                                'bg-slate-100 text-slate-400'
+                                            }`}>
+                                                {faz.status === 'done' ? '★ Tamamlandı' : faz.status === 'active' ? '◐ Devam Ediyor' : '○ Bekliyor'}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {faz.items.map((item, i) => (
+                                                <span key={i} className={`text-[10px] px-2 py-1 rounded-lg font-medium ${
+                                                    faz.status === 'done' ? 'bg-white text-slate-600 border border-slate-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
+                                                }`}>
+                                                    {faz.status === 'done' ? '✓' : '·'} {item}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Geliştirme Günlüğü */}
+                        <section>
+                            <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-6 flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-lg">📝</span>
+                                Geliştirme Günlüğü
+                            </h4>
+                            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px] w-28">Tarih</th>
+                                            <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px]">Güncelleme</th>
+                                            <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px] text-center w-20">Tür</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {[
+                                            { date: '02.04.2026', desc: 'Türkçe karakter encoding sorunu çözüldü (MSSQL NVarChar)', type: 'fix' },
+                                            { date: '02.04.2026', desc: 'Vercel finans sayfası client-side hatası düzeltildi', type: 'fix' },
+                                            { date: '02.04.2026', desc: 'Next.js hydration mismatch (tema butonları) düzeltildi', type: 'fix' },
+                                            { date: '02.04.2026', desc: 'PM2 auto-start + Windows Task Scheduler kurulumu', type: 'deploy' },
+                                            { date: '02.04.2026', desc: 'ilk_kurulum.bat ve guncelle.bat yeniden yazıldı', type: 'deploy' },
+                                            { date: '02.04.2026', desc: 'NestJS build çıktı yolu düzeltildi (dist/src/main.js)', type: 'fix' },
+                                            { date: '01.03.2026', desc: 'Üretim detay sayfası (/uretim/[id]) - PascalCase → camelCase normalizasyonu', type: 'feature' },
+                                            { date: '01.03.2026', desc: 'Konum transferi endpoint (PATCH /production/batches/:id/transfer)', type: 'feature' },
+                                            { date: '28.02.2026', desc: 'Faz A: Parti oluşturma, şaşırtma, fire, satış, toplu gider dağıtımı', type: 'feature' },
+                                            { date: '27.02.2026', desc: 'Sıcaklık & sera kayıtları konum bazlı hale getirildi', type: 'feature' },
+                                            { date: '26.02.2026', desc: 'Kapsamlı geliştirme planı (2026_DEGISIKLIKLER.md) oluşturuldu', type: 'plan' },
+                                            { date: '23.02.2026', desc: 'Satınalma fatura yönetimi (Netsis entegre) tamamlandı', type: 'feature' },
+                                            { date: '23.02.2026', desc: 'Finans modülü (banka/kasa/çek/senet) Netsis entegrasyonu', type: 'feature' },
+                                            { date: '23.02.2026', desc: 'Proje analiz ve iyileştirme planı oluşturuldu', type: 'plan' },
+                                        ].map((log, i) => (
+                                            <tr key={i} className="hover:bg-slate-50">
+                                                <td className="p-4 font-mono text-xs text-slate-400">{log.date}</td>
+                                                <td className="p-4 text-slate-700 font-medium">{log.desc}</td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                                        log.type === 'feature' ? 'bg-emerald-50 text-emerald-600' :
+                                                        log.type === 'fix' ? 'bg-rose-50 text-rose-600' :
+                                                        log.type === 'deploy' ? 'bg-blue-50 text-blue-600' :
+                                                        'bg-amber-50 text-amber-600'
+                                                    }`}>
+                                                        {log.type === 'feature' ? 'Özellik' : log.type === 'fix' ? 'Düzeltme' : log.type === 'deploy' ? 'Kurulum' : 'Plan'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
                     </div>
                 </div>
             </div>
