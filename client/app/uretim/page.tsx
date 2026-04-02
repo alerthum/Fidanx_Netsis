@@ -6,12 +6,14 @@ import PartilerTab from '@/components/uretim/PartilerTab';
 import TopluIslemlerTab from '@/components/uretim/TopluIslemlerTab';
 import SeraTab from '@/components/uretim/SeraTab';
 import { ModalWrapper, Input, Label, Select, TransplantModal, SatisModal, FireModal, CostHistoryModal } from '@/components/uretim/Modals';
+import MaliyetTab from '@/components/uretim/MaliyetTab';
 
 export default function UretimPage() {
     const [activeTab, setActiveTab] = useState('partiler');
     const [batches, setBatches] = useState<any[]>([]);
     const [motherTrees, setMotherTrees] = useState<any[]>([]);
     const [locations, setLocations] = useState<string[]>([]);
+    const [recipes, setRecipes] = useState<any[]>([]);
 
     // UI States
     const [isNewBatchModalOpen, setIsNewBatchModalOpen] = useState(false);
@@ -59,6 +61,12 @@ export default function UretimPage() {
             if (plantRes.ok) {
                 const plants = await plantRes.json();
                 setMotherTrees(Array.isArray(plants) ? plants : []);
+            }
+
+            const recRes = await fetch(`${API_URL}/recipes?tenantId=${tenantId}`);
+            if (recRes.ok) {
+                const recData = await recRes.json().catch(() => []);
+                setRecipes(Array.isArray(recData) ? recData : []);
             }
         } catch (err) { console.error("Data fetch error", err); }
     };
@@ -187,6 +195,7 @@ export default function UretimPage() {
                     )}
                     {activeTab === 'toplu' && <TopluIslemlerTab batches={batches} locations={locations} API_URL={API_URL} tenantId={tenantId} onRefresh={fetchData} />}
                     {activeTab === 'sera' && <SeraTab locations={locations} API_URL={API_URL} tenantId={tenantId} />}
+                    {activeTab === 'maliyet' && <MaliyetTab batches={batches} />}
                 </div>
 
                 {/* --- Yeni Başlangıç Modalı --- */}
@@ -251,7 +260,7 @@ export default function UretimPage() {
                 </ModalWrapper>
 
                 {/* Aksiyon Modalları */}
-                <TransplantModal isOpen={isTransplantModalOpen} onClose={() => setIsTransplantModalOpen(false)} batch={selectedBatch} stages={stages} locations={locations} onSave={handleTransplant} />
+                <TransplantModal isOpen={isTransplantModalOpen} onClose={() => setIsTransplantModalOpen(false)} batch={selectedBatch} stages={stages} locations={locations} recipes={recipes} onSave={handleTransplant} />
                 <SatisModal isOpen={isSatisModalOpen} onClose={() => setIsSatisModalOpen(false)} batch={selectedBatch} onSave={handleSatis} />
                 <FireModal isOpen={isFireModalOpen} onClose={() => setIsFireModalOpen(false)} batch={selectedBatch} onSave={handleFire} />
                 <CostHistoryModal isOpen={isCostModalOpen} onClose={() => setIsCostModalOpen(false)} batch={selectedBatch} />

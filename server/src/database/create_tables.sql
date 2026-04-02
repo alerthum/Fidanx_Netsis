@@ -135,6 +135,32 @@ BEGIN
     );
 END
 
+-- 9b. Reçete şema genişletme (Faz B)
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Recipes') AND name = 'Description')
+    ALTER TABLE Recipes ADD Description NVARCHAR(MAX);
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('RecipeItems') AND name = 'MaterialCode')
+    ALTER TABLE RecipeItems ADD MaterialCode NVARCHAR(50);
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('RecipeItems') AND name = 'MaterialName')
+    ALTER TABLE RecipeItems ADD MaterialName NVARCHAR(200);
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('RecipeItems') AND name = 'UnitPrice')
+    ALTER TABLE RecipeItems ADD UnitPrice FLOAT DEFAULT 0;
+
+-- 3b. ActivityLogs genişletme (Faz B)
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ActivityLogs') AND name = 'Details')
+    ALTER TABLE ActivityLogs ADD Details NVARCHAR(MAX);
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ActivityLogs') AND name = 'Locations')
+    ALTER TABLE ActivityLogs ADD Locations NVARCHAR(MAX);
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ActivityLogs') AND name = 'UserDate')
+    ALTER TABLE ActivityLogs ADD UserDate DATETIME;
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ActivityLogs') AND name = 'RecipeId')
+    ALTER TABLE ActivityLogs ADD RecipeId INT;
+
 -- Netsis Karakter Dönüşümü (Türkçe Karakter Desteği)
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TRK]') AND type in (N'FN', N'IF', N'TF', N'FS', N'FT'))
 BEGIN

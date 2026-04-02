@@ -96,14 +96,18 @@ export function ModalWrapper({ isOpen, onClose, title, subtitle, children, icon 
 }
 
 // ── Şaşırtma Modalı ──
-export function TransplantModal({ isOpen, onClose, batch, stages, locations, onSave }: any) {
+export function TransplantModal({ isOpen, onClose, batch, stages, locations, onSave, recipes = [] }: any) {
     const [form, setForm] = React.useState({
         hedefSafha: '',
         hedefKonum: '',
         sasirtilanMiktar: 0,
         ekMaliyetTutar: 0,
-        kullanilanMalzeme: ''
+        kullanilanMalzeme: '',
+        recipeId: ''
     });
+
+    const selectedRecipe = recipes.find((r: any) => r.id === form.recipeId);
+    const recipeCost = selectedRecipe?.totalCost || 0;
 
     React.useEffect(() => {
         if (batch) {
@@ -140,12 +144,39 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                         {locations.map((l: any) => <option key={l} value={l}>{l}</option>)}
                     </Select>
                 </div>
+                {recipes.length > 0 && (
+                    <div className="col-span-2">
+                        <Label>Reçete Seçin (Opsiyonel)</Label>
+                        <Select value={form.recipeId} onChange={e => setForm({ ...form, recipeId: e.target.value })}>
+                            <option value="">Reçetesiz devam et...</option>
+                            {recipes.map((r: any) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.name} {r.totalCost > 0 ? `(₺${r.totalCost.toLocaleString('tr-TR')})` : ''}
+                                </option>
+                            ))}
+                        </Select>
+                        {selectedRecipe && (
+                            <div className="mt-2 p-3 bg-indigo-50 rounded-xl text-xs space-y-1">
+                                <div className="flex justify-between font-bold text-indigo-700">
+                                    <span>Reçete Maliyeti:</span>
+                                    <span>₺{recipeCost.toLocaleString('tr-TR')}</span>
+                                </div>
+                                {selectedRecipe.items?.map((i: any, idx: number) => (
+                                    <div key={idx} className="flex justify-between text-indigo-500">
+                                        <span>{i.materialName}</span>
+                                        <span>{i.amount} {i.unit}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div>
-                    <Label>Kullanılan Malzeme (Bilgi)</Label>
+                    <Label>Ek Malzeme (Manuel)</Label>
                     <Input placeholder="Örn: 5L Saksı + Torf" value={form.kullanilanMalzeme} onChange={e => setForm({ ...form, kullanilanMalzeme: e.target.value })} />
                 </div>
                 <div>
-                    <Label>Ek Maliyet Tutarı (₺)</Label>
+                    <Label>Ek Maliyet (₺) {recipeCost > 0 ? `+ Reçete ₺${recipeCost}` : ''}</Label>
                     <Input type="number" placeholder="0.00" value={form.ekMaliyetTutar || ''} onChange={e => setForm({ ...form, ekMaliyetTutar: Number(e.target.value) })} />
                 </div>
                 <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">

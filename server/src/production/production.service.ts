@@ -148,15 +148,6 @@ export class ProductionService {
 
     // 4. ŞAŞIRTMA (Safha Değişimi) İşlemi
     async sasirtmaYap(tenantId: string, kaynakPartiId: string, data: any) {
-        /*
-          data = {
-             hedefSafha: 'KÜÇÜK_SAKSI',
-             hedefKonum: 'Sera 1', (opsiyonel)
-             sasirtilanMiktar: 500,
-             ekMaliyetTutar: 1500, // saksı + toprak maliyeti vs.
-             kullanilanMalzeme: '5L Saksı + Torf'
-          }
-        */
         const results = await this.db.query(`SELECT * FROM FDX_BitkiPartileri WHERE Id = @id AND TenantId = @tenantId`, { id: kaynakPartiId, tenantId });
         if (results.length === 0) throw new NotFoundException('Kaynak parti bulunamadı.');
         const kaynakParti = results[0];
@@ -166,8 +157,19 @@ export class ProductionService {
             throw new BadRequestException('Geçersiz şaşırtma miktarı.');
         }
 
+        let recipeCost = 0;
+        let recipeInfo = '';
+        if (data.recipeId) {
+            const recItems = await this.db.query(`SELECT MaterialCode, MaterialName, Amount, Unit, UnitPrice FROM RecipeItems WHERE RecipeId = @recipeId`, { recipeId: data.recipeId }) as any[];
+            if (Array.isArray(recItems)) {
+                recipeCost = recItems.reduce((sum, i) => sum + (i.Amount || 0) * (i.UnitPrice || 0), 0);
+                recipeInfo = recItems.map(i => `${i.MaterialName || i.MaterialCode} (${i.Amount} ${i.Unit})`).join(', ');
+            }
+        }
+
         const hedeflenenKonum = data.hedefKonum || kaynakParti.Konum;
-        const ekMaliyet = Number(data.ekMaliyetTutar) || 0;
+        const manuelEkMaliyet = Number(data.ekMaliyetTutar) || 0;
+        const ekMaliyet = manuelEkMaliyet + recipeCost;
 
         // Kaynak partinin eski birim maliyeti:
         const kaynakBirimMaliyet = kaynakParti.BirimMaliyet;
@@ -216,11 +218,12 @@ export class ProductionService {
             hedefPartiId: yeniPartiId
         });
 
+        const malzemeAciklama = recipeInfo || data.kullanilanMalzeme || '';
         await this.addOperationLog(tenantId, yeniPartiId, {
             islemTipi: 'SASIRTMA_GIRIS',
-            aciklama: `${kaynakParti.PartiNo} partisinden şaşırtılarak oluşturuldu. Ek maliyetler eklendi.`,
+            aciklama: `${kaynakParti.PartiNo} partisinden şaşırtılarak oluşturuldu.${recipeInfo ? ` Reçete: ${recipeInfo}` : ''} Ek maliyetler eklendi.`,
             miktar,
-            kullanilanMalzeme: data.kullanilanMalzeme,
+            kullanilanMalzeme: malzemeAciklama,
             maliyetTutar: ekMaliyet,
             hedefSafha: data.hedefSafha
         });

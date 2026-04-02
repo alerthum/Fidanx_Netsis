@@ -85,17 +85,20 @@ export default function OperationsPage() {
             details = formData.description;
         }
 
+        const selectedRecipe = activeTab === 'app' ? recipes.find(r => r.id === formData.recipeId) : null;
+        const recipeCost = selectedRecipe?.totalCost || 0;
+        const totalCost = (parseFloat(formData.cost) || 0) + recipeCost;
+
         const payload = {
             action: activeTab.toUpperCase(),
             title,
             icon,
             color,
-            details,
+            details: details + (selectedRecipe ? ` | Reçete Maliyeti: ₺${recipeCost}` : ''),
             locations: formData.locations,
-            data: formData, // Store full form data
-            cost: parseFloat(formData.cost) || 0,
-            timestamp: formData.operationDate ? new Date(formData.operationDate).toISOString() : new Date().toISOString(),
-            date: formData.operationDate || new Date().toISOString().split('T')[0]
+            cost: totalCost,
+            recipeId: formData.recipeId || null,
+            userDate: formData.operationDate || null
         };
 
         try {
@@ -192,7 +195,24 @@ export default function OperationsPage() {
                                                     <option key={r.id} value={r.id}>{r.name}</option>
                                                 ))}
                                             </select>
-                                            <p className="text-[10px] text-slate-400 mt-2 italic">Seçilen reçetenin maliyeti ve stok düşümü otomatik yapılacaktır.</p>
+                                            {formData.recipeId && (() => {
+                                                const rec = recipes.find(r => r.id === formData.recipeId);
+                                                return rec ? (
+                                                    <div className="mt-3 p-3 bg-blue-50 rounded-xl text-xs space-y-1">
+                                                        <div className="flex justify-between font-bold text-blue-700">
+                                                            <span>Reçete Maliyeti:</span>
+                                                            <span>₺{(rec.totalCost || 0).toLocaleString('tr-TR')}</span>
+                                                        </div>
+                                                        {rec.items?.slice(0, 3).map((i: any, idx: number) => (
+                                                            <div key={idx} className="flex justify-between text-blue-500">
+                                                                <span>{i.materialName}</span>
+                                                                <span>{i.amount} {i.unit}</span>
+                                                            </div>
+                                                        ))}
+                                                        {(rec.items?.length || 0) > 3 && <p className="text-blue-400 text-center">+{rec.items.length - 3} kalem daha</p>}
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     )}
 
@@ -292,6 +312,7 @@ export default function OperationsPage() {
                                                             ))}
                                                         </td>
                                                         <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
+                                                            {log.recipeName && <span className="inline-block bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded font-bold mr-2">{log.recipeName}</span>}
                                                             {log.details || '-'}
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-bold text-slate-700">

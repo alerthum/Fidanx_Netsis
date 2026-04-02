@@ -374,7 +374,7 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         ]
                                     },
                                     {
-                                        faz: 'Faz B', title: 'Reçete & Operasyon', status: 'pending', color: 'blue',
+                                        faz: 'Faz B', title: 'Reçete & Operasyon', status: 'completed', color: 'blue',
                                         items: [
                                             'Şaşırtma reçetesi (saksı + toprak otomatik maliyet)',
                                             'Reçete-stok bağlantısı (Netsis stok kodu)',
@@ -453,6 +453,13 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '02.04.2026', desc: 'Faz B: Maliyet & Analiz tab (pasta grafik, kârlılık analizi)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz B: Şaşırtma-Reçete entegrasyonu (otomatik maliyet hesabı)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz B: Reçete sayfası tamamlandı (düzenleme, Netsis stok bağlantısı, birim fiyat)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz B: Operasyon sayfası iyileştirildi (reçete maliyet özeti, genişletilmiş geçmiş)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz B: RecipeItems şeması Netsis StokKodu ile çalışacak şekilde güncellendi', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'NEXT_PUBLIC_API_URL kaldırıldı - mixed content engeli çözüldü (18 dosya)', type: 'fix' },
+                                            { date: '02.04.2026', desc: '8 sayfada API yanıt korumaları eklendi (Array.isArray, res.ok, json catch)', type: 'fix' },
                                             { date: '02.04.2026', desc: 'Türkçe karakter encoding sorunu çözüldü (MSSQL NVarChar)', type: 'fix' },
                                             { date: '02.04.2026', desc: 'Vercel finans sayfası client-side hatası düzeltildi', type: 'fix' },
                                             { date: '02.04.2026', desc: 'Next.js hydration mismatch (tema butonları) düzeltildi', type: 'fix' },

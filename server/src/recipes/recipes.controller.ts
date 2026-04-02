@@ -10,6 +10,11 @@ export class RecipesController {
         return this.recipesService.findAll(tenantId);
     }
 
+    @Get(':id')
+    findOne(@Query('tenantId') tenantId: string, @Param('id') id: string) {
+        return this.recipesService.findOne(tenantId, id);
+    }
+
     @Post()
     create(@Query('tenantId') tenantId: string, @Body() data: any) {
         return this.recipesService.create(tenantId, data);
