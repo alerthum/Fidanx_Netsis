@@ -15,9 +15,13 @@ export default function RaporlarPage() {
     const [fertilizerLogs, setFertilizerLogs] = useState<any[]>([]);
     const [temperatureLogs, setTemperatureLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [profitability, setProfitability] = useState<any>(null);
+    const [seraEfficiency, setSeraEfficiency] = useState<any[]>([]);
+    const [lineageData, setLineageData] = useState<any[]>([]);
+    const [lineageSearch, setLineageSearch] = useState('');
     const tabParam = searchParams.get('tab');
-    const [activeSection, setActiveSection] = useState<'overview' | 'monthly' | 'cost' | 'operations'>(() =>
-        tabParam === 'cost' || tabParam === 'maliyet' ? 'cost' : tabParam === 'monthly' ? 'monthly' : tabParam === 'operations' ? 'operations' : 'overview'
+    const [activeSection, setActiveSection] = useState<'overview' | 'monthly' | 'cost' | 'operations' | 'profitability' | 'sera' | 'lineage'>(() =>
+        tabParam === 'cost' || tabParam === 'maliyet' ? 'cost' : tabParam === 'monthly' ? 'monthly' : tabParam === 'operations' ? 'operations' : tabParam === 'profitability' ? 'profitability' : tabParam === 'sera' ? 'sera' : tabParam === 'lineage' ? 'lineage' : 'overview'
     );
 
     const API_URL = '/api';
@@ -26,6 +30,9 @@ export default function RaporlarPage() {
         if (tabParam === 'cost' || tabParam === 'maliyet') setActiveSection('cost');
         else if (tabParam === 'monthly') setActiveSection('monthly');
         else if (tabParam === 'operations') setActiveSection('operations');
+        else if (tabParam === 'profitability') setActiveSection('profitability');
+        else if (tabParam === 'sera') setActiveSection('sera');
+        else if (tabParam === 'lineage') setActiveSection('lineage');
         else if (tabParam === 'overview') setActiveSection('overview');
     }, [tabParam]);
 
@@ -70,13 +77,34 @@ export default function RaporlarPage() {
                 setFertilizerLogs(Array.isArray(d) ? d : []);
             }
 
-            // Masraflar için şimdilik satın alma faturalarını kullanıyoruz (basitleştirme)
             setExpenses([]);
+
+            const [profRes, seraRes] = await Promise.allSettled([
+                fetch(`${API_URL}/production/reports/profitability?tenantId=demo-tenant`),
+                fetch(`${API_URL}/production/reports/sera-efficiency?tenantId=demo-tenant`)
+            ]);
+            if (profRes.status === 'fulfilled' && profRes.value.ok) {
+                setProfitability(await profRes.value.json().catch(() => null));
+            }
+            if (seraRes.status === 'fulfilled' && seraRes.value.ok) {
+                const d = await seraRes.value.json().catch(() => []);
+                setSeraEfficiency(Array.isArray(d) ? d : []);
+            }
         } catch (err) {
             console.error('Rapor verileri yüklenemedi:', err);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const fetchLineage = async (batchId: string) => {
+        try {
+            const res = await fetch(`${API_URL}/production/batches/${batchId}/lineage?tenantId=demo-tenant`);
+            if (res.ok) {
+                const data = await res.json().catch(() => []);
+                setLineageData(Array.isArray(data) ? data : []);
+            }
+        } catch { setLineageData([]); }
     };
 
     // Calculations
@@ -139,6 +167,9 @@ export default function RaporlarPage() {
         { id: 'overview' as const, label: 'Genel Durum', icon: '📊' },
         { id: 'monthly' as const, label: 'Aylık Rapor', icon: '📅' },
         { id: 'cost' as const, label: 'Maliyet Analizi', icon: '💰' },
+        { id: 'profitability' as const, label: 'Kârlılık', icon: '📈' },
+        { id: 'sera' as const, label: 'Sera Verimlilik', icon: '🏡' },
+        { id: 'lineage' as const, label: 'Şecere', icon: '🌳' },
         { id: 'operations' as const, label: 'Operasyonlar', icon: '🌡️' },
     ];
 
@@ -507,6 +538,155 @@ export default function RaporlarPage() {
                                                 );
                                             })()}
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ===================== PROFITABILITY ===================== */}
+                            {activeSection === 'profitability' && profitability && (
+                                <div className="space-y-8 animate-fade-in">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <KPICard icon="💰" label="Toplam Yatırım" value={`₺${(profitability.ozet?.toplamYatirim || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`} color="emerald" />
+                                        <KPICard icon="🌿" label="Mevcut Bitki" value={(profitability.ozet?.toplamBitki || 0).toLocaleString()} color="blue" />
+                                        <KPICard icon="🏷️" label="Satılan" value={(profitability.ozet?.toplamSatilan || 0).toLocaleString()} color="violet" />
+                                        <KPICard icon="🔥" label="Fire Oranı" value={`%${(profitability.ozet?.fireOrani || 0).toFixed(1)}`} color="rose" />
+                                    </div>
+                                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bitki Bazlı Kârlılık Tablosu</h3>
+                                        </div>
+                                        <table className="w-full text-left text-sm" id="report-table">
+                                            <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                <tr>
+                                                    <th className="px-6 py-4">Bitki</th>
+                                                    <th className="px-6 py-4 text-right">Adet</th>
+                                                    <th className="px-6 py-4 text-right">Toplam Maliyet</th>
+                                                    <th className="px-6 py-4 text-right">Birim Maliyet</th>
+                                                    <th className="px-6 py-4 text-right">Satılan</th>
+                                                    <th className="px-6 py-4 text-right">Fire</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {(profitability.bitkiBazli || []).map((b: any, i: number) => (
+                                                    <tr key={i} className="hover:bg-slate-50">
+                                                        <td className="px-6 py-4 font-bold text-slate-800">{b.bitkiAdi}</td>
+                                                        <td className="px-6 py-4 text-right font-bold">{(b.adet || 0).toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right font-mono text-emerald-600 font-bold">₺{(b.maliyet || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</td>
+                                                        <td className="px-6 py-4 text-right font-mono text-xs">₺{b.adet > 0 ? (b.maliyet / b.adet).toFixed(2) : '0'}</td>
+                                                        <td className="px-6 py-4 text-right text-blue-600 font-bold">{(b.satilan || 0).toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right text-red-500 font-bold">{(b.fire || 0).toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ===================== SERA ===================== */}
+                            {activeSection === 'sera' && (
+                                <div className="space-y-8 animate-fade-in">
+                                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Konum Bazlı Sera Verimlilik Raporu</h3>
+                                        </div>
+                                        <table className="w-full text-left text-sm" id="report-table">
+                                            <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                <tr>
+                                                    <th className="px-6 py-4">Konum</th>
+                                                    <th className="px-6 py-4 text-right">Parti</th>
+                                                    <th className="px-6 py-4 text-right">Bitki</th>
+                                                    <th className="px-6 py-4 text-right">Maliyet</th>
+                                                    <th className="px-6 py-4 text-right">Fire</th>
+                                                    <th className="px-6 py-4 text-right">Satılan</th>
+                                                    <th className="px-6 py-4 text-right">Verimlilik</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {seraEfficiency.map((s: any, i: number) => (
+                                                    <tr key={i} className="hover:bg-slate-50">
+                                                        <td className="px-6 py-4 font-bold text-slate-800">{s.konum}</td>
+                                                        <td className="px-6 py-4 text-right">{s.partiSayisi}</td>
+                                                        <td className="px-6 py-4 text-right font-bold">{(s.toplamBitki || 0).toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right font-mono text-emerald-600">₺{(s.toplamMaliyet || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</td>
+                                                        <td className="px-6 py-4 text-right text-red-500">{(s.toplamFire || 0).toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right text-blue-600">{(s.toplamSatilan || 0).toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(s.verimlilik || 0, 100)}%` }}></div>
+                                                                </div>
+                                                                <span className="font-bold text-xs text-slate-600">%{(s.verimlilik || 0).toFixed(1)}</span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {seraEfficiency.length === 0 && (
+                                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-bold">Henüz veri yok</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ===================== LINEAGE ===================== */}
+                            {activeSection === 'lineage' && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Parti Şeceresi (Tam İzlenebilirlik)</h3>
+                                        <div className="flex gap-3 mb-6">
+                                            <select
+                                                value={lineageSearch}
+                                                onChange={e => { setLineageSearch(e.target.value); if (e.target.value) fetchLineage(e.target.value); }}
+                                                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500"
+                                            >
+                                                <option value="">Parti seçin...</option>
+                                                {production.map((b: any) => (
+                                                    <option key={b.id} value={b.id}>{b.partiNo} - {b.bitkiAdi}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {lineageData.length > 0 ? (
+                                            <div className="relative">
+                                                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200"></div>
+                                                <div className="space-y-4">
+                                                    {lineageData.map((node: any, i: number) => (
+                                                        <div key={node.id} className="relative pl-14">
+                                                            <div className={`absolute left-4 w-5 h-5 rounded-full border-2 z-10 ${node.id.toString() === lineageSearch ? 'bg-emerald-500 border-emerald-600' : 'bg-white border-slate-300'}`}></div>
+                                                            <div className={`p-4 rounded-xl border ${node.id.toString() === lineageSearch ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="font-black text-slate-800 text-sm">{node.partiNo}</span>
+                                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${node.durum === 'AKTIF' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{node.durum}</span>
+                                                                </div>
+                                                                <p className="text-xs text-slate-600 font-bold">{node.bitkiAdi} | {node.safha} | {node.konum}</p>
+                                                                <div className="flex gap-4 mt-2 text-[10px] text-slate-400 font-bold">
+                                                                    <span>Başlangıç: {node.baslangicMiktar}</span>
+                                                                    <span>Mevcut: {node.mevcutMiktar}</span>
+                                                                    <span>Birim ₺{(node.birimMaliyet || 0).toFixed(2)}</span>
+                                                                </div>
+                                                                {node.operations?.length > 0 && (
+                                                                    <div className="mt-3 space-y-1">
+                                                                        {node.operations.map((op: any, j: number) => (
+                                                                            <div key={j} className="text-[10px] text-slate-400 flex gap-2">
+                                                                                <span className="font-mono">{op.islemTarihi ? new Date(op.islemTarihi).toLocaleDateString('tr-TR') : '-'}</span>
+                                                                                <span className="font-bold text-slate-500">{op.islemTipi}</span>
+                                                                                <span className="truncate">{op.aciklama}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : lineageSearch ? (
+                                            <p className="text-slate-400 text-center py-8 font-bold">Şecere verisi yükleniyor...</p>
+                                        ) : (
+                                            <p className="text-slate-400 text-center py-8 font-bold">Yukarıdan bir parti seçerek şecere ağacını görüntüleyin</p>
+                                        )}
                                     </div>
                                 </div>
                             )}

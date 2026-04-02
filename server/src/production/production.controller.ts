@@ -82,6 +82,27 @@ export class ProductionController {
         return this.productionService.satisYap(tenantId, id, body);
     }
 
+    // 8. Parti Şeceresi (Tam izlenebilirlik)
+    @Get('batches/:id/lineage')
+    getLineage(
+        @Query('tenantId') tenantId: string,
+        @Param('id') id: string
+    ) {
+        return this.productionService.getLineage(tenantId, id);
+    }
+
+    // 9. Kârlılık Özet Raporu
+    @Get('reports/profitability')
+    getProfitabilityReport(@Query('tenantId') tenantId: string) {
+        return this.productionService.getProfitabilityReport(tenantId);
+    }
+
+    // 10. Sera Verimlilik Raporu
+    @Get('reports/sera-efficiency')
+    getSeraEfficiency(@Query('tenantId') tenantId: string) {
+        return this.productionService.getSeraEfficiency(tenantId);
+    }
+
     // ── Sera Sıcaklık Ölçümleri (Konum Bazlı) ──
     @Get('sicaklik')
     getTemperatureLogs(@Query('tenantId') tenantId: string) {

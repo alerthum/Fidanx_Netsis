@@ -400,12 +400,12 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         ]
                                     },
                                     {
-                                        faz: 'Faz E', title: 'Raporlama & Analiz', status: 'pending', color: 'rose',
+                                        faz: 'Faz E', title: 'Raporlama & Analiz', status: 'completed', color: 'rose',
                                         items: [
-                                            'Parti maliyet detay raporu (PDF/Excel)',
-                                            'Bitki şeceresi (tam izlenebilirlik)',
-                                            'Sera verimlilik raporu',
-                                            'Kârlılık analizi dashboard',
+                                            'Parti maliyet detay raporu (Excel export) ✅',
+                                            'Bitki şeceresi (tam izlenebilirlik timeline) ✅',
+                                            'Sera verimlilik raporu (konum bazlı) ✅',
+                                            'Kârlılık analizi dashboard ✅',
                                         ]
                                     },
                                 ].map((faz) => (
@@ -453,6 +453,10 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '02.04.2026', desc: 'Faz E: Kârlılık analizi dashboard (bitki bazlı maliyet/satış/fire tablosu)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz E: Sera verimlilik raporu (konum bazlı parti/bitki/maliyet/fire/verimlilik)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz E: Bitki şeceresi (parti lineage - tam izlenebilirlik timeline)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz E: Backend rapor endpoint\'leri (lineage, profitability, sera-efficiency)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz D: Parti bazlı QR etiket oluşturma ve baskı (3 boyut seçeneği)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz D: Gerçek kamera ile barkod/QR tarama (html5-qrcode entegrasyonu)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz D: PWA install prompt + gelişmiş Service Worker (API cache, statik cache)', type: 'feature' },

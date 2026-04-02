@@ -401,4 +401,123 @@ export class ProductionService {
         return { processedBatches: batches.length, totalDistributed: totalCost };
     }
 
+    async getLineage(tenantId: string, batchId: string) {
+        const visited = new Set<string>();
+        const lineage: any[] = [];
+
+        const traverse = async (id: string, direction: 'up' | 'down') => {
+            if (visited.has(id)) return;
+            visited.add(id);
+
+            const rows = await this.db.query(
+                `SELECT * FROM FDX_BitkiPartileri WHERE Id = @id AND TenantId = @tenantId`,
+                { id, tenantId }
+            );
+            if (rows.length === 0) return;
+            const b = rows[0];
+
+            const ops = await this.db.query(
+                `SELECT * FROM ProductionHistory WHERE BatchId = @bId ORDER BY IslemTarihi ASC`,
+                { bId: b.Id }
+            );
+
+            lineage.push({
+                ...this.normalizeBatch(b),
+                operations: (ops || []).map(this.normalizeOperation),
+                direction
+            });
+
+            if (direction === 'up' && b.KaynakPartiId) {
+                await traverse(b.KaynakPartiId.toString(), 'up');
+            }
+
+            if (direction === 'down') {
+                const children = await this.db.query(
+                    `SELECT Id FROM FDX_BitkiPartileri WHERE KaynakPartiId = @id AND TenantId = @tenantId`,
+                    { id: b.Id, tenantId }
+                );
+                for (const child of children) {
+                    await traverse(child.Id.toString(), 'down');
+                }
+            }
+        };
+
+        await traverse(batchId, 'up');
+        visited.delete(batchId);
+        await traverse(batchId, 'down');
+
+        return lineage.sort((a, b) => (a.baslangicTarihi || '') < (b.baslangicTarihi || '') ? -1 : 1);
+    }
+
+    async getProfitabilityReport(tenantId: string) {
+        const batches = await this.db.query(
+            `SELECT * FROM FDX_BitkiPartileri WHERE TenantId = @tenantId`,
+            { tenantId }
+        );
+
+        const all = (batches || []).map((b: any) => this.normalizeBatch(b));
+        const aktif = all.filter((b: any) => b.durum === 'AKTIF' && b.mevcutMiktar > 0);
+        const satilan = all.filter((b: any) => b.satilanMiktar > 0);
+
+        const toplamYatirim = aktif.reduce((s: number, b: any) => s + (b.toplamMaliyet || 0), 0);
+        const toplamBitki = aktif.reduce((s: number, b: any) => s + (b.mevcutMiktar || 0), 0);
+        const toplamFire = all.reduce((s: number, b: any) => s + (b.fireMiktar || 0), 0);
+        const toplamSatilan = all.reduce((s: number, b: any) => s + (b.satilanMiktar || 0), 0);
+
+        const salesOps = await this.db.query(
+            `SELECT h.* FROM ProductionHistory h
+             JOIN FDX_BitkiPartileri b ON h.BatchId = b.Id
+             WHERE b.TenantId = @tenantId AND h.IslemTipi = 'SATIS'`, { tenantId }
+        );
+        const toplamSatisGeliri = (salesOps || []).reduce((s: number, op: any) => {
+            const fiyat = op.MaliyetTutar || 0;
+            return s + fiyat;
+        }, 0);
+
+        const bitkiBazli: Record<string, { bitkiAdi: string; adet: number; maliyet: number; satilan: number; fire: number }> = {};
+        all.forEach((b: any) => {
+            const key = b.bitkiAdi || 'Bilinmeyen';
+            if (!bitkiBazli[key]) bitkiBazli[key] = { bitkiAdi: key, adet: 0, maliyet: 0, satilan: 0, fire: 0 };
+            bitkiBazli[key].adet += b.mevcutMiktar || 0;
+            bitkiBazli[key].maliyet += b.toplamMaliyet || 0;
+            bitkiBazli[key].satilan += b.satilanMiktar || 0;
+            bitkiBazli[key].fire += b.fireMiktar || 0;
+        });
+
+        return {
+            ozet: {
+                toplamYatirim,
+                toplamBitki,
+                toplamSatilan,
+                toplamFire,
+                toplamSatisGeliri,
+                ortBirimMaliyet: toplamBitki > 0 ? toplamYatirim / toplamBitki : 0,
+                fireOrani: (toplamFire + toplamSatilan + toplamBitki) > 0 ? (toplamFire / (toplamFire + toplamSatilan + toplamBitki) * 100) : 0
+            },
+            bitkiBazli: Object.values(bitkiBazli).sort((a, b) => b.maliyet - a.maliyet)
+        };
+    }
+
+    async getSeraEfficiency(tenantId: string) {
+        const batches = await this.db.query(
+            `SELECT Konum, COUNT(*) as PartiSayisi, SUM(MevcutMiktar) as ToplamBitki, SUM(ToplamMaliyet) as ToplamMaliyet, SUM(FireMiktar) as ToplamFire, SUM(SatilanMiktar) as ToplamSatilan
+             FROM FDX_BitkiPartileri WHERE TenantId = @tenantId AND Durum = 'AKTIF'
+             GROUP BY Konum ORDER BY ToplamBitki DESC`,
+            { tenantId }
+        );
+
+        return (batches || []).map((r: any) => ({
+            konum: r.Konum || 'Belirtilmemiş',
+            partiSayisi: r.PartiSayisi || 0,
+            toplamBitki: r.ToplamBitki || 0,
+            toplamMaliyet: r.ToplamMaliyet || 0,
+            toplamFire: r.ToplamFire || 0,
+            toplamSatilan: r.ToplamSatilan || 0,
+            birimMaliyet: r.ToplamBitki > 0 ? r.ToplamMaliyet / r.ToplamBitki : 0,
+            verimlilik: (r.ToplamBitki + r.ToplamSatilan) > 0
+                ? ((r.ToplamBitki + r.ToplamSatilan) / (r.ToplamBitki + r.ToplamSatilan + (r.ToplamFire || 0)) * 100)
+                : 0
+        }));
+    }
+
 }
