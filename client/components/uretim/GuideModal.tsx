@@ -17,6 +17,11 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                         <div>
                             <h3 className="text-xl font-black text-slate-800 tracking-tight">FidanX Üretim Sistemi</h3>
                             <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Kullanım Kılavuzu & Akış Şeması</p>
+                            <div className="flex items-center gap-3 mt-2">
+                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">★ Tamamlandı</span>
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1">◐ Kısmi</span>
+                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">○ Bekliyor</span>
+                            </div>
                         </div>
                     </div>
                     <button
@@ -44,7 +49,8 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                 <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 relative z-10">
                                     {/* Adım 0 & 1 */}
                                     <div className="flex-1 flex flex-col space-y-6">
-                                        <div className="bg-slate-800/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50">
+                                        <div className="bg-slate-800/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50 relative">
+                                            <span className="absolute top-3 right-3 text-emerald-400 text-sm font-black" title="Tamamlandı">★</span>
                                             <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">0. İlk Kurulum</h5>
                                             <div className="bg-slate-700/50 p-3 rounded-lg text-xs text-slate-300 font-medium mb-2 border border-slate-600">⚙️ Ayarlar (Konum, Safha)</div>
                                             <div className="bg-slate-700/50 p-3 rounded-lg text-xs text-slate-300 font-medium border border-slate-600">🔗 Netsis Bağlantısı</div>
@@ -52,7 +58,8 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
 
                                         <div className="flex justify-center text-slate-600">↓</div>
 
-                                        <div className="bg-emerald-900/40 p-5 rounded-2xl border border-emerald-800/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                        <div className="bg-emerald-900/40 p-5 rounded-2xl border border-emerald-800/50 shadow-[0_0_15px_rgba(16,185,129,0.1)] relative">
+                                            <span className="absolute top-3 right-3 text-emerald-400 text-sm font-black" title="Tamamlandı">★</span>
                                             <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3">1. Bitki Girişi</h5>
                                             <div className="bg-emerald-800/50 p-3 rounded-lg text-xs text-emerald-100 font-medium border border-emerald-700/50">
                                                 📥 <b>+ Yeni Üretime Başla</b><br />
@@ -65,7 +72,8 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     <div className="md:hidden flex justify-center text-slate-600">↓</div>
 
                                     {/* Adım 2 */}
-                                    <div className="flex-[1.5] bg-blue-900/30 p-5 w-full rounded-2xl border border-blue-800/50 flex flex-col">
+                                    <div className="flex-[1.5] bg-blue-900/30 p-5 w-full rounded-2xl border border-blue-800/50 flex flex-col relative">
+                                        <span className="absolute top-3 right-3 text-emerald-400 text-sm font-black" title="Tamamlandı">★</span>
                                         <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">2. Büyütme Süreci (Günlük İşlemler)</h5>
 
                                         <div className="space-y-3 flex-1">
@@ -100,7 +108,8 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
 
                                     {/* Adım 3 & 4 */}
                                     <div className="flex-1 flex flex-col space-y-6">
-                                        <div className="bg-amber-900/30 p-5 rounded-2xl border border-amber-800/50">
+                                        <div className="bg-amber-900/30 p-5 rounded-2xl border border-amber-800/50 relative">
+                                            <span className="absolute top-3 right-3 text-emerald-400 text-sm font-black" title="Tamamlandı">★</span>
                                             <h5 className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-3 flex justify-between">
                                                 <span>3. Şaşırtma</span>
                                                 <span className="text-amber-500 text-lg leading-none -mt-1">🔄</span>
@@ -113,10 +122,11 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
 
                                         <div className="flex justify-center text-slate-600">↓</div>
 
-                                        <div className="bg-violet-900/40 p-5 rounded-2xl border border-violet-800/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] flex-1 flex flex-col justify-center">
+                                        <div className="bg-violet-900/40 p-5 rounded-2xl border border-violet-800/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] flex-1 flex flex-col justify-center relative">
+                                            <span className="absolute top-3 right-3 text-amber-400 text-sm font-black" title="Kısmi (FidanX tarafı tamam, Netsis fatura Faz C)">◐</span>
                                             <h5 className="text-[10px] font-black text-violet-400 uppercase tracking-widest mb-3 flex items-center gap-1"><span className="text-sm">🏷️</span> 4. Satış</h5>
                                             <div className="bg-violet-800/50 p-3 rounded-lg text-xs text-violet-100 font-medium border border-violet-700/50">
-                                                Her safhada direkt satış yapılabilir. Kâr tahmini anlık hesaplanır ve Netsis faturasına yansır.
+                                                Her safhada direkt satış yapılabilir. Kâr tahmini anlık hesaplanır. <span className="text-violet-300 text-[10px]">(Netsis fatura entegrasyonu Faz C'de)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -138,6 +148,7 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                             <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px]">Adım</th>
                                             <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px]">Menü / Sayfa</th>
                                             <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px]">Açıklama</th>
+                                            <th className="p-4 font-black text-slate-400 uppercase tracking-widest text-[10px] text-center">Durum</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -146,42 +157,49 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                             <td className="p-4 font-bold text-slate-800">İlk Kurulum</td>
                                             <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono">/ayarlar</span></td>
                                             <td className="p-4 text-slate-600">Sera/konumları tanımlayın, bitki safhalarını belirleyin.</td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">1</td>
                                             <td className="p-4 font-bold text-slate-800">Parti (Üretim) Girişi</td>
                                             <td className="p-4"><span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-xs font-mono border border-emerald-100">/uretim &gt; Partiler</span></td>
                                             <td className="p-4 text-slate-600">Netsis stok kartını (ana tür) seçip miktarı ve alış maliyetini girerek <b>yeni bir LOT (Parti) oluşturun.</b></td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">2a</td>
                                             <td className="p-4 font-bold text-slate-800">Toplu İşlemler / Gider</td>
                                             <td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-mono border border-blue-100">/uretim &gt; Toplu İşlemler</span></td>
                                             <td className="p-4 text-slate-600">Seçilen Konumdaki (Sera 1 vb.) <b>tüm fidanlara</b> toplu ilaçlama, sulama veya işçilik maliyeti uygulayın. Sistem maliyeti eşit dağıtır.</td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">2b</td>
                                             <td className="p-4 font-bold text-slate-800">Sıcaklık ve Sera Takibi</td>
                                             <td className="p-4"><span className="bg-amber-50 text-amber-600 px-2 py-1 rounded text-xs font-mono border border-amber-100">/uretim &gt; Sera / Sıcaklık</span></td>
                                             <td className="p-4 text-slate-600">Konum ve Periyot (Sabah/Öğle/Akşam) seçerek sıcaklık, nem ve mazot tüketimi verilerini işleyin.</td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">2c</td>
                                             <td className="p-4 font-bold text-slate-800 text-red-600 flex items-center gap-1"><span className="text-xl leading-none -mt-1">💀</span> Fire / Ölüm Kaydı</td>
                                             <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono">/uretim &gt; Partiler</span></td>
                                             <td className="p-4 text-slate-600">Kuruyan veya hastalanan bitkileri düşün. Partinin genel maliyeti aynı kalırken, kalan fidanların <b>birim maliyeti yükselir.</b></td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">3</td>
                                             <td className="p-4 font-bold text-slate-800 text-amber-600 flex items-center gap-1"><span className="text-xl leading-none -mt-1">🔄</span> Şaşırtma (Saksı Değişimi)</td>
                                             <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono">/uretim &gt; Partiler</span></td>
                                             <td className="p-4 text-slate-600">Bitki büyüdüğünde safha geçişi yapın (örn: Tepsi -&gt; 3L Saksı). <b>YENİ bir LOT numarasıyla alt parti oluşur.</b> Kullanılan saksı maliyetini ekleyin.</td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı">★</span></td>
                                         </tr>
                                         <tr className="hover:bg-slate-50">
                                             <td className="p-4 font-black text-slate-300">4</td>
                                             <td className="p-4 font-bold text-slate-800 text-emerald-600 flex items-center gap-1"><span className="text-xl leading-none -mt-1">🏷️</span> Satış (Netsis)</td>
                                             <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono">/uretim &gt; Partiler</span></td>
                                             <td className="p-4 text-slate-600">Satışı gerçekleştirin. Sistem birim satış fiyatınızdan son partinin maliyetini çıkarıp size anlık tahmini KÂR gösterecektir.</td>
+                                            <td className="p-4 text-center"><span className="text-amber-500 font-black" title="Kısmi – FidanX tarafı tamam, Netsis fatura Faz C">◐</span></td>
                                         </tr>
                                     </tbody>
                                 </table>

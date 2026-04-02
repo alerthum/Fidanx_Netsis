@@ -95,7 +95,7 @@ export default function UretimPage() {
     const handleTransplant = async (form: any) => {
         if (!selectedBatch) return;
         try {
-            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.Id}/sasirtma?tenantId=${tenantId}`, {
+            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.id}/sasirtma?tenantId=${tenantId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
@@ -110,7 +110,7 @@ export default function UretimPage() {
     const handleSatis = async (form: any) => {
         if (!selectedBatch) return;
         try {
-            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.Id}/satis?tenantId=${tenantId}`, {
+            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.id}/satis?tenantId=${tenantId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
@@ -125,7 +125,7 @@ export default function UretimPage() {
     const handleFire = async (form: any) => {
         if (!selectedBatch) return;
         try {
-            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.Id}/fire?tenantId=${tenantId}`, {
+            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.id}/fire?tenantId=${tenantId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
@@ -139,7 +139,7 @@ export default function UretimPage() {
 
     const openCostFetchAndShow = async (batch: any) => {
         try {
-            const res = await fetch(`${API_URL}/production/batches/${batch.Id}?tenantId=${tenantId}`);
+            const res = await fetch(`${API_URL}/production/batches/${batch.id}?tenantId=${tenantId}`);
             if (res.ok) {
                 setSelectedBatch(await res.json());
                 setIsCostModalOpen(true);

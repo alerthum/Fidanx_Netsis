@@ -55,10 +55,49 @@ export class ProductionService {
         return { id: partiId.toString(), partiNo, ...data };
     }
 
+    // --- Normalizer: DB satırını tutarlı camelCase JSON'a çevirir ---
+    private normalizeBatch(b: any) {
+        return {
+            id: b.Id?.toString(),
+            partiNo: b.PartiNo,
+            netsisStokKodu: b.NetsisStokKodu,
+            bitkiAdi: b.BitkiAdi,
+            safha: b.Safha,
+            konum: b.Konum,
+            baslangicMiktar: b.BaslangicMiktar ?? 0,
+            mevcutMiktar: b.MevcutMiktar ?? 0,
+            birimMaliyet: b.BirimMaliyet ?? 0,
+            toplamMaliyet: b.ToplamMaliyet ?? 0,
+            fireMiktar: b.FireMiktar ?? 0,
+            satilanMiktar: b.SatilanMiktar ?? 0,
+            durum: b.Durum ?? 'AKTIF',
+            baslangicTarihi: b.BaslangicTarihi,
+            alisFaturaNo: b.AlisFaturaNo,
+            kaynakPartiId: b.KaynakPartiId,
+        };
+    }
+
+    private normalizeOperation(h: any) {
+        return {
+            id: h.Id,
+            islemTipi: h.IslemTipi,
+            aciklama: h.Aciklama,
+            miktar: h.Miktar,
+            maliyetTutar: h.MaliyetTutar ?? 0,
+            birimMaliyetEtkisi: h.BirimMaliyetEtkisi ?? 0,
+            kullanilanMalzeme: h.KullanilanMalzeme,
+            kullanilanMiktar: h.KullanilanMiktar,
+            hedefKonum: h.HedefKonum,
+            hedefSafha: h.HedefSafha,
+            hedefPartiId: h.HedefPartiId,
+            islemTarihi: h.IslemTarihi,
+        };
+    }
+
     // 2. Partileri Listeleme
     async findAll(tenantId: string) {
         const result = await this.db.query(`SELECT * FROM FDX_BitkiPartileri WHERE TenantId = @tenantId ORDER BY BaslangicTarihi DESC`, { tenantId });
-        return Array.isArray(result) ? result : [];
+        return Array.isArray(result) ? result.map(b => this.normalizeBatch(b)) : [];
     }
 
     // 3. Parti Detayı & İşlem Geçmişi
@@ -73,7 +112,38 @@ export class ProductionService {
 
         const history = await this.db.query(`SELECT * FROM FDX_PartiIslemleri WHERE PartiId = @partiId ORDER BY IslemTarihi DESC`, { partiId: parti.Id });
 
-        return { ...parti, history };
+        return {
+            ...this.normalizeBatch(parti),
+            history: Array.isArray(history) ? history.map(h => this.normalizeOperation(h)) : [],
+        };
+    }
+
+    // 3b. Konum Transferi
+    async transferKonum(tenantId: string, partiId: string, data: any) {
+        const results = await this.db.query(`SELECT * FROM FDX_BitkiPartileri WHERE Id = @id AND TenantId = @tenantId`, { id: partiId, tenantId });
+        if (results.length === 0) throw new NotFoundException('Parti bulunamadı.');
+        const parti = results[0];
+
+        const eskiKonum = parti.Konum;
+        const yeniKonum = data.targetLocation;
+        if (!yeniKonum) throw new BadRequestException('Hedef konum belirtilmedi.');
+
+        await this.db.query(`UPDATE FDX_BitkiPartileri SET Konum = @yeniKonum WHERE Id = @id`, { yeniKonum, id: parti.Id });
+
+        await this.addOperationLog(tenantId, parti.Id, {
+            islemTipi: 'TRANSFER',
+            aciklama: `${eskiKonum} → ${yeniKonum} konumuna transfer edildi. ${data.note || ''}`.trim(),
+            hedefKonum: yeniKonum,
+        });
+
+        await this.activity.log(tenantId, {
+            action: 'Konum Transferi',
+            title: `${parti.PartiNo} partisi ${eskiKonum} → ${yeniKonum} konumuna taşındı.`,
+            icon: '🚚',
+            color: 'bg-amber-50 text-amber-600',
+        });
+
+        return { success: true, eskiKonum, yeniKonum };
     }
 
     // 4. ŞAŞIRTMA (Safha Değişimi) İşlemi

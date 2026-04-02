@@ -7,7 +7,7 @@ export default function HareketlerPage() {
     const [locations, setLocations] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
-    const [transferData, setTransferData] = useState({ targetLocation: 'Sera 1', note: '' });
+    const [transferData, setTransferData] = useState({ targetLocation: '', note: '' });
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -75,7 +75,7 @@ export default function HareketlerPage() {
 
     const openTransferModal = (batch: any) => {
         setSelectedBatch(batch);
-        setTransferData({ targetLocation: locations.filter(l => l !== batch.location)[0] || locations[0] || '', note: '' });
+        setTransferData({ targetLocation: locations.filter(l => l !== batch.konum)[0] || locations[0] || '', note: '' });
         setIsTransferModalOpen(true);
     };
 
@@ -94,11 +94,9 @@ export default function HareketlerPage() {
                     {/* Batches List regarding Location */}
                     <div className="space-y-6">
                         {locations.map(location => {
-                            // Smart Default Location Logic
                             const locationBatches = batches.filter(b => {
-                                if (b.location) return b.location === location;
-                                // If no location, check rules
-                                const defaultLoc = (b.plantName?.toLowerCase().includes('viyol')) ? 'Sera 1' : 'Açık Alan';
+                                if (b.konum) return b.konum === location;
+                                const defaultLoc = (b.bitkiAdi?.toLowerCase().includes('viyol')) ? 'Sera 1' : 'Açık Alan';
                                 return defaultLoc === location;
                             });
 
@@ -120,21 +118,21 @@ export default function HareketlerPage() {
                                             <div key={batch.id} className="p-4 lg:p-6 hover:bg-slate-50/50 transition flex flex-col sm:flex-row gap-3 lg:gap-4 justify-between items-start sm:items-center">
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-1">
-                                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded uppercase tracking-wider">{batch.lotId}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{batch.stage}</span>
-                                                        {!batch.location && (
+                                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded uppercase tracking-wider">{batch.partiNo}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{batch.safha}</span>
+                                                        {!batch.konum && (
                                                             <span className="text-[9px] text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-bold">OTOMATİK KONUM</span>
                                                         )}
                                                     </div>
-                                                    <h4 className="font-bold text-slate-800 text-base">{batch.plantName || 'İsimsiz Ürün'}</h4>
-                                                    <p className="text-xs text-slate-500">{batch.quantity} Adet • {new Date(batch.startDate).toLocaleDateString('tr-TR')}</p>
+                                                    <h4 className="font-bold text-slate-800 text-base">{batch.bitkiAdi || 'İsimsiz Ürün'}</h4>
+                                                    <p className="text-xs text-slate-500">{batch.mevcutMiktar} Adet • {batch.baslangicTarihi ? new Date(batch.baslangicTarihi).toLocaleDateString('tr-TR') : '-'}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         className="bg-white text-slate-500 px-4 py-2 rounded-lg text-xs font-bold border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition shadow-sm active:scale-95 flex items-center gap-2"
-                                                        onClick={() => alert('Şecere özelliği yakında eklenecek.')} // Placeholder
+                                                        onClick={() => window.location.href = `/uretim/${batch.id}`}
                                                     >
-                                                        📜 Şecere
+                                                        📋 Detay
                                                     </button>
                                                     <button
                                                         onClick={() => openTransferModal(batch)}
@@ -166,7 +164,7 @@ export default function HareketlerPage() {
                         <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 border border-slate-200 max-h-[95vh] overflow-y-auto">
                             <h3 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">Konum Transferi</h3>
                             <p className="text-sm text-slate-500 mb-6">
-                                <span className="font-bold text-slate-700">{selectedBatch.lotId}</span> numaralı parti <span className="font-bold text-slate-700">{selectedBatch.location || 'Depo'}</span> konumundan taşınıyor.
+                                <span className="font-bold text-slate-700">{selectedBatch.partiNo}</span> numaralı parti <span className="font-bold text-slate-700">{selectedBatch.konum || 'Depo'}</span> konumundan taşınıyor.
                             </p>
 
                             <form onSubmit={handleTransfer} className="space-y-6">
@@ -177,7 +175,7 @@ export default function HareketlerPage() {
                                         onChange={(e) => setTransferData({ ...transferData, targetLocation: e.target.value })}
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-amber-500 text-sm bg-slate-50/50"
                                     >
-                                        {locations.filter(l => l !== selectedBatch.location).map(l => (
+                                        {locations.filter(l => l !== selectedBatch.konum).map(l => (
                                             <option key={l} value={l}>{l}</option>
                                         ))}
                                     </select>

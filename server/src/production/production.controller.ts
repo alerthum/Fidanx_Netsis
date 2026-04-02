@@ -33,6 +33,16 @@ export class ProductionController {
         return this.productionService.findOne(tenantId, id);
     }
 
+    // 3b. Konum Transferi
+    @Patch('batches/:id/transfer')
+    transferKonum(
+        @Query('tenantId') tenantId: string,
+        @Param('id') id: string,
+        @Body() body: any
+    ) {
+        return this.productionService.transferKonum(tenantId, id, body);
+    }
+
     // 4. ŞAŞIRTMA (Safha Değişimi)
     @Post('batches/:id/sasirtma')
     sasirtmaYap(

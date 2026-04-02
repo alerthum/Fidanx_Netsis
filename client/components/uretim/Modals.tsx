@@ -109,8 +109,8 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
         if (batch) {
             setForm(prev => ({
                 ...prev,
-                sasirtilanMiktar: batch.MevcutMiktar,
-                hedefKonum: batch.Konum || ''
+                sasirtilanMiktar: batch.mevcutMiktar,
+                hedefKonum: batch.konum || ''
             }));
         }
     }, [batch]);
@@ -122,7 +122,7 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
             isOpen={isOpen}
             onClose={onClose}
             title="Şaşırtma (Safha Geçiş)"
-            subtitle={`Parti: ${batch.PartiNo} • Mevcut: ${batch.MevcutMiktar} ad (${batch.Safha})`}
+            subtitle={`Parti: ${batch.partiNo} • Mevcut: ${batch.mevcutMiktar} ad (${batch.safha})`}
             icon="🔄"
         >
             <div className="grid grid-cols-2 gap-4">
@@ -151,20 +151,20 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                 <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center mb-4">
                         <span className="text-sm font-bold text-slate-600">Şaşırtılacak Adet</span>
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mak: {batch.MevcutMiktar}</span>
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mak: {batch.mevcutMiktar}</span>
                     </div>
                     <div className="flex items-center">
                         <input
                             type="range"
                             min="1"
-                            max={batch.MevcutMiktar}
+                            max={batch.mevcutMiktar}
                             value={form.sasirtilanMiktar}
                             onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })}
                             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                         />
                     </div>
                     <div className="mt-4 flex items-center gap-3">
-                        <Input type="number" min="1" max={batch.MevcutMiktar} value={form.sasirtilanMiktar} onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })} className="text-center text-xl font-black py-4 !border-emerald-200 !text-emerald-700 bg-emerald-50/50 focus:!bg-white" />
+                        <Input type="number" min="1" max={batch.mevcutMiktar} value={form.sasirtilanMiktar} onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })} className="text-center text-xl font-black py-4 !border-emerald-200 !text-emerald-700 bg-emerald-50/50 focus:!bg-white" />
                     </div>
                 </div>
 
@@ -172,7 +172,7 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                     <button onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
-                        disabled={!form.hedefSafha || form.sasirtilanMiktar <= 0 || form.sasirtilanMiktar > batch.MevcutMiktar}
+                        disabled={!form.hedefSafha || form.sasirtilanMiktar <= 0 || form.sasirtilanMiktar > batch.mevcutMiktar}
                         className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Onayla & Böl
@@ -195,14 +195,14 @@ export function SatisModal({ isOpen, onClose, batch, onSave }: any) {
 
     if (!batch) return null;
 
-    const kar = (form.birimFiyat - (batch.BirimMaliyet || 0)) * form.satisAdet;
+    const kar = (form.birimFiyat - (batch.birimMaliyet || 0)) * form.satisAdet;
 
     return (
-        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Satış & Çıkış" subtitle={batch.PartiNo} icon="🏷️">
+        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Satış & Çıkış" subtitle={batch.partiNo} icon="🏷️">
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <Label>Satış Adedi</Label>
-                    <Input type="number" min="1" max={batch.MevcutMiktar} value={form.satisAdet || ''} onChange={e => setForm({ ...form, satisAdet: Number(e.target.value) })} />
+                    <Input type="number" min="1" max={batch.mevcutMiktar} value={form.satisAdet || ''} onChange={e => setForm({ ...form, satisAdet: Number(e.target.value) })} />
                 </div>
                 <div>
                     <Label>Birim Satış Fiyatı (₺)</Label>
@@ -212,7 +212,7 @@ export function SatisModal({ isOpen, onClose, batch, onSave }: any) {
                 <div className="col-span-2 my-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex flex-col gap-2">
                     <div className="flex justify-between items-center text-sm">
                         <span className="font-bold text-blue-800">Parti Birim Maliyeti:</span>
-                        <span className="font-mono text-slate-600">{Number(batch.BirimMaliyet || 0).toFixed(2)} ₺</span>
+                        <span className="font-mono text-slate-600">{Number(batch.birimMaliyet || 0).toFixed(2)} ₺</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                         <span className="font-bold text-blue-800">Toplam Satış Tutarı:</span>
@@ -231,7 +231,7 @@ export function SatisModal({ isOpen, onClose, batch, onSave }: any) {
                     <button onClick={onClose} className="py-4 px-6 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
-                        disabled={form.satisAdet <= 0 || form.satisAdet > batch.MevcutMiktar}
+                        disabled={form.satisAdet <= 0 || form.satisAdet > batch.mevcutMiktar}
                         className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
                         Satış Kaydet
@@ -249,11 +249,11 @@ export function FireModal({ isOpen, onClose, batch, onSave }: any) {
     if (!batch) return null;
 
     return (
-        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Fire Kaydı" subtitle={batch.PartiNo} icon="💀">
+        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Fire Kaydı" subtitle={batch.partiNo} icon="💀">
             <div className="space-y-4">
                 <div>
-                    <Label>Ölüm / Fire Adedi (Maks: {batch.MevcutMiktar})</Label>
-                    <Input type="number" min="1" max={batch.MevcutMiktar} value={form.fireMiktar || ''} onChange={e => setForm({ ...form, fireMiktar: Number(e.target.value) })} />
+                    <Label>Ölüm / Fire Adedi (Maks: {batch.mevcutMiktar})</Label>
+                    <Input type="number" min="1" max={batch.mevcutMiktar} value={form.fireMiktar || ''} onChange={e => setForm({ ...form, fireMiktar: Number(e.target.value) })} />
                 </div>
                 <div>
                     <Label>Sebep</Label>
@@ -275,7 +275,7 @@ export function FireModal({ isOpen, onClose, batch, onSave }: any) {
                     <button onClick={onClose} className="py-4 px-6 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
-                        disabled={form.fireMiktar <= 0 || form.fireMiktar > batch.MevcutMiktar || !form.sebep}
+                        disabled={form.fireMiktar <= 0 || form.fireMiktar > batch.mevcutMiktar || !form.sebep}
                         className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black shadow-lg shadow-red-200 hover:bg-red-600 transition-colors disabled:opacity-50"
                     >
                         Fire Düş
@@ -291,7 +291,7 @@ export function CostHistoryModal({ isOpen, onClose, batch }: any) {
     if (!batch) return null;
 
     return (
-        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Maliyet & Şecere" subtitle={`${batch.PartiNo} • ${batch.BitkiAdi}`} icon="💰" large>
+        <ModalWrapper isOpen={isOpen} onClose={onClose} title="Maliyet & Şecere" subtitle={`${batch.partiNo} • ${batch.bitkiAdi}`} icon="💰" large>
             <div className="flex flex-col lg:flex-row gap-8 h-full overflow-hidden">
                 <div className="w-full lg:w-80 space-y-6 flex-shrink-0">
                     <div className="fx-card bg-emerald-600 border-0 text-white p-6 shadow-emerald-900/20">
@@ -299,12 +299,12 @@ export function CostHistoryModal({ isOpen, onClose, batch }: any) {
                         <div className="space-y-4">
                             <div>
                                 <p className="text-sm font-bold opacity-60">Toplam Maliyet</p>
-                                <p className="text-4xl font-black tracking-tighter">₺{Number(batch.ToplamMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                                <p className="text-4xl font-black tracking-tighter">₺{Number(batch.toplamMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
                             </div>
                             <div className="h-px bg-white/20 w-full"></div>
                             <div>
                                 <p className="text-sm font-bold opacity-60">Birim Maliyet</p>
-                                <p className="text-3xl font-black tracking-tighter">₺{Number(batch.BirimMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 3 })}</p>
+                                <p className="text-3xl font-black tracking-tighter">₺{Number(batch.birimMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 3 })}</p>
                             </div>
                         </div>
                     </div>
@@ -314,15 +314,15 @@ export function CostHistoryModal({ isOpen, onClose, batch }: any) {
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="opacity-50">Safha:</span>
-                                <span className="font-bold">{batch.Safha}</span>
+                                <span className="font-bold">{batch.safha}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="opacity-50">Stok:</span>
-                                <span className="font-bold">{batch.MevcutMiktar} ADET</span>
+                                <span className="font-bold">{batch.mevcutMiktar} ADET</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="opacity-50">Konum:</span>
-                                <span className="font-bold">{batch.Konum}</span>
+                                <span className="font-bold">{batch.konum}</span>
                             </div>
                         </div>
                     </div>
@@ -336,10 +336,10 @@ export function CostHistoryModal({ isOpen, onClose, batch }: any) {
                     <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/20">
                         <div className="relative border-l-2 border-slate-100 ml-4 space-y-12 pb-12">
                             {(batch.history || []).map((h: any, i: number) => {
-                                const isSatis = h.IslemTipi === 'SATIS';
-                                const isFire = h.IslemTipi === 'FIRE';
-                                const isGiris = h.IslemTipi === 'ALIS_GIRIS' || h.IslemTipi === 'SASIRTMA_GIRIS';
-                                const isMaliyetEkle = h.MaliyetTutar > 0;
+                                const isSatis = h.islemTipi === 'SATIS';
+                                const isFire = h.islemTipi === 'FIRE';
+                                const isGiris = h.islemTipi === 'ALIS_GIRIS' || h.islemTipi === 'SASIRTMA_GIRIS';
+                                const isMaliyetEkle = h.maliyetTutar > 0;
 
                                 let dotColor = 'bg-slate-300 border-slate-100';
                                 if (isSatis) dotColor = 'bg-blue-500 border-blue-100';
@@ -349,33 +349,32 @@ export function CostHistoryModal({ isOpen, onClose, batch }: any) {
 
                                 return (
                                     <div key={i} className="relative pl-6">
-                                        {/* Timeline Dot */}
                                         <div className={`absolute -left-[11px] top-1.5 w-5 h-5 rounded-full border-4 shadow-sm z-10 ${dotColor}`}></div>
 
                                         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                                             <div className="flex items-start justify-between gap-4">
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 mb-1">
-                                                        {new Date(h.IslemTarihi).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        {new Date(h.islemTarihi).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
-                                                    <p className="font-bold text-slate-800 text-sm leading-snug">{h.Aciklama || h.IslemTipi}</p>
+                                                    <p className="font-bold text-slate-800 text-sm leading-snug">{h.aciklama || h.islemTipi}</p>
 
-                                                    {h.KullanilanMalzeme && (
+                                                    {h.kullanilanMalzeme && (
                                                         <p className="text-xs font-medium text-slate-500 mt-2 bg-white px-2 py-1 rounded-lg border border-slate-100 inline-flex items-center gap-1.5">
-                                                            <span className="text-[10px]">📦</span> {h.KullanilanMalzeme}
-                                                            {h.KullanilanMiktar && <span className="font-mono bg-slate-100 px-1 rounded text-[10px] text-slate-600 ml-1">x{Number(h.KullanilanMiktar).toFixed(2)}</span>}
+                                                            <span className="text-[10px]">📦</span> {h.kullanilanMalzeme}
+                                                            {h.kullanilanMiktar && <span className="font-mono bg-slate-100 px-1 rounded text-[10px] text-slate-600 ml-1">x{Number(h.kullanilanMiktar).toFixed(2)}</span>}
                                                         </p>
                                                     )}
                                                 </div>
                                                 <div className="text-right flex flex-col items-end gap-1 flex-shrink-0">
-                                                    {h.MaliyetTutar > 0 && (
+                                                    {h.maliyetTutar > 0 && (
                                                         <span className="inline-flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg border border-emerald-100">
-                                                            +{Number(h.MaliyetTutar).toFixed(2)} ₺
+                                                            +{Number(h.maliyetTutar).toFixed(2)} ₺
                                                         </span>
                                                     )}
-                                                    {h.BirimMaliyetEtkisi > 0 && (
+                                                    {h.birimMaliyetEtkisi > 0 && (
                                                         <span className="text-[10px] font-bold text-slate-400 block px-1">
-                                                            Birim: +{Number(h.BirimMaliyetEtkisi).toFixed(3)} ₺
+                                                            Birim: +{Number(h.birimMaliyetEtkisi).toFixed(3)} ₺
                                                         </span>
                                                     )}
                                                 </div>

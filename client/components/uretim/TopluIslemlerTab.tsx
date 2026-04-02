@@ -15,8 +15,8 @@ export default function TopluIslemlerTab({ batches, locations, API_URL, tenantId
     const [isLoading, setIsLoading] = useState(false);
 
     // Seçilen konumdaki aktif partileri listele
-    const etkilenenPartiler = batches.filter((b: any) => b.Konum === form.konum && Number(b.MevcutMiktar) > 0);
-    const toplamMiktar = etkilenenPartiler.reduce((sum: number, b: any) => sum + Number(b.MevcutMiktar), 0);
+    const etkilenenPartiler = batches.filter((b: any) => b.konum === form.konum && Number(b.mevcutMiktar) > 0);
+    const toplamMiktar = etkilenenPartiler.reduce((sum: number, b: any) => sum + Number(b.mevcutMiktar), 0);
     const birimBasinaDusmeDahil = form.maliyetTutar > 0 && toplamMiktar > 0 ? (form.maliyetTutar / toplamMiktar).toFixed(3) : 0;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -157,18 +157,18 @@ export default function TopluIslemlerTab({ batches, locations, API_URL, tenantId
                         <p className="text-sm font-black text-slate-800 mb-4 px-2">Bu İşlemden Etkilenecek Ürünler ({form.konum})</p>
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                             {etkilenenPartiler.map((b: any) => {
-                                const eklenecekMaliyetTutar = (Number(b.MevcutMiktar) / toplamMiktar) * form.maliyetTutar;
+                                const eklenecekMaliyetTutar = (Number(b.mevcutMiktar) / toplamMiktar) * form.maliyetTutar;
 
                                 return (
-                                    <div key={b.Id} className="flex gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 bg-slate-50 transition-colors">
+                                    <div key={b.id} className="flex gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 bg-slate-50 transition-colors">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-mono font-bold text-slate-800 text-sm">{b.PartiNo}</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-slate-500 shadow-sm border border-slate-100">{b.Safha}</span>
+                                                <span className="font-mono font-bold text-slate-800 text-sm">{b.partiNo}</span>
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-slate-500 shadow-sm border border-slate-100">{b.safha}</span>
                                             </div>
-                                            <p className="font-bold text-emerald-700 truncate">{b.BitkiAdi}</p>
+                                            <p className="font-bold text-emerald-700 truncate">{b.bitkiAdi}</p>
                                             <div className="flex items-center gap-4 mt-3">
-                                                <span className="text-xs font-bold text-slate-600 px-2.5 py-1 bg-white border border-slate-200 rounded-lg">{b.MevcutMiktar} Adet</span>
+                                                <span className="text-xs font-bold text-slate-600 px-2.5 py-1 bg-white border border-slate-200 rounded-lg">{b.mevcutMiktar} Adet</span>
                                                 {form.maliyetTutar > 0 && (
                                                     <span className="text-[10px] font-medium text-emerald-600">Partiye Yansıyan Gider Payı: <b className="text-xs">+{eklenecekMaliyetTutar.toFixed(2)}₺</b></span>
                                                 )}
