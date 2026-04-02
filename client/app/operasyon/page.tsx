@@ -108,9 +108,25 @@ export default function OperationsPage() {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
+                if (selectedRecipe?.items?.length) {
+                    try {
+                        await fetch(`${API_URL}/netsis/stocks/consumption`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                aciklama: `FidanX Operasyon: ${selectedRecipe.name} (${formData.locations.join(', ')})`,
+                                tarih: formData.operationDate,
+                                items: selectedRecipe.items.map((it: any) => ({
+                                    stokKodu: it.materialCode,
+                                    miktar: it.amount || 0,
+                                    birimFiyat: it.unitPrice || 0
+                                }))
+                            })
+                        });
+                    } catch { }
+                }
                 setFormData({ locations: [], recipeId: '', expenseType: '', description: '', cost: 0, measurements: {}, operationDate: new Date().toISOString().split('T')[0] });
                 fetchLogs();
-                // Optionally trigger cost calculation backend task here
             } else {
                 alert('Hata oluştu.');
             }

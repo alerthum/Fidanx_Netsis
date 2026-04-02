@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { IntegrationService } from '../../integration/integration.service';
 
@@ -13,6 +13,68 @@ export class NetsisStocksService {
 
     async getNextCode(tenantId: string, prefix: string) {
         return this.integration.getNextErpCode(tenantId, 'STOCK', prefix);
+    }
+
+    /**
+     * Netsis'e sarf (tüketim) hareketi yazar.
+     * Üretimde reçete uygulandığında veya operasyonda malzeme kullanıldığında çağrılır.
+     * TBLSTHAR'a çıkış (C) kaydı oluşturur.
+     */
+    async createConsumption(data: {
+        fisNo?: string;
+        aciklama?: string;
+        tarih?: string;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
+    }) {
+        if (!data.items?.length) {
+            throw new BadRequestException('En az bir malzeme kalemi gerekli.');
+        }
+
+        const fisNo = data.fisNo || await this.generateFisNo();
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+
+        return this.db.executeTransaction(async (tx) => {
+            for (const item of data.items) {
+                if (!item.stokKodu || !item.miktar || item.miktar <= 0) continue;
+
+                const req = this.db.createRequest(tx, {
+                    fisno: fisNo,
+                    stokKodu: item.stokKodu,
+                    miktar: item.miktar,
+                    birimFiyat: item.birimFiyat || 0,
+                    tutar: (item.miktar || 0) * (item.birimFiyat || 0),
+                    tarih,
+                    aciklama: data.aciklama || 'FidanX Sarf',
+                    gckod: 'C',
+                    htur: 10,
+                    ftirsip: '0'
+                });
+                await req.query(`
+                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR, STHAR_FTIRSIP)
+                    VALUES (@fisno, @stokKodu, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur, @ftirsip)
+                `);
+            }
+
+            this.logger.log(`Netsis sarf fişi oluşturuldu: ${fisNo} (${data.items.length} kalem)`);
+            return { success: true, fisNo, kalemSayisi: data.items.length };
+        });
+    }
+
+    private async generateFisNo(): Promise<string> {
+        const yil = new Date().getFullYear();
+        const prefix = `SRF${yil}`;
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FISNO FROM TBLSTHAR WITH (NOLOCK)
+            WHERE FISNO LIKE @pattern
+            ORDER BY FISNO DESC
+        `, { pattern: `${prefix}%` });
+
+        if (sonuc.length === 0) return `${prefix}00000001`;
+        const lastNo = sonuc[0].FISNO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}00000001`;
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${nextNum}`;
     }
 
     async getStocks(tenantId: string, filters?: { grupKodu?: string; tedarikci?: string; arama?: string }) {

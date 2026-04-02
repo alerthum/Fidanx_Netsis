@@ -48,6 +48,41 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
+    async executeTransaction<T = any>(callback: (tx: mssql.Transaction) => Promise<T>): Promise<T> {
+        if (!this.pool || !this.pool.connected) await this.connect();
+        if (!this.pool) throw new Error('Veritabanı bağlantısı kurulamadı.');
+
+        const tx = new mssql.Transaction(this.pool);
+        await tx.begin();
+        try {
+            const result = await callback(tx);
+            await tx.commit();
+            return result;
+        } catch (err) {
+            try { await tx.rollback(); } catch { }
+            this.logger.error('Transaction hatası:', err);
+            throw err;
+        }
+    }
+
+    createRequest(tx: mssql.Transaction, params: Record<string, any> = {}): mssql.Request {
+        const request = new mssql.Request(tx);
+        Object.entries(params).forEach(([key, value]) => {
+            if (typeof value === 'string') {
+                request.input(key, mssql.NVarChar, value);
+            } else if (typeof value === 'number') {
+                request.input(key, Number.isInteger(value) ? mssql.Int : mssql.Decimal(18, 4), value);
+            } else if (value instanceof Date) {
+                request.input(key, mssql.DateTime, value);
+            } else if (typeof value === 'boolean') {
+                request.input(key, mssql.Bit, value);
+            } else {
+                request.input(key, value);
+            }
+        });
+        return request;
+    }
+
     async query<T = any>(sql: string, params: Record<string, any> = {}): Promise<T[]> {
         try {
             if (!this.pool || !this.pool.connected) {

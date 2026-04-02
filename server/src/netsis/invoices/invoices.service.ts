@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
@@ -6,6 +6,113 @@ export class NetsisInvoicesService {
     private readonly logger = new Logger(NetsisInvoicesService.name);
 
     constructor(private db: DatabaseService) { }
+
+    /**
+     * Netsis'te yeni satış/alış faturası oluşturur.
+     * tblFATUIRS (başlık) + TBLSTHAR (kalemler) + TBLCAHAR (cari hareket) atomik INSERT.
+     */
+    async createInvoice(data: {
+        faturaTuru: '1' | '2';
+        cariKodu: string;
+        tarih?: string;
+        vadeTarihi?: string;
+        aciklama?: string;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; kdvOrani?: number }>;
+    }) {
+        if (!data.cariKodu || !data.items?.length) {
+            throw new BadRequestException('Cari kodu ve en az bir kalem gerekli.');
+        }
+
+        const faturaNo = await this.generateInvoiceNo(data.faturaTuru);
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+        const vadeTarihi = data.vadeTarihi || tarih;
+        const ftirsip = data.faturaTuru;
+
+        let brutTutar = 0;
+        let kdvTutar = 0;
+        for (const item of data.items) {
+            const satirTutar = (item.miktar || 0) * (item.birimFiyat || 0);
+            brutTutar += satirTutar;
+            kdvTutar += satirTutar * ((item.kdvOrani || 0) / 100);
+        }
+        const genelToplam = brutTutar + kdvTutar;
+
+        return this.db.executeTransaction(async (tx) => {
+            const fReq = this.db.createRequest(tx, {
+                fatiraNo: faturaNo,
+                tarih,
+                vadeTarihi,
+                cariKodu: data.cariKodu,
+                ftirsip,
+                aciklama: data.aciklama || '',
+                brutTutar,
+                kdvTutar,
+                genelToplam
+            });
+            await fReq.query(`
+                INSERT INTO tblFATUIRS (FATIRS_NO, TARIH, ODEMETARIHI, CARI_KODU, FTIRSIP, ACIKLAMA, BRUTTUTAR, KDVTUTAR, GENELTOPLAM, DOVIZTIP)
+                VALUES (@fatiraNo, @tarih, @vadeTarihi, @cariKodu, @ftirsip, @aciklama, @brutTutar, @kdvTutar, @genelToplam, 0)
+            `);
+
+            for (const item of data.items) {
+                const satirTutar = (item.miktar || 0) * (item.birimFiyat || 0);
+                const gckod = ftirsip === '1' ? 'C' : 'G';
+
+                const sReq = this.db.createRequest(tx, {
+                    fisno: faturaNo,
+                    stokKodu: item.stokKodu,
+                    ftirsip,
+                    gckod,
+                    miktar: item.miktar || 0,
+                    birimFiyat: item.birimFiyat || 0,
+                    tutar: satirTutar,
+                    kdvOrani: item.kdvOrani || 0,
+                    tarih,
+                    htur: 1
+                });
+                await sReq.query(`
+                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_KDV, STHAR_TARIH, STHAR_HTUR)
+                    VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @kdvOrani, @tarih, @htur)
+                `);
+            }
+
+            const cReq = this.db.createRequest(tx, {
+                cariKod: data.cariKodu,
+                tarih,
+                vadeTarihi,
+                belgeNo: faturaNo,
+                borc: ftirsip === '1' ? genelToplam : 0,
+                alacak: ftirsip === '2' ? genelToplam : 0,
+                aciklama: data.aciklama || `FidanX Fatura: ${faturaNo}`
+            });
+            await cReq.query(`
+                INSERT INTO TBLCAHAR (CARI_KOD, TARIH, VADE_TARIHI, BELGE_NO, BORC, ALACAK, ACIKLAMA)
+                VALUES (@cariKod, @tarih, @vadeTarihi, @belgeNo, @borc, @alacak, @aciklama)
+            `);
+
+            this.logger.log(`Netsis fatura oluşturuldu: ${faturaNo} (${ftirsip === '1' ? 'Satış' : 'Alış'})`);
+            return { success: true, faturaNo, genelToplam };
+        });
+    }
+
+    private async generateInvoiceNo(faturaTuru: string): Promise<string> {
+        const prefix = faturaTuru === '1' ? 'FDX' : 'FDA';
+        const yil = new Date().getFullYear();
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FATIRS_NO FROM tblFATUIRS WITH (NOLOCK)
+            WHERE FATIRS_NO LIKE @pattern
+            ORDER BY FATIRS_NO DESC
+        `, { pattern: `${prefix}${yil}%` });
+
+        if (sonuc.length === 0) return `${prefix}${yil}00000001`;
+
+        const lastNo = sonuc[0].FATIRS_NO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}${yil}00000001`;
+
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${yil}${nextNum}`;
+    }
 
     async getAllInvoices(page: number = 1, pageSize: number = 20, faturaTuru?: string) {
         const offset = (page - 1) * pageSize;

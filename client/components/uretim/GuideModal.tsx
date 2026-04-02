@@ -123,10 +123,10 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         <div className="flex justify-center text-slate-600">↓</div>
 
                                         <div className="bg-violet-900/40 p-5 rounded-2xl border border-violet-800/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] flex-1 flex flex-col justify-center relative">
-                                            <span className="absolute top-3 right-3 text-amber-400 text-sm font-black" title="Kısmi (FidanX tarafı tamam, Netsis fatura Faz C)">◐</span>
+                                            <span className="absolute top-3 right-3 text-emerald-400 text-sm font-black" title="Tamamlandı (Faz C)">★</span>
                                             <h5 className="text-[10px] font-black text-violet-400 uppercase tracking-widest mb-3 flex items-center gap-1"><span className="text-sm">🏷️</span> 4. Satış</h5>
                                             <div className="bg-violet-800/50 p-3 rounded-lg text-xs text-violet-100 font-medium border border-violet-700/50">
-                                                Her safhada direkt satış yapılabilir. Kâr tahmini anlık hesaplanır. <span className="text-violet-300 text-[10px]">(Netsis fatura entegrasyonu Faz C'de)</span>
+                                                Her safhada direkt satış yapılabilir. Kâr tahmini anlık hesaplanır. Netsis fatura entegrasyonu aktif.
                                             </div>
                                         </div>
                                     </div>
@@ -199,7 +199,7 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                             <td className="p-4 font-bold text-slate-800 text-emerald-600 flex items-center gap-1"><span className="text-xl leading-none -mt-1">🏷️</span> Satış (Netsis)</td>
                                             <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono">/uretim &gt; Partiler</span></td>
                                             <td className="p-4 text-slate-600">Satışı gerçekleştirin. Sistem birim satış fiyatınızdan son partinin maliyetini çıkarıp size anlık tahmini KÂR gösterecektir.</td>
-                                            <td className="p-4 text-center"><span className="text-amber-500 font-black" title="Kısmi – FidanX tarafı tamam, Netsis fatura Faz C">◐</span></td>
+                                            <td className="p-4 text-center"><span className="text-emerald-500 font-black" title="Tamamlandı – Netsis fatura entegrasyonu aktif">★</span></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -383,11 +383,11 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         ]
                                     },
                                     {
-                                        faz: 'Faz C', title: 'Netsis Yazma Entegrasyonu', status: 'pending', color: 'amber',
+                                        faz: 'Faz C', title: 'Netsis Yazma Entegrasyonu', status: 'completed', color: 'amber',
                                         items: [
-                                            'Satış faturası → Netsis (tblFATUIRS + TBLSTHAR)',
-                                            'Cari hesap hareketi (TBLCAHAR)',
-                                            'Stok sarf hareketi (saksı/gübre düşümü)',
+                                            'Satış faturası → Netsis (tblFATUIRS + TBLSTHAR) ✅',
+                                            'Cari hesap hareketi (TBLCAHAR) ✅',
+                                            'Stok sarf hareketi (saksı/gübre düşümü) ✅',
                                         ]
                                     },
                                     {
@@ -453,6 +453,12 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '02.04.2026', desc: 'Faz C: Netsis satış faturası yazma (tblFATUIRS + TBLSTHAR + TBLCAHAR atomik transaction)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz C: Netsis stok sarf hareketi servisi (üretimde malzeme tüketimi otomatik kaydı)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz C: Satış sayfası Netsis fatura entegrasyonu (fatura no otomatik üretim)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz C: Operasyon reçete uygulama → Netsis sarf fişi otomatik gönderimi', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz C: Şaşırtma/Satış işlemleri → Netsis stok çıkışı entegrasyonu', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz C: DatabaseService transaction desteği eklendi (atomik yazma güvenliği)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz B: Maliyet & Analiz tab (pasta grafik, kârlılık analizi)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz B: Şaşırtma-Reçete entegrasyonu (otomatik maliyet hesabı)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz B: Reçete sayfası tamamlandı (düzenleme, Netsis stok bağlantısı, birim fiyat)', type: 'feature' },

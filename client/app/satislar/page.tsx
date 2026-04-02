@@ -273,23 +273,20 @@ export default function SatislarPage() {
         if (draftOrder.items.length === 0) return alert('Kalem listesi boş.');
 
         const totalAmount = draftOrder.items.reduce((acc: any, item: any) => acc + (item.amount * item.unitPrice), 0);
-
-        // Netsis entegrasyonuna gönderilecek format
-        const subTotal = totalAmount;
-        const totalTax = draftOrder.taxIncluded ? 0 : totalAmount * 0.20; // Example
-        const genTotal = subTotal + totalTax;
+        const kdvOrani = draftOrder.taxIncluded ? 0 : 20;
 
         const payload = {
-            belgeNo: draftOrder.id,
+            faturaTuru: '1' as const,
             cariKodu: draftOrder.customerId,
-            faturaTuru: '1', // Satis faturasi
+            tarih: draftOrder.orderDate,
+            vadeTarihi: draftOrder.dueDate || draftOrder.orderDate,
+            aciklama: draftOrder.description || `${draftOrder.customerName} satış faturası`,
             items: draftOrder.items.map((it: any) => ({
-                StokKodu: it.materialId,
-                Miktar: it.amount,
-                BirimFiyat: it.unitPrice
-            })),
-            totals: { subTotal, tax: totalTax, total: genTotal },
-            description: draftOrder.description
+                stokKodu: it.materialId,
+                miktar: it.amount,
+                birimFiyat: it.unitPrice,
+                kdvOrani
+            }))
         };
 
         try {
@@ -299,8 +296,8 @@ export default function SatislarPage() {
                 body: JSON.stringify(payload),
             });
             if (res.ok) {
-                alert('Fatura başarıyla oluşturuldu.');
-                // create a new blank draft
+                const result = await res.json().catch(() => ({}));
+                alert(`Fatura Netsis'e yazıldı! Fatura No: ${result.faturaNo || '-'}`);
                 setDraftOrder({
                     id: `FAT${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
                     customerId: '',
@@ -313,16 +310,18 @@ export default function SatislarPage() {
                 });
                 setActiveTab('ORDERS');
                 fetchOrders();
-                // Aktivite Logla
                 fetch(`${API_URL}/activity?tenantId=demo-tenant`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'Satış/Sipariş', title: `${draftOrder.customerName} - ₺${genTotal.toLocaleString()} fatura oluşturuldu.`, icon: '💰', color: 'bg-emerald-50 text-emerald-600' })
+                    body: JSON.stringify({ action: 'Satış/Sipariş', title: `${draftOrder.customerName} - ₺${totalAmount.toLocaleString()} Netsis fatura: ${result.faturaNo || '-'}`, icon: '💰', color: 'bg-emerald-50 text-emerald-600' })
                 });
             } else {
-                alert('Fatura oluşturulurken hata oluştu.');
+                const err = await res.json().catch(() => ({}));
+                alert(`Fatura oluşturulurken hata: ${err.message || 'Bilinmeyen hata'}`);
             }
-        } catch (err) { }
+        } catch (err) {
+            alert('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
+        }
     };
 
     const handleUpdateEditOrder = async () => {

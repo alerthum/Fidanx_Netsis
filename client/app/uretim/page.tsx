@@ -112,6 +112,25 @@ export default function UretimPage() {
                 body: JSON.stringify(form)
             });
             if (res.ok) {
+                if (form.recipeId) {
+                    const recipe = recipes.find((r: any) => r.id == form.recipeId);
+                    if (recipe?.items?.length) {
+                        try {
+                            await fetch(`${API_URL}/netsis/stocks/consumption`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    aciklama: `FidanX Şaşırtma: ${selectedBatch.bitkiAdi} - ${recipe.name}`,
+                                    items: recipe.items.map((it: any) => ({
+                                        stokKodu: it.materialCode,
+                                        miktar: (it.amount || 0) * ((form.miktar || selectedBatch.mevcutMiktar) / 100),
+                                        birimFiyat: it.unitPrice || 0
+                                    }))
+                                })
+                            });
+                        } catch { }
+                    }
+                }
                 setIsTransplantModalOpen(false);
                 fetchData();
             } else { alert('Şaşırtma hatası'); }
@@ -127,6 +146,22 @@ export default function UretimPage() {
                 body: JSON.stringify(form)
             });
             if (res.ok) {
+                if (selectedBatch.netsisStokKodu && form.satisAdet > 0) {
+                    try {
+                        await fetch(`${API_URL}/netsis/stocks/consumption`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                aciklama: `FidanX Satış: ${selectedBatch.bitkiAdi} (${selectedBatch.partiNo})`,
+                                items: [{
+                                    stokKodu: selectedBatch.netsisStokKodu,
+                                    miktar: form.satisAdet,
+                                    birimFiyat: form.birimFiyat || 0
+                                }]
+                            })
+                        });
+                    } catch { }
+                }
                 setIsSatisModalOpen(false);
                 fetchData();
             } else { alert('Satış hatası'); }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Put, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Put, Body } from '@nestjs/common';
 import { NetsisInvoicesService } from './invoices.service';
 import { IntegrationService } from '../../integration/integration.service';
 
@@ -42,6 +42,18 @@ export class NetsisInvoicesController {
         @Query('type') type: 'PURCHASE' | 'SALES'
     ) {
         return this.integration.pushInvoice(tenantId || 'demo-tenant', invoiceId, type);
+    }
+
+    @Post()
+    async createInvoice(@Body() body: {
+        faturaTuru: '1' | '2';
+        cariKodu: string;
+        tarih?: string;
+        vadeTarihi?: string;
+        aciklama?: string;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; kdvOrani?: number }>;
+    }) {
+        return this.invoicesService.createInvoice(body);
     }
 
     @Get(':belgeNo/details')
