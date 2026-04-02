@@ -6,6 +6,7 @@ import GuideModal from '@/components/uretim/GuideModal';
 
 export default function AyarlarPage() {
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
     const [categories, setCategories] = useState<string[]>(['Meyve', 'Süs', 'Endüstriyel']);
     const [productionStages, setProductionStages] = useState<string[]>(['TEPSİ', 'KÜÇÜK_SAKSI', 'BÜYÜK_SAKSI', 'SATIŞA_HAZIR']);
     const [locations, setLocations] = useState<string[]>(['Sera 1', 'Sera 2', 'Açık Alan', 'Depo']);
@@ -33,6 +34,7 @@ export default function AyarlarPage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
     useEffect(() => {
+        setMounted(true);
         fetchSettings();
         fetchBackups();
     }, []);
@@ -355,7 +357,7 @@ export default function AyarlarPage() {
                                         key={t.id}
                                         onClick={() => setTheme(t.id)}
                                         title={t.desc}
-                                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === t.id
+                                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${mounted && theme === t.id
                                             ? 'bg-white text-emerald-600 shadow-md dark:bg-slate-700 dark:text-emerald-400 scale-105 z-10'
                                             : 'text-slate-500 hover:text-slate-700 hover:bg-white/50 dark:text-slate-400 dark:hover:text-slate-300'}`}
                                     >

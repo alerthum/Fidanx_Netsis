@@ -1,0 +1,34 @@
+---
+description: MSSQL veritabanı parametreleri için NVarChar zorunluluğu ve Türkçe karakter güvenliği
+globs: server/src/**/*.ts
+alwaysApply: false
+---
+
+# MSSQL NVarChar Kuralı
+
+`database.service.ts` içindeki `query()` metodu tüm string parametreleri `mssql.NVarChar` tipi ile göndermeli. Aksi halde Türkçe karakterler (Ö, Ü, Ş, İ, Ğ, Ç, ğ, ı, ş, ç) bozulur.
+
+## Yasak Kullanım
+
+```typescript
+// ❌ YANLIŞ - tip belirtilmezse VARCHAR olur, Türkçe bozulur
+request.input(key, value);
+```
+
+## Doğru Kullanım
+
+```typescript
+// ✅ DOĞRU - string için her zaman NVarChar
+if (typeof value === 'string') {
+    request.input(key, mssql.NVarChar, value);
+} else if (typeof value === 'number') {
+    request.input(key, Number.isInteger(value) ? mssql.Int : mssql.Decimal(18, 4), value);
+} else {
+    request.input(key, value);
+}
+```
+
+## Ek Kurallar
+
+- Yeni SQL sorguları yazarken string literal'ler için N prefix kullan: `N'değer'`
+- Raw SQL INSERT/UPDATE sorgularında parametre kullan, string birleştirme yapma

@@ -1,0 +1,32 @@
+---
+description: Next.js hydration mismatch önleme kuralları (next-themes, Date, random)
+globs: client/**/*.tsx
+alwaysApply: false
+---
+
+# Next.js Hydration Mismatch Önleme
+
+Server ve client arasında HTML uyumsuzluğu oluşturan kodlardan kaçın.
+
+## next-themes Kullanımı
+
+`useTheme()` hook'undan gelen `theme` değeri server'da `undefined`, client'da gerçek değerdir. Doğrudan render'da kullanma.
+
+```typescript
+// ❌ YANLIŞ - hydration mismatch oluşturur
+const { theme } = useTheme();
+return <div className={theme === 'dark' ? 'bg-black' : 'bg-white'}>
+
+// ✅ DOĞRU - mounted kontrolü ile
+const { theme } = useTheme();
+const [mounted, setMounted] = useState(false);
+useEffect(() => setMounted(true), []);
+
+return <div className={mounted && theme === 'dark' ? 'bg-black' : 'bg-white'}>
+```
+
+## Genel Kurallar
+
+- `Date.now()`, `Math.random()`, `new Date().toLocaleString()` gibi değişken değerleri doğrudan JSX'te kullanma
+- `typeof window !== 'undefined'` ile server/client dallanması yapma, bunun yerine `useEffect` + `mounted` state kullan
+- Bileşen tamamen client-only ise `if (!mounted) return null` pattern'ini uygula
