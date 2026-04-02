@@ -50,7 +50,10 @@ export default function UretimPage() {
     const fetchData = async () => {
         try {
             const res = await fetch(`${API_URL}/production/batches?tenantId=${tenantId}`);
-            if (res.ok) setBatches(await res.json());
+            if (res.ok) {
+                const d = await res.json().catch(() => []);
+                setBatches(Array.isArray(d) ? d : []);
+            }
 
             const plantRes = await fetch(`${API_URL}/netsis/stocks/list`);
             if (plantRes.ok) {

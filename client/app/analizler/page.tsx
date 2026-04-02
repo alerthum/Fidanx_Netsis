@@ -35,7 +35,10 @@ export default function AnalizlerPage() {
                 })) : []);
             }
 
-            if (prodRes.ok) setProduction(await prodRes.json());
+            if (prodRes.ok) {
+                const d = await prodRes.json().catch(() => []);
+                setProduction(Array.isArray(d) ? d : []);
+            }
 
             if (sRes.ok) {
                 const data = await sRes.json();

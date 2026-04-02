@@ -45,18 +45,19 @@ export default function DashboardPage() {
         fetch(`${API_URL}/netsis/invoices/summary`)
       ]);
 
-      const [stockSummary, salesComparison, shipmentSummary] = await Promise.all([
-        stockRes.ok ? stockRes.json() : [],
-        salesRes.ok ? salesRes.json() : [],
-        summaryRes.ok ? summaryRes.json() : []
+      const [stockSummaryRaw, salesComparisonRaw, shipmentSummaryRaw] = await Promise.all([
+        stockRes.ok ? stockRes.json().catch(() => []) : [],
+        salesRes.ok ? salesRes.json().catch(() => []) : [],
+        summaryRes.ok ? summaryRes.json().catch(() => []) : []
       ]);
 
-      const stockData = stockSummary[0] || {};
-      const totalSales = Array.isArray(salesComparison)
-        ? salesComparison.reduce((acc: number, s: any) => acc + (s.ToplamSatış || 0), 0)
-        : 0;
+      const stockSummary = Array.isArray(stockSummaryRaw) ? stockSummaryRaw : [];
+      const salesComparison = Array.isArray(salesComparisonRaw) ? salesComparisonRaw : [];
+      const shipmentSummary = Array.isArray(shipmentSummaryRaw) ? shipmentSummaryRaw : [];
 
-      // Alış faturası toplamlarını gider olarak gösteriyoruz
+      const stockData = stockSummary[0] || {};
+      const totalSales = salesComparison.reduce((acc: number, s: any) => acc + (s.ToplamSatış || 0), 0);
+
       const purchaseData = shipmentSummary.find((s: any) => s.FaturaTuru === '2');
       const totalExpenses = purchaseData ? purchaseData.ToplamTL : 0;
 

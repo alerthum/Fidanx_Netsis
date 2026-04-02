@@ -80,13 +80,13 @@ export default function SatislarPage() {
     const fetchStocks = async () => {
         try {
             const res = await fetch(`${API_URL}/netsis/stocks/list`);
-            const data = await res.json();
-            // Netsis stoklarını eşliyoruz
+            if (!res.ok) return;
+            const data = await res.json().catch(() => []);
             const mapped = Array.isArray(data) ? data.map((s: any) => ({
                 id: s.StokKodu,
                 name: s.StokAdi,
                 currentStock: s.Bakiye,
-                wholesalePrice: s.SatisFiyat1 || 0, // Netsis satış fiyatı varsa alınır
+                wholesalePrice: s.SatisFiyat1 || 0,
                 unit: s.OlcuBirimi1 || 'Adet',
                 type: 'CUTTING',
                 category: s.GrupIsim || s.Tip || 'Diğer'
@@ -109,7 +109,8 @@ export default function SatislarPage() {
     const fetchCustomers = async () => {
         try {
             const res = await fetch(`${API_URL}/netsis/customers?type=120`);
-            const data = await res.json();
+            if (!res.ok) return;
+            const data = await res.json().catch(() => []);
             const mapped = Array.isArray(data) ? data.map((c: any) => ({
                 id: c.CariKodu,
                 name: c.CariAdi,

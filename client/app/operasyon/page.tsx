@@ -28,25 +28,30 @@ export default function OperationsPage() {
 
     const fetchData = async () => {
         try {
-            // Fetch Settings
             const setRes = await fetch(`${API_URL}/tenants/demo-tenant`);
-            const setData = await setRes.json();
-            if (setData.settings) setSettings(setData.settings);
+            if (setRes.ok) {
+                const setData = await setRes.json().catch(() => ({}));
+                if (setData.settings) setSettings(setData.settings);
+            }
 
-            // Fetch Recipes
             const recRes = await fetch(`${API_URL}/recipes?tenantId=demo-tenant`);
-            const recData = await recRes.json();
-            setRecipes(Array.isArray(recData) ? recData : []);
+            if (recRes.ok) {
+                const recData = await recRes.json().catch(() => []);
+                setRecipes(Array.isArray(recData) ? recData : []);
+            }
 
-            // Fetch Activity Logs
             fetchLogs();
         } catch (err) { console.error(err); }
     };
 
     const fetchLogs = async () => {
-        const res = await fetch(`${API_URL}/activity?tenantId=demo-tenant`);
-        const data = await res.json();
-        setLogs(data);
+        try {
+            const res = await fetch(`${API_URL}/activity?tenantId=demo-tenant`);
+            if (res.ok) {
+                const data = await res.json().catch(() => []);
+                setLogs(Array.isArray(data) ? data : []);
+            }
+        } catch (err) { console.error(err); }
     };
 
     const handleLocationToggle = (loc: string) => {

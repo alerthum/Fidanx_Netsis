@@ -54,12 +54,21 @@ export default function RaporlarPage() {
                     type: s.StokKodu?.includes('ANA') ? 'MOTHER_TREE' : 'CUTTING'
                 })) : []);
             }
-            if (prodRes.ok) setProduction(await prodRes.json());
+            if (prodRes.ok) {
+                const d = await prodRes.json().catch(() => []);
+                setProduction(Array.isArray(d) ? d : []);
+            }
             if (salesRes.ok) setSales((await salesRes.json()).items || []);
             if (purchRes.ok) setPurchases((await purchRes.json()).items || []);
 
-            if (tempRes.ok) setTemperatureLogs(await tempRes.json());
-            if (fertRes.ok) setFertilizerLogs(await fertRes.json());
+            if (tempRes.ok) {
+                const d = await tempRes.json().catch(() => []);
+                setTemperatureLogs(Array.isArray(d) ? d : []);
+            }
+            if (fertRes.ok) {
+                const d = await fertRes.json().catch(() => []);
+                setFertilizerLogs(Array.isArray(d) ? d : []);
+            }
 
             // Masraflar için şimdilik satın alma faturalarını kullanıyoruz (basitleştirme)
             setExpenses([]);

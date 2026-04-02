@@ -21,7 +21,8 @@ export default function NotificationCenter() {
         try {
             const res = await fetch(`${API_URL}/plants?tenantId=demo-tenant`);
             if (res.ok) {
-                const plants = await res.json();
+                const raw = await res.json().catch(() => []);
+                const plants = Array.isArray(raw) ? raw : [];
                 const stockAlerts = plants
                     .filter((p: any) => (p.currentStock || 0) <= (p.criticalStock || 10))
                     .map((p: any) => ({

@@ -56,8 +56,10 @@ export default function RecipesPage() {
     const fetchRecipes = async () => {
         try {
             const res = await fetch(`${API_URL}/recipes?tenantId=demo-tenant`);
-            const data = await res.json();
-            setRecipes(data);
+            if (res.ok) {
+                const data = await res.json().catch(() => []);
+                setRecipes(Array.isArray(data) ? data : []);
+            }
         } catch (err) {
             console.error(err);
         }
