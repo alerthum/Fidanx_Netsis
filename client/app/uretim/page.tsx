@@ -7,6 +7,7 @@ import TopluIslemlerTab from '@/components/uretim/TopluIslemlerTab';
 import SeraTab from '@/components/uretim/SeraTab';
 import { ModalWrapper, Input, Label, Select, TransplantModal, SatisModal, FireModal, CostHistoryModal } from '@/components/uretim/Modals';
 import MaliyetTab from '@/components/uretim/MaliyetTab';
+import BarkodEtiket from '@/components/uretim/BarkodEtiket';
 
 export default function UretimPage() {
     const [activeTab, setActiveTab] = useState('partiler');
@@ -21,6 +22,7 @@ export default function UretimPage() {
     const [isCostModalOpen, setIsCostModalOpen] = useState(false);
     const [isSatisModalOpen, setIsSatisModalOpen] = useState(false);
     const [isFireModalOpen, setIsFireModalOpen] = useState(false);
+    const [isBarkodModalOpen, setIsBarkodModalOpen] = useState(false);
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
 
     const [newBatchForm, setNewBatchForm] = useState({
@@ -226,6 +228,7 @@ export default function UretimPage() {
                             openTransplantModal={(b: any) => { setSelectedBatch(b); setIsTransplantModalOpen(true); }}
                             openFireModal={(b: any) => { setSelectedBatch(b); setIsFireModalOpen(true); }}
                             openSatisModal={(b: any) => { setSelectedBatch(b); setIsSatisModalOpen(true); }}
+                            openBarkodModal={(b: any) => { setSelectedBatch(b); setIsBarkodModalOpen(true); }}
                         />
                     )}
                     {activeTab === 'toplu' && <TopluIslemlerTab batches={batches} locations={locations} API_URL={API_URL} tenantId={tenantId} onRefresh={fetchData} />}
@@ -299,6 +302,7 @@ export default function UretimPage() {
                 <SatisModal isOpen={isSatisModalOpen} onClose={() => setIsSatisModalOpen(false)} batch={selectedBatch} onSave={handleSatis} />
                 <FireModal isOpen={isFireModalOpen} onClose={() => setIsFireModalOpen(false)} batch={selectedBatch} onSave={handleFire} />
                 <CostHistoryModal isOpen={isCostModalOpen} onClose={() => setIsCostModalOpen(false)} batch={selectedBatch} />
+                <BarkodEtiket isOpen={isBarkodModalOpen} onClose={() => setIsBarkodModalOpen(false)} batch={selectedBatch} />
             </main>
         </div>
     );

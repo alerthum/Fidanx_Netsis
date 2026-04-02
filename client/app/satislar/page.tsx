@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ExportButton from '@/components/ExportButton';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 
 export default function SatislarPage() {
     const [activeTab, setActiveTab] = useState<'NEW_ORDER' | 'ORDERS' | 'CUSTOMERS'>('ORDERS');
@@ -320,7 +321,19 @@ export default function SatislarPage() {
                 alert(`Fatura oluşturulurken hata: ${err.message || 'Bilinmeyen hata'}`);
             }
         } catch (err) {
-            alert('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
+            addToOfflineQueue({
+                type: 'invoice',
+                endpoint: `${API_URL}/netsis/invoices`,
+                method: 'POST',
+                payload
+            });
+            alert('Çevrimdışı modda kaydedildi. Bağlantı gelince otomatik gönderilecek.');
+            setDraftOrder({
+                id: `FAT${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+                customerId: '', customerName: '',
+                orderDate: new Date().toISOString().split('T')[0], dueDate: '',
+                taxIncluded: false, items: [], description: ''
+            });
         }
     };
 

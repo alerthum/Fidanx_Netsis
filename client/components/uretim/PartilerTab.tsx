@@ -6,13 +6,15 @@ export default function PartilerTab({
     openCostModal,
     openTransplantModal,
     openFireModal,
-    openSatisModal
+    openSatisModal,
+    openBarkodModal
 }: {
     batches: any[],
     openCostModal: any,
     openTransplantModal: any,
     openFireModal: any,
-    openSatisModal: any
+    openSatisModal: any,
+    openBarkodModal?: any
 }) {
 
     return (
@@ -107,6 +109,15 @@ export default function PartilerTab({
                                             >
                                                 💀
                                             </button>
+                                            {openBarkodModal && (
+                                                <button
+                                                    title="Barkod Etiket Bas"
+                                                    onClick={() => openBarkodModal(batch)}
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 flex items-center justify-center transition-all shadow-sm hover:shadow active:scale-95"
+                                                >
+                                                    🏷
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -169,6 +180,11 @@ export default function PartilerTab({
                                 <button onClick={() => openFireModal(batch)} className="flex-1 py-2.5 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 active:scale-95 transition-all">
                                     💀 Fire
                                 </button>
+                                {openBarkodModal && (
+                                    <button onClick={() => openBarkodModal(batch)} className="flex-1 py-2.5 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 active:scale-95 transition-all">
+                                        🏷 Etiket
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

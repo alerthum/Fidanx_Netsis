@@ -391,12 +391,12 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         ]
                                     },
                                     {
-                                        faz: 'Faz D', title: 'Barkod & Mobil', status: 'pending', color: 'violet',
+                                        faz: 'Faz D', title: 'Barkod & Mobil', status: 'completed', color: 'violet',
                                         items: [
-                                            'Gerçek kamera ile barkod/QR okutma',
-                                            'Barkod etiket basımı (PDF)',
-                                            'PWA (Progressive Web App) dönüşümü',
-                                            'Offline satış desteği',
+                                            'Gerçek kamera ile barkod/QR okutma ✅',
+                                            'Barkod etiket basımı (QR + PDF) ✅',
+                                            'PWA dönüşümü (install prompt + gelişmiş SW) ✅',
+                                            'Offline satış desteği (kuyruk + otomatik sync) ✅',
                                         ]
                                     },
                                     {
@@ -453,6 +453,10 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '02.04.2026', desc: 'Faz D: Parti bazlı QR etiket oluşturma ve baskı (3 boyut seçeneği)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz D: Gerçek kamera ile barkod/QR tarama (html5-qrcode entegrasyonu)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz D: PWA install prompt + gelişmiş Service Worker (API cache, statik cache)', type: 'feature' },
+                                            { date: '02.04.2026', desc: 'Faz D: Offline satış desteği (localStorage kuyruk + otomatik senkronizasyon)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz C: Netsis satış faturası yazma (tblFATUIRS + TBLSTHAR + TBLCAHAR atomik transaction)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz C: Netsis stok sarf hareketi servisi (üretimde malzeme tüketimi otomatik kaydı)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz C: Satış sayfası Netsis fatura entegrasyonu (fatura no otomatik üretim)', type: 'feature' },

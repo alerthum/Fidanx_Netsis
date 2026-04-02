@@ -39,6 +39,8 @@ export const metadata: Metadata = {
 import { Providers } from "@/components/Providers";
 import BottomNavigation from "@/components/BottomNavigation";
 import AiAssistant from "@/components/AiAssistant";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export default function RootLayout({
   children,
@@ -58,6 +60,8 @@ export default function RootLayout({
           {children}
           <BottomNavigation />
           <AiAssistant />
+          <PwaInstallPrompt />
+          <OfflineBanner />
         </Providers>
         <script
           dangerouslySetInnerHTML={{
