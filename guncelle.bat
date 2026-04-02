@@ -13,13 +13,13 @@ call git pull
 echo.
 echo [2/5] API (SERVER) DERLENIYOR...
 cd server
-call npm install --omit=dev
+call npm install
 call npm run build
 
 echo.
 echo [3/5] ISTEMCI (CLIENT) DERLENIYOR...
 cd ..\client
-call npm install --omit=dev
+call npm install
 call npm run build
 
 echo.
