@@ -103,7 +103,8 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
         sasirtilanMiktar: 0,
         ekMaliyetTutar: 0,
         kullanilanMalzeme: '',
-        recipeId: ''
+        recipeId: '',
+        hedefNetsisStokKodu: ''
     });
 
     const selectedRecipe = recipes.find((r: any) => r.id === form.recipeId);
@@ -143,6 +144,18 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                         <option value="">Seçiniz</option>
                         {locations.map((l: any) => <option key={l} value={l}>{l}</option>)}
                     </Select>
+                </div>
+                <div className="col-span-2">
+                    <Label>Hedef Netsis stok kodu (opsiyonel)</Label>
+                    <Input
+                        placeholder="Örn: leylendi 2L — Netsis'te açılmış kart; boşsa mevcut stok kodu ile devam"
+                        value={form.hedefNetsisStokKodu}
+                        onChange={e => setForm({ ...form, hedefNetsisStokKodu: e.target.value })}
+                        className="font-mono text-sm"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                        Farklı kod girerseniz Netsis’te kaynak stoktan düşer, hedef stoğa üretim girişi yazılır (aynı adet).
+                    </p>
                 </div>
                 {recipes.length > 0 && (
                     <div className="col-span-2">

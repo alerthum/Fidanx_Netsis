@@ -325,4 +325,73 @@ export class NetsisInvoicesService {
             throw new Error('Fatura güncellenirken Netsis üzerinde hata oluştu.');
         }
     }
+
+    /**
+     * FidanX `Purchases` + `PurchaseItems` üzerinden Netsis alış faturası — `createInvoice` ile aynı motor.
+     * `PurchaseItems.MaterialId` = Netsis stok kodu (TBLSTSABIT.STOK_KODU) olmalı.
+     */
+    async syncFidanxPurchaseToNetsis(tenantId: string, purchaseId: string) {
+        const pid = parseInt(purchaseId, 10);
+        if (Number.isNaN(pid)) return { ok: false, reason: 'Geçersiz satınalma id' };
+
+        const pr = await this.db.query(`SELECT * FROM Purchases WHERE Id = @id AND TenantId = @t`, { id: pid, t: tenantId });
+        if (!pr?.length) return { ok: false, reason: 'Satınalma bulunamadı' };
+
+        const items = await this.db.query(
+            `SELECT MaterialId, Amount, UnitPrice FROM PurchaseItems WHERE PurchaseId = @pid`,
+            { pid }
+        );
+        if (!items?.length) return { ok: false, reason: 'Satınalma kalemi yok' };
+
+        const purchase = pr[0];
+        let cariKodu = '';
+        const supplierKey = purchase.SupplierId != null ? String(purchase.SupplierId).trim() : '';
+        if (supplierKey) {
+            const c = await this.db.query(
+                `SELECT TOP 1 ErpCode FROM Customers WHERE TenantId = @t AND (CAST(Id AS NVARCHAR(50)) = @sid OR RTRIM(ErpCode) = RTRIM(@sid))`,
+                { t: tenantId, sid: supplierKey }
+            );
+            if (c?.length) cariKodu = String(c[0].ErpCode || '').trim();
+        }
+        if (!cariKodu) {
+            this.logger.warn(`syncFidanxPurchaseToNetsis: tedarikçi cari yok (PurchaseId=${purchaseId})`);
+            return { ok: false, reason: 'Tedarikçi için Netsis cari kodu yok. Customers kaydında ErpCode (320-...) tanımlı olmalı.' };
+        }
+
+        const mapped = (items as any[])
+            .map((i) => ({
+                stokKodu: String(i.MaterialId || '').trim(),
+                miktar: Number(i.Amount) || 0,
+                birimFiyat: Number(i.UnitPrice) || 0,
+                kdvOrani: 20
+            }))
+            .filter((i) => i.stokKodu && i.miktar > 0);
+
+        if (!mapped.length) {
+            return { ok: false, reason: 'Geçerli stok kalemi yok. MaterialId alanına Netsis STOK_KODU yazılmalı.' };
+        }
+
+        const inv = await this.createInvoice({
+            faturaTuru: '2',
+            cariKodu,
+            aciklama: `FidanX satınalma #${purchaseId}`,
+            items: mapped
+        });
+
+        return { ok: true, ...inv };
+    }
+
+    /**
+     * Eski `Sales` tablosu kalemsiz; Netsis faturası için Satışlar sayfası / POST /netsis/invoices kullanılmalı.
+     */
+    async syncFidanxSaleToNetsis(tenantId: string, saleId: string) {
+        const sid = parseInt(saleId, 10);
+        const rows = await this.db.query(`SELECT * FROM Sales WHERE Id = @id AND TenantId = @t`, { id: sid, t: tenantId });
+        if (!rows?.length) return { ok: false, reason: 'Satış kaydı bulunamadı' };
+        this.logger.warn(`syncFidanxSaleToNetsis: Sales #${saleId} için kalem tablosu yok; ana yol Satışlar → Netsis faturası.`);
+        return {
+            ok: false,
+            reason: 'Sales kaydında fatura kalemi tanımlı değil. Satışlar sayfasından Netsis satış faturası kesin.'
+        };
+    }
 }

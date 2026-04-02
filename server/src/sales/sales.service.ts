@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { IntegrationService } from '../integration/integration.service';
+import { NetsisInvoicesService } from '../netsis/invoices/invoices.service';
 
 @Injectable()
 export class SalesService {
     constructor(
         private db: DatabaseService,
-        private integration: IntegrationService
+        private netsisInvoices: NetsisInvoicesService
     ) { }
 
     async createInvoice(tenantId: string, data: { customerId: string, totalAmount: number, invoiceNo: string }) {
@@ -24,8 +24,8 @@ export class SalesService {
 
         const saleId = results[0].Id;
 
-        this.integration.pushInvoice(tenantId, saleId.toString(), 'SALES').catch(err => {
-            console.error('Failed to sync invoice to ERP:', err);
+        this.netsisInvoices.syncFidanxSaleToNetsis(tenantId, saleId.toString()).catch((err) => {
+            console.error('Netsis satış senkron bilgisi:', err);
         });
 
         return { id: saleId.toString(), ...data, isSynced: false, date: new Date() };

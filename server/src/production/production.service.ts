@@ -1,13 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { ActivityService } from '../activity/activity.service';
+import { NetsisStocksService } from '../netsis/stocks/stocks.service';
 
 @Injectable()
 export class ProductionService {
+    private readonly logger = new Logger(ProductionService.name);
+
     constructor(
         private db: DatabaseService,
         @Inject(forwardRef(() => ActivityService))
-        private activity: ActivityService
+        private activity: ActivityService,
+        private netsisStocks: NetsisStocksService
     ) { }
 
     // 1. Üretim Partisi Oluşturma (Alış Faturasından veya Manuel)
@@ -187,10 +191,14 @@ export class ProductionService {
             OUTPUT INSERTED.Id
             VALUES (@tenantId, @partiNo, @netsisStokKodu, @bitkiAdi, @safha, @konum, @miktar, @miktar, @yeniBirimMaliyet, @yeniToplamMaliyet, @kaynakPartiId)`;
 
+        const hedefNetsisKod = (data.hedefNetsisStokKodu && String(data.hedefNetsisStokKodu).trim())
+            ? String(data.hedefNetsisStokKodu).trim()
+            : kaynakParti.NetsisStokKodu;
+
         const yeniPartiResult = await this.db.query(insertSql, {
             tenantId,
             partiNo: yeniPartiNo,
-            netsisStokKodu: kaynakParti.NetsisStokKodu,
+            netsisStokKodu: hedefNetsisKod,
             bitkiAdi: kaynakParti.BitkiAdi,
             safha: data.hedefSafha,
             konum: hedeflenenKonum,
@@ -228,7 +236,25 @@ export class ProductionService {
             hedefSafha: data.hedefSafha
         });
 
-        return { success: true, yeniPartiId, yeniPartiNo };
+        let netsisTransfer: { fisNo?: string; error?: string } | null = null;
+        const kaynakSk = String(kaynakParti.NetsisStokKodu || '').trim();
+        const hedefSk = String(hedefNetsisKod || '').trim();
+        if (kaynakSk && hedefSk && kaynakSk !== hedefSk) {
+            try {
+                const tr = await this.netsisStocks.transferBetweenStocks({
+                    kaynakStokKodu: kaynakSk,
+                    hedefStokKodu: hedefSk,
+                    miktar,
+                    aciklama: `FidanX şaşırtma ${kaynakParti.PartiNo} → ${yeniPartiNo}`
+                });
+                netsisTransfer = { fisNo: tr?.fisNo };
+            } catch (e: any) {
+                this.logger.warn(`Netsis stok transferi başarısız (${kaynakSk}→${hedefSk}): ${e?.message || e}`);
+                netsisTransfer = { error: e?.message || String(e) };
+            }
+        }
+
+        return { success: true, yeniPartiId, yeniPartiNo, netsisTransfer };
     }
 
     // 5. Günlük İşlem Kaydetme (Toplu Dağıtım)
@@ -332,10 +358,13 @@ export class ProductionService {
             kM: kalanMiktar, yT: yeniToplamMaliyet, ySA: yeniSatilanAdet, pId: parti.Id
         });
 
+        const birimFiyat = Number(data.birimFiyat) || 0;
+        const satisGeliri = satisAdet * birimFiyat;
         await this.addOperationLog(tenantId, parti.Id, {
             islemTipi: 'SATIS',
-            aciklama: `${satisAdet} adet ürün satıldı. Fiyat/Adet: ₺${data.birimFiyat || 0}`,
-            miktar: satisAdet
+            aciklama: `${satisAdet} adet ürün satıldı. Birim fiyat: ₺${birimFiyat.toFixed(2)} | Ciro: ₺${satisGeliri.toFixed(2)}`,
+            miktar: satisAdet,
+            maliyetTutar: satisGeliri
         });
 
         return { success: true, kalanMiktar };
@@ -417,7 +446,7 @@ export class ProductionService {
             const b = rows[0];
 
             const ops = await this.db.query(
-                `SELECT * FROM ProductionHistory WHERE BatchId = @bId ORDER BY IslemTarihi ASC`,
+                `SELECT * FROM FDX_PartiIslemleri WHERE PartiId = @bId ORDER BY IslemTarihi ASC`,
                 { bId: b.Id }
             );
 
@@ -465,13 +494,12 @@ export class ProductionService {
         const toplamSatilan = all.reduce((s: number, b: any) => s + (b.satilanMiktar || 0), 0);
 
         const salesOps = await this.db.query(
-            `SELECT h.* FROM ProductionHistory h
-             JOIN FDX_BitkiPartileri b ON h.BatchId = b.Id
+            `SELECT h.MaliyetTutar, h.Miktar, h.IslemTipi FROM FDX_PartiIslemleri h
+             INNER JOIN FDX_BitkiPartileri b ON h.PartiId = b.Id
              WHERE b.TenantId = @tenantId AND h.IslemTipi = 'SATIS'`, { tenantId }
         );
         const toplamSatisGeliri = (salesOps || []).reduce((s: number, op: any) => {
-            const fiyat = op.MaliyetTutar || 0;
-            return s + fiyat;
+            return s + (Number(op.MaliyetTutar) || 0);
         }, 0);
 
         const bitkiBazli: Record<string, { bitkiAdi: string; adet: number; maliyet: number; satilan: number; fire: number }> = {};

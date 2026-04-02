@@ -60,6 +60,78 @@ export class NetsisStocksService {
         });
     }
 
+    /**
+     * Aynı fiş numarasıyla kaynak stoktan çıkış (C), hedef stoğa giriş (G).
+     * Şaşırtmada "leylendi fidan" → "leylendi 2L" gibi farklı Netsis kartları arası miktar aktarımı.
+     */
+    async transferBetweenStocks(data: {
+        kaynakStokKodu: string;
+        hedefStokKodu: string;
+        miktar: number;
+        aciklama?: string;
+        tarih?: string;
+    }) {
+        const kaynak = String(data.kaynakStokKodu || '').trim();
+        const hedef = String(data.hedefStokKodu || '').trim();
+        const miktar = Number(data.miktar) || 0;
+        if (!kaynak || !hedef || miktar <= 0) {
+            throw new BadRequestException('Kaynak/hedef stok kodu ve pozitif miktar gerekli.');
+        }
+        if (kaynak === hedef) {
+            throw new BadRequestException('Kaynak ve hedef stok aynı olamaz.');
+        }
+
+        const fisNo = await this.generateTransferFisNo();
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+        const aciklama = data.aciklama || 'FidanX stok transferi';
+
+        return this.db.executeTransaction(async (tx) => {
+            const base = { fisno: fisNo, tarih, aciklama, ftirsip: '0', htur: 10, nf: 0, tutar: 0 };
+
+            const outReq = this.db.createRequest(tx, {
+                ...base,
+                stokKodu: kaynak,
+                gckod: 'C',
+                miktar
+            });
+            await outReq.query(`
+                INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR)
+                VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @nf, @nf, @tutar, @tarih, @aciklama, @htur)
+            `);
+
+            const inReq = this.db.createRequest(tx, {
+                ...base,
+                stokKodu: hedef,
+                gckod: 'G',
+                miktar
+            });
+            await inReq.query(`
+                INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR)
+                VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @nf, @nf, @tutar, @tarih, @aciklama, @htur)
+            `);
+
+            this.logger.log(`Netsis stok transferi: ${fisNo} ${kaynak} → ${hedef} (${miktar} ad)`);
+            return { success: true, fisNo, kaynak, hedef, miktar };
+        });
+    }
+
+    private async generateTransferFisNo(): Promise<string> {
+        const yil = new Date().getFullYear();
+        const prefix = `TRF${yil}`;
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FISNO FROM TBLSTHAR WITH (NOLOCK)
+            WHERE FISNO LIKE @pattern
+            ORDER BY FISNO DESC
+        `, { pattern: `${prefix}%` });
+
+        if (sonuc.length === 0) return `${prefix}00000001`;
+        const lastNo = sonuc[0].FISNO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}00000001`;
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${nextNum}`;
+    }
+
     private async generateFisNo(): Promise<string> {
         const yil = new Date().getFullYear();
         const prefix = `SRF${yil}`;

@@ -127,24 +127,16 @@ export class IntegrationService {
         }
     }
 
+    /**
+     * @deprecated Netsis fatura yazımı `NetsisInvoicesService.createInvoice` ve
+     * `syncFidanxPurchaseToNetsis` ile yapılır. Eski çağrılar için log bırakıldı.
+     */
     async pushInvoice(tenantId: string, invoiceId: string, type: 'PURCHASE' | 'SALES') {
-        const config = await this.getNetsisConfig(tenantId);
-        if (!config || config.erpType !== 'NETSIS' || !config.sqlServerIp) return;
-
-        this.logger.log(`Kiracı ${tenantId} için ${invoiceId} nolu ${type} faturası Netsis'e gönderiliyor...`);
-
-        try {
-            const table = type === 'SALES' ? 'Sales' : 'Purchases';
-            const invoice = await this.db.query(`SELECT * FROM ${table} WHERE Id = @id`, { id: invoiceId });
-            if (invoice.length === 0) return;
-
-            // TODO: Netsis'e yazma mantığı: TBLSTHAR ve TBLFATUIRS tablolarına kayıt
-            // Bu kısım Netsis veritabanı yapısına (cari_kod, stok_kod, miktar, fiyat) göre SQL Transaction ile yapılmalıdır.
-
-            this.logger.log(`Netsis Kaydı Başarılı: ${invoice[0].InvoiceNo || invoice[0].Id}`);
-        } catch (err) {
-            this.logger.error(`Netsis fatura gönderim hatası:`, err);
-        }
+        this.logger.warn(
+            `pushInvoice kullanımdan kalktı: ${type} #${invoiceId}. ` +
+            `GET /api/netsis/invoices/push?tenantId=${tenantId}&invoiceId=${invoiceId}&type=${type} veya createInvoice kullanın.`
+        );
+        return { deprecated: true, tenantId, invoiceId, type };
     }
 
     async getNextErpCode(tenantId: string, module: 'CUSTOMER' | 'STOCK', prefix: string) {

@@ -45,4 +45,16 @@ export class NetsisStocksController {
     }) {
         return this.stocksService.createConsumption(body);
     }
+
+    /** Kaynak stoktan çıkış, hedef stoğa giriş (şaşırtma / saksı değişimi). */
+    @Post('transfer-sku')
+    async transferSku(@Body() body: {
+        kaynakStokKodu: string;
+        hedefStokKodu: string;
+        miktar: number;
+        aciklama?: string;
+        tarih?: string;
+    }) {
+        return this.stocksService.transferBetweenStocks(body);
+    }
 }

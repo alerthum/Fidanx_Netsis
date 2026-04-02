@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { ActivityService } from '../activity/activity.service';
-import { IntegrationService } from '../integration/integration.service';
+import { NetsisInvoicesService } from '../netsis/invoices/invoices.service';
 
 @Injectable()
 export class PurchasesService {
@@ -9,7 +9,7 @@ export class PurchasesService {
     constructor(
         private db: DatabaseService,
         private activity: ActivityService,
-        private integration: IntegrationService
+        private netsisInvoices: NetsisInvoicesService
     ) { }
 
     async create(tenantId: string, data: any) {
@@ -29,13 +29,6 @@ export class PurchasesService {
 
         const purchaseId = results[0].Id;
 
-        // IntegrationService üzerinden Netsis'e gönder
-        try {
-            await this.integration.pushInvoice(tenantId, purchaseId.toString(), 'PURCHASE');
-        } catch (err) {
-            this.logger.error('Netsis push failed:', err);
-        }
-
         if (data.items && Array.isArray(data.items)) {
             for (const item of data.items) {
                 await this.db.query(`INSERT INTO PurchaseItems (PurchaseId, MaterialId, Amount, UnitPrice) VALUES (@pId, @mId, @amount, @price)`, {
@@ -45,6 +38,15 @@ export class PurchasesService {
                     price: Number(item.unitPrice) || 0
                 });
             }
+        }
+
+        try {
+            const sync = await this.netsisInvoices.syncFidanxPurchaseToNetsis(tenantId, purchaseId.toString());
+            if (!sync?.ok) {
+                this.logger.warn(`Netsis alış faturası oluşturulamadı: ${sync?.reason || 'bilinmeyen'}`);
+            }
+        } catch (err) {
+            this.logger.error('Netsis alış faturası senkron hatası:', err);
         }
 
         await this.activity.log(tenantId, {

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SalesController } from './sales.controller';
 import { SalesService } from './sales.service';
-import { IntegrationModule } from '../integration/integration.module';
+import { NetsisModule } from '../netsis/netsis.module';
 
 @Module({
-  imports: [IntegrationModule],
+  imports: [NetsisModule],
   controllers: [SalesController],
   providers: [SalesService],
 })

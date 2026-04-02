@@ -1,12 +1,10 @@
 import { Controller, Get, Post, Param, Query, Put, Body } from '@nestjs/common';
 import { NetsisInvoicesService } from './invoices.service';
-import { IntegrationService } from '../../integration/integration.service';
 
 @Controller('netsis/invoices')
 export class NetsisInvoicesController {
     constructor(
         private readonly invoicesService: NetsisInvoicesService,
-        private readonly integration: IntegrationService
     ) { }
 
     @Get()
@@ -35,13 +33,18 @@ export class NetsisInvoicesController {
         return this.invoicesService.getShipmentSummary(startDate, endDate);
     }
 
+    /** Eski FidanX Purchases/Sales kayıtlarını Netsis faturalarına bağlamak için (createInvoice ile aynı mantık). */
     @Get('push')
     async pushInvoice(
         @Query('tenantId') tenantId: string,
         @Query('invoiceId') invoiceId: string,
         @Query('type') type: 'PURCHASE' | 'SALES'
     ) {
-        return this.integration.pushInvoice(tenantId || 'demo-tenant', invoiceId, type);
+        const t = tenantId || 'demo-tenant';
+        if (type === 'PURCHASE') {
+            return this.invoicesService.syncFidanxPurchaseToNetsis(t, invoiceId);
+        }
+        return this.invoicesService.syncFidanxSaleToNetsis(t, invoiceId);
     }
 
     @Post()
