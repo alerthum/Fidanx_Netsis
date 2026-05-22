@@ -435,6 +435,133 @@ export class NetsisStocksService {
         });
     }
 
+    /**
+     * Netsis Serbest Üretim Sonu Kaydı (SÜSK)
+     * Üretim Giriş (G - HTUR:4) ve Sarf Çıkış (C - HTUR:3) işlemlerini tek fiş altında toplar.
+     */
+    async createSuskKaydi(data: {
+        kaynakStokKodu: string;
+        hedefStokKodu: string;
+        miktar: number;
+        yeniPartiNo: string;
+        eskiPartiNo?: string;
+        fisNo?: string;
+        aciklama?: string;
+        tarih?: string;
+        kaynakBirimMaliyet?: number;
+        hedefBirimMaliyet?: number;
+        yardimciMalzemeler?: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
+        projeKodu?: string;
+    }) {
+        const kaynak = String(data.kaynakStokKodu || '').trim();
+        const hedef = String(data.hedefStokKodu || '').trim();
+        const yeniParti = String(data.yeniPartiNo || '').trim();
+        const eskiParti = String(data.eskiPartiNo || data.yeniPartiNo || '').trim();
+        const miktar = Number(data.miktar) || 0;
+
+        if (!kaynak || !hedef || !yeniParti || miktar <= 0) {
+            throw new BadRequestException('Kaynak/hedef stok kodu, yeni parti no ve pozitif miktar gerekli.');
+        }
+
+        await this.ensureStockCard(kaynak);
+        await this.ensureStockCard(hedef);
+        for (const item of data.yardimciMalzemeler || []) {
+            await this.ensureStockCard(item.stokKodu);
+        }
+
+        const fisNo = data.fisNo || await this.generateSuskFisNo();
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+        const aciklama = data.aciklama || `FidanX SÜSK ${yeniParti}`;
+
+        return this.db.executeTransaction(async (tx) => {
+            const hareketler: Array<{ role: string; stokKodu: string; inckeyNo: number; gckod: 'G' | 'C'; miktar: number }> = [];
+
+            const insertMovement = async (role: string, stokKodu: string, gckod: 'G' | 'C', movMiktar: number, birimFiyat: number, seriNo: string, htur: number) => {
+                const req = this.db.createRequest(tx, {
+                    fisno: fisNo,
+                    stokKodu,
+                    ftirsip: '0',
+                    gckod,
+                    miktar: movMiktar,
+                    birimFiyat,
+                    tutar: movMiktar * birimFiyat,
+                    tarih,
+                    aciklama,
+                    htur,
+                    projeKodu: data.projeKodu || ''
+                });
+                const result = await req.query(`
+                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR, PROJE_KODU)
+                    OUTPUT INSERTED.INCKEYNO
+                    VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur, @projeKodu)
+                `);
+                const inckeyNo = result.recordset?.[0]?.INCKEYNO;
+                if (!inckeyNo) throw new BadRequestException('TBLSTHAR hareket anahtarı alınamadı.');
+
+                if (seriNo) {
+                    const seriReq = this.db.createRequest(tx, {
+                        straInc: inckeyNo,
+                        stokKodu,
+                        seriNo,
+                        gckod,
+                        miktar: movMiktar,
+                        depoKodu: 0
+                    });
+                    await seriReq.query(`
+                        INSERT INTO TBLSERITRA (STRA_INC, STOK_KODU, SERI_NO, GCKOD, MIKTAR, DEPOKOD)
+                        VALUES (@straInc, @stokKodu, @seriNo, @gckod, @miktar, @depoKodu)
+                    `);
+                }
+
+                hareketler.push({ role, stokKodu, inckeyNo, gckod, miktar: movMiktar });
+            };
+
+            // 1. Kaynak bitkinin sarfı (Çıkış, HTUR: 3, Eski Parti No)
+            await insertMovement('kaynak-sarf', kaynak, 'C', miktar, Number(data.kaynakBirimMaliyet) || 0, eskiParti, 3);
+            
+            // 2. Yardımcı malzemelerin (Saksı, Torf vb.) sarfı (Çıkış, HTUR: 3, partisiz)
+            for (const item of data.yardimciMalzemeler || []) {
+                const matMiktar = Number(item.miktar) || 0;
+                if (!item.stokKodu || matMiktar <= 0) continue;
+                // Yardımcı malzemelerde parti takibi yok sayıyoruz
+                await insertMovement('yardimci-sarf', String(item.stokKodu).trim(), 'C', matMiktar, Number(item.birimFiyat) || 0, '', 3);
+            }
+            
+            // 3. Yeni saksılanmış bitkinin üretimi (Giriş, HTUR: 4, Yeni Parti No)
+            await insertMovement('hedef-uretim', hedef, 'G', miktar, Number(data.hedefBirimMaliyet) || 0, yeniParti, 4);
+
+            const uretim = hareketler.find(h => h.role === 'hedef-uretim');
+            this.logger.log(`Netsis SÜSK tamamlandı: ${fisNo} ${kaynak} -> ${hedef} (${miktar}) yeniLot=${yeniParti}`);
+            return {
+                success: true,
+                fisNo,
+                yeniPartiNo: yeniParti,
+                kaynak,
+                hedef,
+                miktar,
+                uretimInckeyNo: uretim?.inckeyNo,
+                hareketler
+            };
+        });
+    }
+
+    private async generateSuskFisNo(): Promise<string> {
+        const yil = new Date().getFullYear();
+        const prefix = `SSK${yil}`;
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FISNO FROM TBLSTHAR WITH (NOLOCK)
+            WHERE FISNO LIKE @pattern
+            ORDER BY FISNO DESC
+        `, { pattern: `${prefix}%` });
+
+        if (sonuc.length === 0) return `${prefix}00000001`;
+        const lastNo = sonuc[0].FISNO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}00000001`;
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${nextNum}`;
+    }
+
     private async generateTransferFisNo(): Promise<string> {
         const yil = new Date().getFullYear();
         const prefix = `TRF${yil}`;

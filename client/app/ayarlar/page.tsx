@@ -30,6 +30,7 @@ export default function AyarlarPage() {
     const [isBackingUp, setIsBackingUp] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [backupName, setBackupName] = useState('');
+    const [isBatchRequired, setIsBatchRequired] = useState(false);
 
     const API_URL = '/api';
 
@@ -58,6 +59,7 @@ export default function AyarlarPage() {
             if (data.settings?.expenseTypes) setExpenseTypes(data.settings.expenseTypes);
             if (data.settings?.measurementParams) setMeasurementParams(data.settings.measurementParams);
             if (Array.isArray(data.settings?.invoiceCategories)) setInvoiceCategories(data.settings.invoiceCategories);
+            if (data.settings?.isBatchRequired !== undefined) setIsBatchRequired(data.settings.isBatchRequired);
         } catch (err) { }
     };
 
@@ -74,7 +76,7 @@ export default function AyarlarPage() {
 
 
 
-    const handleSaveSettings = async (customCategories?: string[], customStages?: string[], customUsers?: any[], customLocations?: string[], customExpenseTypes?: string[], customMeasurementParams?: string[], customInvoiceCategories?: { id: string; label: string }[]) => {
+    const handleSaveSettings = async (customCategories?: string[], customStages?: string[], customUsers?: any[], customLocations?: string[], customExpenseTypes?: string[], customMeasurementParams?: string[], customInvoiceCategories?: { id: string; label: string }[], customIsBatchRequired?: boolean) => {
         setIsSaving(true);
         try {
             const payload = {
@@ -84,7 +86,8 @@ export default function AyarlarPage() {
                 locations: customLocations || locations,
                 expenseTypes: customExpenseTypes || expenseTypes,
                 measurementParams: customMeasurementParams || measurementParams,
-                invoiceCategories: customInvoiceCategories ?? invoiceCategories
+                invoiceCategories: customInvoiceCategories ?? invoiceCategories,
+                isBatchRequired: customIsBatchRequired !== undefined ? customIsBatchRequired : isBatchRequired
             };
 
             const res = await fetch(`${API_URL}/tenants/demo-tenant/settings`, {
@@ -421,6 +424,27 @@ export default function AyarlarPage() {
 
                     {/* Parametreler */}
                     <div className="space-y-8">
+                        {/* Sistem Ayarları Ekstra */}
+                        <div className="fx-card p-8 space-y-6 bg-amber-50/30 border border-amber-100">
+                            <h3 className="font-black text-amber-700 uppercase text-[10px] tracking-[0.2em] mb-4">ERP & Operasyon Parametreleri</h3>
+                            <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-amber-200 shadow-sm">
+                                <input 
+                                    type="checkbox" 
+                                    id="isBatchRequired"
+                                    checked={isBatchRequired}
+                                    onChange={(e) => {
+                                        setIsBatchRequired(e.target.checked);
+                                        handleSaveSettings(undefined, undefined, undefined, undefined, undefined, undefined, undefined, e.target.checked);
+                                    }}
+                                    className="w-5 h-5 accent-amber-600 rounded cursor-pointer"
+                                />
+                                <div>
+                                    <label htmlFor="isBatchRequired" className="font-bold text-slate-700 text-sm cursor-pointer select-none">Bitkiler İçin Parti No Girişi Zorunlu Olsun</label>
+                                    <p className="text-xs text-slate-500 font-medium">Bu seçenek aktifken; satış, üretim ve sevkiyat işlemlerinde bitkiler (150-01) için mutlaka parti seçilmesi zorunlu hale gelir. Geçmiş faturaları girerken kapalı tutun.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="fx-card p-8 space-y-6">
                             <h3 className="font-black fx-text-secondary uppercase text-[10px] tracking-[0.2em] mb-4">Üretim Safhaları (Dinamik Şaşırtma)</h3>
                             <div className="flex flex-wrap gap-2">

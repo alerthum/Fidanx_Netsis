@@ -321,19 +321,26 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     <div className="flex-1">
                                         <h5 className="text-base font-black text-slate-800 mb-2 flex items-center gap-2 text-amber-600">🔄 Şaşırtma (Büyük Saksıya Geçiş)</h5>
                                         <p className="text-sm text-slate-600 mb-3">
-                                            Bitkiler büyüdü. Sadece <b>200 adeti</b> 2 Litrelik saksılara geçirildi (Şaşırtma işlemi yapıldı).<br />
-                                            Ek olarak 200 saksı + torf + işçilik maliyeti olan toplam <b>1.400₺</b> masraf girildi.<br />
+                                            Bitkiler büyüdü. Sadece <b>200 adeti</b> Viyolden 2 Litrelik saksılara geçirildi (Şaşırtma yapıldı).<br />
+                                            <b>Sistem bu esnada stok değiştirdi!</b> Ürün artık "Mavi Servi - Viyol" değil, "Mavi Servi - 2L Saksı" oldu.<br />
+                                            Ek olarak 200 adet boş saksı + torf + işçilik maliyeti olan toplam <b>1.400₺</b> masraf girildi.<br />
                                             Bu masraf sadece yeni ayrılan bu 200 adet için geçerlidir (<span className="text-red-500 font-bold bg-red-50 px-1 rounded">+7.00₺/adet</span>). Ana parti miktarı 800'e düştü.
                                         </p>
                                         <div className="bg-amber-50 border border-amber-100 text-xs p-3 rounded-xl flex flex-col sm:flex-row gap-3 justify-between font-mono">
                                             <div className="flex justify-between flex-1">
-                                                <span className="text-slate-500">Kalan LOT-001 (Adet: 800)</span>
-                                                <span className="font-bold text-slate-600">Maliyet: 8.00 ₺ (Değişmedi)</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-slate-500 font-bold">Kalan LOT-001 (Adet: 800)</span>
+                                                    <span className="text-slate-400 text-[10px]">Stok: 150-01-MVS-01 (Mavi Servi - Viyol)</span>
+                                                </div>
+                                                <span className="font-bold text-slate-600 self-center">Maliyet: 8.00 ₺ (Değişmedi)</span>
                                             </div>
-                                            <div className="hidden sm:block border-l border-amber-200 h-4"></div>
+                                            <div className="hidden sm:block border-l border-amber-200 h-8"></div>
                                             <div className="flex justify-between flex-1">
-                                                <span className="text-amber-700 font-bold">Yeni LOT-002 (Adet: 200)</span>
-                                                <span className="font-bold text-amber-700">Yeni Maliyet: <span className="line-through opacity-50 mr-2">8.00₺</span> 15.00 ₺</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-amber-700 font-bold">Yeni LOT-002 (Adet: 200)</span>
+                                                    <span className="text-amber-600 text-[10px] bg-amber-100 px-1 py-0.5 rounded w-max mt-0.5 border border-amber-200">Yeni Stok: 150-01-MVS-02 (Mavi Servi - 2L Saksı)</span>
+                                                </div>
+                                                <span className="font-bold text-amber-700 self-center">Yeni Maliyet: <span className="line-through opacity-50 mr-2">8.00₺</span> 15.00 ₺</span>
                                             </div>
                                         </div>
                                     </div>
@@ -441,6 +448,17 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                             'Netsis malzeme arama & sepet sistemi ✅',
                                             'Sarf fişi PROJE_KODU ile konum bazlı Netsis kaydı ✅',
                                             'FidanX tarafında partilere orantısal maliyet dağıtımı ✅',
+                                            'Netsis Serbest Üretim Sonu (SÜSK) Entegrasyonu (HTUR 3 & 4) ✅',
+                                            'Satış/Şaşırtma için "Parti No Zorunlu" parametrik yapı (Ayarlar) ✅',
+                                        ]
+                                    },
+                                    {
+                                        faz: 'Faz G', title: 'Finans & Satınalma Optimizasyonu', status: 'active', color: 'teal',
+                                        items: [
+                                            'Kasa, Banka ve Çek/Senet güncel bakiye/risk raporları ✅',
+                                            'Nakit Akış Projeksiyonu (Vade bazlı tahsilat/ödeme) ✅',
+                                            'Satınalma modülü modern kurumsal UI/UX dönüşümü ✅',
+                                            'Gider fişleri ve satın alma siparişlerinin entegre görüntülenmesi',
                                         ]
                                     },
                                 ].map((faz) => (
@@ -488,6 +506,13 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '22.05.2026', desc: 'Faz G: Ana Dashboard (page.tsx) ekranına Finansal Durum & Nakit Akış özeti eklendi. Netsis (Kasa/Banka/Çek) canlı entegrasyon.', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz G: Satınalma modülü FidanX kurumsal konseptine (rounded-3xl, emerald/orange palet, dark footer) modernize edildi', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz G: Kılavuz güncellendi, yeni Finans ve Satınalma fazı eklendi', type: 'plan' },
+                                            { date: '22.05.2026', desc: 'Faz F: Netsis Serbest Üretim Sonu (SÜSK) Entegrasyonu – Şaşırtmada kaynak sarfı ve hedef üretimi', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Ayarlar: Parti No zorunluluğu parametresi (isBatchRequired) eklendi', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Satış Modülü: Parti no validasyonu dinamik ayar parametresine (isBatchRequired) bağlandı', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'UI/UX: Modallar turuncu/yeşil FidanX kurumsal renklerine ve font ailesine güncellendi', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz F: Toplu Sarf Fişi Entegrasyonu – Operasyon sayfasına "📦 Toplu Sarf" sekmesi eklendi. Netsis\'ten malzeme arama, sepete ekleme, konum seçimi ve tek tuşla Netsis sarf fişi + FidanX maliyet dağıtımı', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz F: NetsisStocksService.createConsumption → PROJE_KODU (sera/konum) desteği eklendi', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz F: ProductionService.createBulkConsumption – Netsis sarf + FidanX distributeOperationCost + FDX_Giderler atomik orkestrasyon', type: 'feature' },

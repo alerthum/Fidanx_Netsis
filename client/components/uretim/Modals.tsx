@@ -155,8 +155,8 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                         onChange={e => setForm({ ...form, hedefNetsisStokKodu: e.target.value })}
                         className="font-mono text-sm"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                        Farklı kod girerseniz Netsis’te kaynak stoktan düşer, hedef stoğa üretim girişi yazılır (aynı adet).
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium leading-relaxed">
+                        Farklı kod girerseniz arka planda <b>SÜSK (Serbest Üretim Sonu Kaydı)</b> oluşur. Kaynak stok ve reçetedeki saksı/torf sarf edilir (çıkış), buraya yazacağınız hedef stoğa üretim girişi yapılır.
                     </p>
                 </div>
                 {recipes.length > 0 && (

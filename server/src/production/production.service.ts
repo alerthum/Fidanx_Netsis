@@ -163,11 +163,17 @@ export class ProductionService {
 
         let recipeCost = 0;
         let recipeInfo = '';
+        let yardimciMalzemeler: Array<{ stokKodu: string; miktar: number; birimFiyat: number }> = [];
         if (data.recipeId) {
             const recItems = await this.db.query(`SELECT MaterialCode, MaterialName, Amount, Unit, UnitPrice FROM RecipeItems WHERE RecipeId = @recipeId`, { recipeId: data.recipeId }) as any[];
             if (Array.isArray(recItems)) {
                 recipeCost = recItems.reduce((sum, i) => sum + (i.Amount || 0) * (i.UnitPrice || 0), 0);
                 recipeInfo = recItems.map(i => `${i.MaterialName || i.MaterialCode} (${i.Amount} ${i.Unit})`).join(', ');
+                yardimciMalzemeler = recItems.map(i => ({ 
+                    stokKodu: i.MaterialCode, 
+                    miktar: (i.Amount || 0) * miktar, // Reçetede miktar 1 adet bitki içindir, toplam için çarpılır
+                    birimFiyat: i.UnitPrice || 0 
+                }));
             }
         }
 
@@ -241,15 +247,22 @@ export class ProductionService {
         const hedefSk = String(hedefNetsisKod || '').trim();
         if (kaynakSk && hedefSk && kaynakSk !== hedefSk) {
             try {
-                const tr = await this.netsisStocks.transferBetweenStocks({
+                // Netsis Serbest Üretim Sonu Kaydı (SÜSK) - HTUR 3 ve 4 ile TBLSTHAR ve TBLSERITRA yazılır
+                const tr = await this.netsisStocks.createSuskKaydi({
                     kaynakStokKodu: kaynakSk,
                     hedefStokKodu: hedefSk,
                     miktar,
-                    aciklama: `FidanX şaşırtma ${kaynakParti.PartiNo} → ${yeniPartiNo}`
+                    yeniPartiNo: yeniPartiNo,
+                    eskiPartiNo: kaynakParti.PartiNo,
+                    aciklama: `FidanX şaşırtma SÜSK ${kaynakParti.PartiNo} → ${yeniPartiNo}`,
+                    kaynakBirimMaliyet: kaynakBirimMaliyet,
+                    hedefBirimMaliyet: yeniBirimMaliyet,
+                    yardimciMalzemeler: yardimciMalzemeler,
+                    projeKodu: hedeflenenKonum // Konumları proje kodu olarak takip ediyoruz
                 });
                 netsisTransfer = { fisNo: tr?.fisNo };
             } catch (e: any) {
-                this.logger.warn(`Netsis stok transferi başarısız (${kaynakSk}→${hedefSk}): ${e?.message || e}`);
+                this.logger.warn(`Netsis SÜSK başarısız (${kaynakSk}→${hedefSk}): ${e?.message || e}`);
                 netsisTransfer = { error: e?.message || String(e) };
             }
         }

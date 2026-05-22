@@ -34,6 +34,7 @@ export default function SatislarPage() {
         unitPrice: 0,
         partiNo: ''
     });
+    const [isBatchRequired, setIsBatchRequired] = useState(false);
     const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
     const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
@@ -75,11 +76,24 @@ export default function SatislarPage() {
     const API_URL = '/api';
 
     React.useEffect(() => {
+        fetchSettings();
         fetchCustomers();
         fetchOrders();
         fetchStocks();
         fetchBatches();
     }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch(`${API_URL}/tenants/demo-tenant`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.settings?.isBatchRequired !== undefined) {
+                    setIsBatchRequired(data.settings.isBatchRequired);
+                }
+            }
+        } catch (err) { }
+    };
 
     const fetchStocks = async () => {
         try {
@@ -250,7 +264,7 @@ export default function SatislarPage() {
         if (!tempItem.materialId || tempItem.amount <= 0) return alert('Lütfen malzeme ve miktar seçin.');
 
         const isPlant = tempItem.materialId.startsWith('150');
-        if (isPlant && !tempItem.partiNo) {
+        if (isBatchRequired && isPlant && !tempItem.partiNo) {
             return alert('Lütfen bu bitki için satılacak parti numarasını seçin!');
         }
 
@@ -400,7 +414,7 @@ export default function SatislarPage() {
         if (!tempItem.materialId || tempItem.amount <= 0) return alert('Lütfen malzeme ve miktar seçin.');
 
         const isPlant = tempItem.materialId.startsWith('150');
-        if (isPlant && !tempItem.partiNo) {
+        if (isBatchRequired && isPlant && !tempItem.partiNo) {
             return alert('Lütfen bu bitki için satılacak parti numarasını seçin!');
         }
 

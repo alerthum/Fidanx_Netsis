@@ -16,9 +16,37 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [healthStatus, setHealthStatus] = useState({ healthy: 0, observation: 0, critical: 0 });
   const [regionalSales, setRegionalSales] = useState<Record<string, number>>({});
+  const [financeStats, setFinanceStats] = useState({
+    bank: 0, cash: 0, musteriCekleri: 0, borcCekleri: 0, netLikit: 0, projection: [] as any[]
+  });
   const API_URL = '/api';
 
   const [tempStats, setTempStats] = useState<any[]>([]);
+
+  const fetchFinanceStats = async () => {
+    try {
+      const [bankRes, cashRes, musteriRes, borcRes, projRes] = await Promise.all([
+        fetch(`${API_URL}/netsis/finance/banks`),
+        fetch(`${API_URL}/netsis/finance/cash-boxes`),
+        fetch(`${API_URL}/netsis/finance/cheques/customer?yeri=*`),
+        fetch(`${API_URL}/netsis/finance/cheques/own`),
+        fetch(`${API_URL}/netsis/finance/projection`)
+      ]);
+      const [banks, cash, musteriCekleri, borcCekleri, projection] = await Promise.all([
+        bankRes.ok ? bankRes.json().catch(()=>[]) : [],
+        cashRes.ok ? cashRes.json().catch(()=>[]) : [],
+        musteriRes.ok ? musteriRes.json().catch(()=>[]) : [],
+        borcRes.ok ? borcRes.json().catch(()=>[]) : [],
+        projRes.ok ? projRes.json().catch(()=>[]) : []
+      ]);
+
+      const b = (banks||[]).reduce((sum:number, b:any) => sum + ((b.BorcBakiye||0) - (b.AlacakBakiye||0)), 0);
+      const c = (cash||[]).reduce((sum:number, box:any) => sum + (box.Bakiye||0), 0);
+      const m = (musteriCekleri||[]).reduce((sum:number, c:any) => sum + (c.Tutar||0), 0);
+      const bo = (borcCekleri||[]).reduce((sum:number, c:any) => sum + (c.Tutar||0), 0);
+      setFinanceStats({ bank: b, cash: c, musteriCekleri: m, borcCekleri: bo, netLikit: b+c+m-bo, projection: projection || [] });
+    } catch(err){}
+  };
 
   const fetchActivities = async () => {
     try {
@@ -141,6 +169,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchStats();
     fetchActivities();
+    fetchFinanceStats();
   }, []);
 
 
@@ -186,6 +215,43 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Finansal Özüt (Executive View) - Phase G */}
+            <div className="xl:col-span-3 fx-card !rounded-[2.5rem] border-2 border-emerald-500/10 shadow-2xl shadow-emerald-500/5 relative overflow-hidden bg-slate-900 border-slate-800">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+              <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-2">
+                <div>
+                  <h2 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-3">Finansal Durum & Nakit Akış</h2>
+                  <p className="text-3xl lg:text-4xl font-black text-white tracking-tighter pt-2">
+                    {financeStats.netLikit.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </p>
+                  <p className="text-[11px] font-black text-slate-400 mt-3 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Toplam Net Likit Değer (CASH + PORTFÖY)
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">
+                  <div className="bg-white/5 backdrop-blur-md p-5 rounded-[1.5rem] border border-white/10 shadow-sm">
+                    <span className="block text-[9px] font-black text-slate-400 uppercase mb-2">Hazır Değer</span>
+                    <span className="text-xl font-black text-white">₺{(financeStats.bank + financeStats.cash).toLocaleString()}</span>
+                  </div>
+                  <div className="bg-emerald-500/10 backdrop-blur-md p-5 rounded-[1.5rem] border border-emerald-500/20 shadow-sm">
+                    <span className="block text-[9px] font-black text-emerald-400 uppercase mb-2">Müşteri Çekleri</span>
+                    <span className="text-xl font-black text-emerald-400">₺{financeStats.musteriCekleri.toLocaleString()}</span>
+                  </div>
+                  <div className="bg-amber-500/10 backdrop-blur-md p-5 rounded-[1.5rem] border border-amber-500/20 shadow-sm">
+                    <span className="block text-[9px] font-black text-amber-400 uppercase mb-2">Borç Çekleri</span>
+                    <span className="text-xl font-black text-amber-400">₺{financeStats.borcCekleri.toLocaleString()}</span>
+                  </div>
+                  <div className="bg-blue-500/10 backdrop-blur-md p-5 rounded-[1.5rem] border border-blue-500/20 shadow-sm">
+                    <span className="block text-[9px] font-black text-blue-400 uppercase mb-2">Beklenen (30G)</span>
+                    <span className="text-xl font-black text-blue-400">
+                      ₺{(financeStats.projection.filter(p => p.Tip === 'ALACAK' && p.Ay === (new Date().getMonth() + 1)).reduce((s, p) => s + p.Tutar, 0)).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Bölgesel Satış Analizi (Türkiye Haritası) */}
             <div className="xl:col-span-2 fx-card !p-8 space-y-8 flex flex-col min-h-[500px]">
               <div className="flex justify-between items-center border-b fx-border pb-5">
