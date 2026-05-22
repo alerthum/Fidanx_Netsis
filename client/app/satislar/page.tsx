@@ -27,10 +27,12 @@ export default function SatislarPage() {
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
     const [productSearchQuery, setProductSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('TÜMÜ');
+    const [batches, setBatches] = useState<any[]>([]);
     const [tempItem, setTempItem] = useState({
         materialId: '',
         amount: 1,
-        unitPrice: 0
+        unitPrice: 0,
+        partiNo: ''
     });
     const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
     const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
@@ -76,6 +78,7 @@ export default function SatislarPage() {
         fetchCustomers();
         fetchOrders();
         fetchStocks();
+        fetchBatches();
     }, []);
 
     const fetchStocks = async () => {
@@ -93,6 +96,16 @@ export default function SatislarPage() {
                 category: s.GrupIsim || s.Tip || 'Diğer'
             })) : [];
             setStocks(mapped);
+        } catch (err) { }
+    };
+
+    const fetchBatches = async () => {
+        try {
+            const res = await fetch(`${API_URL}/production/batches?tenantId=demo-tenant`);
+            if (res.ok) {
+                const data = await res.json();
+                setBatches(Array.isArray(data) ? data : []);
+            }
         } catch (err) { }
     };
 
@@ -236,10 +249,25 @@ export default function SatislarPage() {
     const addDraftItem = () => {
         if (!tempItem.materialId || tempItem.amount <= 0) return alert('Lütfen malzeme ve miktar seçin.');
 
+        const isPlant = tempItem.materialId.startsWith('150');
+        if (isPlant && !tempItem.partiNo) {
+            return alert('Lütfen bu bitki için satılacak parti numarasını seçin!');
+        }
+
         const product = stocks.find(s => s.id === tempItem.materialId);
         if (!product) return;
 
-        const existing = draftOrder.items.find((c: any) => c.materialId === tempItem.materialId || c.id === tempItem.materialId);
+        // Seçilen partideki miktar kontrolü
+        if (isPlant && tempItem.partiNo) {
+            const batch = batches.find(b => b.partiNo === tempItem.partiNo);
+            if (batch && tempItem.amount > batch.mevcutMiktar) {
+                return alert(`Seçilen partide yeterli miktar yok! Mevcut: ${batch.mevcutMiktar} Adet`);
+            }
+        }
+
+        const existing = draftOrder.items.find((c: any) => 
+            (c.materialId === tempItem.materialId || c.id === tempItem.materialId) && c.partiNo === tempItem.partiNo
+        );
 
         const newItem = {
             id: product.id,
@@ -249,14 +277,17 @@ export default function SatislarPage() {
             amount: tempItem.amount,
             price: tempItem.unitPrice,
             unitPrice: tempItem.unitPrice,
-            unit: product.unit || 'Adet'
+            unit: product.unit || 'Adet',
+            partiNo: tempItem.partiNo || undefined
         };
 
         if (existing) {
             setDraftOrder({
                 ...draftOrder,
                 items: draftOrder.items.map((c: any) =>
-                    c.materialId === tempItem.materialId ? { ...c, amount: c.amount + tempItem.amount, qty: c.qty + tempItem.amount, price: tempItem.unitPrice, unitPrice: tempItem.unitPrice } : c
+                    (c.materialId === tempItem.materialId && c.partiNo === tempItem.partiNo)
+                        ? { ...c, amount: c.amount + tempItem.amount, qty: c.qty + tempItem.amount, price: tempItem.unitPrice, unitPrice: tempItem.unitPrice }
+                        : c
                 )
             });
         } else {
@@ -266,7 +297,7 @@ export default function SatislarPage() {
             });
         }
         setIsProductModalOpen(false);
-        setTempItem({ materialId: '', amount: 1, unitPrice: 0 });
+        setTempItem({ materialId: '', amount: 1, unitPrice: 0, partiNo: '' });
     };
 
     const handleCompleteOrder = async () => {
@@ -286,7 +317,8 @@ export default function SatislarPage() {
                 stokKodu: it.materialId,
                 miktar: it.amount,
                 birimFiyat: it.unitPrice,
-                kdvOrani
+                kdvOrani,
+                partiNo: it.partiNo
             }))
         };
 
@@ -367,6 +399,11 @@ export default function SatislarPage() {
     const addEditItemToEditOrder = () => {
         if (!tempItem.materialId || tempItem.amount <= 0) return alert('Lütfen malzeme ve miktar seçin.');
 
+        const isPlant = tempItem.materialId.startsWith('150');
+        if (isPlant && !tempItem.partiNo) {
+            return alert('Lütfen bu bitki için satılacak parti numarasını seçin!');
+        }
+
         const material = stocks.find(s => s.id === tempItem.materialId);
         const newItem = {
             materialId: tempItem.materialId,
@@ -374,7 +411,8 @@ export default function SatislarPage() {
             amount: tempItem.amount,
             unitPrice: tempItem.unitPrice,
             name: material?.name || 'Bilinmiyor',
-            unit: material?.unit || 'Adet'
+            unit: material?.unit || 'Adet',
+            partiNo: tempItem.partiNo || undefined
         };
 
         if (editingItemIndex !== null) {
@@ -386,7 +424,7 @@ export default function SatislarPage() {
         } else {
             setEditOrder(prev => ({ ...prev, items: [...prev.items, newItem] }));
         }
-        setTempItem({ materialId: '', amount: 1, unitPrice: 0 });
+        setTempItem({ materialId: '', amount: 1, unitPrice: 0, partiNo: '' });
         setIsEditItemModalOpen(false);
     };
 
@@ -567,6 +605,11 @@ export default function SatislarPage() {
                                                                     <div className="flex flex-col">
                                                                         <span className="text-[10px] text-slate-400 uppercase tracking-widest">{item.materialId}</span>
                                                                         <span>{item.name}</span>
+                                                                        {item.partiNo && (
+                                                                            <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded w-fit mt-1 border border-emerald-200">
+                                                                                Parti: {item.partiNo}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 </td>
                                                                 <td className="p-4 text-center">
@@ -947,7 +990,7 @@ export default function SatislarPage() {
                                                     .map(s => (
                                                         <button
                                                             key={s.id}
-                                                            onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.wholesalePrice || s.BirimFiyat || 0) })}
+                                                            onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.wholesalePrice || s.BirimFiyat || 0), partiNo: '' })}
                                                             className={`w-full text-left p-3 rounded-xl border transition-all flex justify-between items-center ${tempItem.materialId === s.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-[0.99]' : 'bg-white text-slate-700 border-slate-100 hover:border-emerald-300'}`}
                                                         >
                                                             <div className="min-w-0">
@@ -966,6 +1009,27 @@ export default function SatislarPage() {
                                         <p className="py-8 text-center text-slate-400 italic text-xs">Aranan ürün bulunamadı.</p>
                                     )}
                                 </div>
+
+                                {tempItem.materialId.startsWith('150') && (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1.5 font-bold">Parti No Seçiniz (Zorunlu) *</label>
+                                        <select
+                                            value={tempItem.partiNo}
+                                            onChange={(e) => setTempItem({ ...tempItem, partiNo: e.target.value })}
+                                            className="w-full p-3 bg-white border border-rose-200 rounded-xl outline-none focus:border-rose-500 text-sm font-bold text-slate-700 shadow-sm transition"
+                                        >
+                                            <option value="">-- Satış Yapılacak Partiyi Seçin --</option>
+                                            {batches
+                                                .filter(b => b.netsisStokKodu === tempItem.materialId && b.mevcutMiktar > 0)
+                                                .map(b => (
+                                                    <option key={b.id} value={b.partiNo}>
+                                                        {b.partiNo} (Mevcut: {b.mevcutMiktar} Adet {b.saksiBoyutu ? `- Saksı: ${b.saksiBoyutu}` : ''})
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -990,7 +1054,7 @@ export default function SatislarPage() {
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
-                                    <button onClick={() => { setIsProductModalOpen(false); setTempItem({ materialId: '', amount: 1, unitPrice: 0 }); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-200">Vazgeç</button>
+                                    <button onClick={() => { setIsProductModalOpen(false); setTempItem({ materialId: '', amount: 1, unitPrice: 0, partiNo: '' }); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-200">Vazgeç</button>
                                     <button onClick={addDraftItem} className="flex-1 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 shadow-md">+ LİSTEYE EKLE</button>
                                 </div>
                             </div>
@@ -1086,7 +1150,7 @@ export default function SatislarPage() {
                                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fatura Kalemleri</span>
                                         <button
                                             type="button"
-                                            onClick={() => { setEditingItemIndex(null); setTempItem({ materialId: '', amount: 1, unitPrice: 0 }); setIsEditItemModalOpen(true); }}
+                                            onClick={() => { setEditingItemIndex(null); setTempItem({ materialId: '', amount: 1, unitPrice: 0, partiNo: '' }); setIsEditItemModalOpen(true); }}
                                             className="text-emerald-600 text-xs font-bold hover:text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg transition"
                                         >
                                             + Kalem Ekle
@@ -1110,7 +1174,7 @@ export default function SatislarPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                setTempItem({ materialId: item.materialId || item.StokKodu || '', amount: item.amount || item.Miktar || 1, unitPrice: item.unitPrice || item.BirimFiyat || 0 });
+                                                                setTempItem({ materialId: item.materialId || item.StokKodu || '', amount: item.amount || item.Miktar || 1, unitPrice: item.unitPrice || item.BirimFiyat || 0, partiNo: item.partiNo || item.LotNo || item.SeriNo || '' });
                                                                 setEditingItemIndex(idx);
                                                                 setIsEditItemModalOpen(true);
                                                             }}
@@ -1231,7 +1295,7 @@ export default function SatislarPage() {
                                                     .map(s => (
                                                         <button
                                                             key={s.id}
-                                                            onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.wholesalePrice || s.BirimFiyat || 0) })}
+                                                            onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.wholesalePrice || s.BirimFiyat || 0), partiNo: '' })}
                                                             className={`w-full text-left p-3 rounded-xl border transition-all flex justify-between items-center ${tempItem.materialId === s.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-[0.99]' : 'bg-white text-slate-700 border-slate-100 hover:border-emerald-300'}`}
                                                         >
                                                             <div className="min-w-0">
@@ -1250,6 +1314,27 @@ export default function SatislarPage() {
                                         <p className="py-8 text-center text-slate-400 italic text-xs">Aranan ürün bulunamadı.</p>
                                     )}
                                 </div>
+
+                                {tempItem.materialId.startsWith('150') && (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1.5 font-bold">Parti No Seçiniz (Zorunlu) *</label>
+                                        <select
+                                            value={tempItem.partiNo}
+                                            onChange={(e) => setTempItem({ ...tempItem, partiNo: e.target.value })}
+                                            className="w-full p-3 bg-white border border-rose-200 rounded-xl outline-none focus:border-rose-500 text-sm font-bold text-slate-700 shadow-sm transition"
+                                        >
+                                            <option value="">-- Satış Yapılacak Partiyi Seçin --</option>
+                                            {batches
+                                                .filter(b => b.netsisStokKodu === tempItem.materialId && b.mevcutMiktar > 0)
+                                                .map(b => (
+                                                    <option key={b.id} value={b.partiNo}>
+                                                        {b.partiNo} (Mevcut: {b.mevcutMiktar} Adet {b.saksiBoyutu ? `- Saksı: ${b.saksiBoyutu}` : ''})
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -1274,7 +1359,7 @@ export default function SatislarPage() {
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
-                                    <button onClick={() => { setIsEditItemModalOpen(false); setTempItem({ materialId: '', amount: 1, unitPrice: 0 }); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-200">Vazgeç</button>
+                                    <button onClick={() => { setIsEditItemModalOpen(false); setTempItem({ materialId: '', amount: 1, unitPrice: 0, partiNo: '' }); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-200">Vazgeç</button>
                                     <button onClick={addEditItemToEditOrder} className="flex-1 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 shadow-md">{editingItemIndex !== null ? 'GÜNCELLE' : '+ LİSTEYE EKLE'}</button>
                                 </div>
                             </div>

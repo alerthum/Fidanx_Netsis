@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Providers } from "@/components/Providers";
+import BottomNavigation from "@/components/BottomNavigation";
+import AiAssistant from "@/components/AiAssistant";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import "./themes.css";
-import NotificationCenter from "@/components/NotificationCenter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,18 +21,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FidanX | Yönetim Paneli",
   description: "Fidan Üretim ve Satış Yönetim Sistemi",
-  manifest: "/manifest.json",
-  themeColor: "#059669",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "FidanX",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   },
   icons: {
     icon: "/icons/icon-192x192.png",
@@ -36,11 +32,13 @@ export const metadata: Metadata = {
   },
 };
 
-import { Providers } from "@/components/Providers";
-import BottomNavigation from "@/components/BottomNavigation";
-import AiAssistant from "@/components/AiAssistant";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
-import OfflineBanner from "@/components/OfflineBanner";
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#059669",
+};
 
 export default function RootLayout({
   children,
@@ -51,6 +49,7 @@ export default function RootLayout({
     <html lang="tr" suppressHydrationWarning>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
@@ -63,17 +62,19 @@ export default function RootLayout({
           <PwaInstallPrompt />
           <OfflineBanner />
         </Providers>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+        {process.env.NODE_ENV === "production" ? (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js');
                 });
               }
             `,
-          }}
-        />
+            }}
+          />
+        ) : null}
       </body>
     </html>
   );

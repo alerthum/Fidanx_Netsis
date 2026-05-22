@@ -83,15 +83,9 @@ export default function VeriYuklePage() {
                 let payload = {};
 
                 if (importType === 'stocks') {
-                    endpoint = `${API_URL}/plants?tenantId=demo-tenant`; // Backend should extract ID usually or we use POST for create
-                    // Note: Real ERP imports usually check SKU match to update using PUT/PATCH.
-                    // For simplified demo, we are POSTing. In real scenario, backend handles upsert by SKU.
-                    payload = {
-                        ...row,
-                        // Ensure critical fields match backend DTO
-                        criticalStock: row.criticalStock || 10,
-                        currentStock: row.currentStock || 0
-                    };
+                    errorCount++;
+                    setLogs(prev => [`[ATLANDI] Satır ${index + 1}: Stok kartı FidanX'e yüklenmez. Stok ana kaynağı Netsis'tir.`, ...prev]);
+                    continue;
                 } else {
                     endpoint = `${API_URL}/sales/customers?tenantId=demo-tenant`;
                     payload = {

@@ -34,6 +34,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
+    // Next.js derleme parçaları ve HMR asla önbellekten servis edilmesin (ChunkLoadError / 503 önlenir)
+    if (url.pathname.startsWith('/_next/')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     if (event.request.method === 'POST') {
         if (url.pathname.includes('/api/') && url.pathname.includes('offline-queue')) {
             return;

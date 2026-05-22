@@ -336,70 +336,68 @@ export default function SatinalmaPage() {
                     icon="🧾"
                     large
                 >
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-8">
-                            <div className="fx-card !p-8 !rounded-3xl">
-                                <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest mb-6">Genel Bilgiler</h4>
-                                <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                                <h4 className="font-bold text-slate-800 text-xs uppercase tracking-widest mb-4">Genel Bilgiler</h4>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Tedarikçi Seçimi</label>
+                                        <label className="block text-[11px] font-bold text-slate-800 mb-1.5">Tedarikçi Seçimi</label>
                                         <select
                                             value={newOrder.supplierId}
                                             onChange={e => setNewOrder({ ...newOrder, supplierId: e.target.value })}
                                             disabled={!!newOrder.id}
-                                            className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 transition-all rounded-2xl font-bold text-sm outline-none"
+                                            className="w-full p-2.5 bg-white border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all rounded-xl text-sm font-medium outline-none"
                                         >
                                             <option value="">Tedarikçi Seçiniz...</option>
                                             {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Fatura / Belge No</label>
+                                        <label className="block text-[11px] font-bold text-slate-800 mb-1.5">Fatura / Belge No</label>
                                         <input
                                             type="text"
                                             placeholder="Örn: ABC2024000001"
                                             value={newOrder.description}
                                             onChange={e => setNewOrder({ ...newOrder, description: e.target.value })}
-                                            className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 transition-all rounded-2xl font-bold text-sm outline-none"
+                                            className="w-full p-2.5 bg-white border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all rounded-xl text-sm font-medium outline-none"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="fx-card !p-8 !rounded-3xl">
-                                <div className="flex justify-between items-center mb-8">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl">🛒</div>
-                                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Fatura İçeriği (Kalemler)</h4>
+                            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center text-sm">🛒</div>
+                                        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-widest">Fatura Kalemleri</h4>
                                     </div>
                                     <button
                                         onClick={() => setIsItemModalOpen(true)}
-                                        className="bg-[#4f46e5] text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                                        className="bg-[#ff7a18] text-white px-4 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-orange-600 shadow-sm transition-all"
                                     >
                                         + Kalem Ekle
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {newOrder.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-lg grayscale group-hover:grayscale-0 transition-all">
-                                                    📦
-                                                </div>
+                                        <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-orange-200 transition-all">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-lg">📦</div>
                                                 <div>
-                                                    <p className="font-black text-slate-800 text-sm tracking-tight">{item.name || item.StokAdi}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                                                        {item.amount || item.Miktar} {item.unit || item.Birim} x
-                                                        <span className="text-indigo-500 ml-1">₺{(item.unitPrice || item.BirimFiyat || 0).toLocaleString()}</span>
+                                                    <p className="font-bold text-slate-800 text-sm">{item.name || item.StokAdi}</p>
+                                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                                        {item.amount || item.Miktar} {item.unit || item.Birim} x 
+                                                        <span className="text-orange-600 font-bold ml-1">₺{(item.unitPrice || item.BirimFiyat || 0).toLocaleString()}</span>
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-6">
-                                                <p className="font-mono font-black text-slate-900 text-xl tracking-tighter">₺{((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString()}</p>
+                                            <div className="flex items-center gap-4">
+                                                <p className="font-bold text-slate-900 text-base">₺{((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString()}</p>
                                                 <button
                                                     onClick={() => setNewOrder(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== idx) }))}
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all text-lg"
                                                 >
                                                     ✕
                                                 </button>
@@ -407,31 +405,29 @@ export default function SatinalmaPage() {
                                         </div>
                                     ))}
                                     {newOrder.items.length === 0 && (
-                                        <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-3xl">
-                                            <div className="text-4xl mb-3 grayscale opacity-30">📋</div>
-                                            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Henüz kalem eklenmedi</p>
+                                        <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+                                            <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest">Henüz kalem eklenmedi</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="fx-card bg-slate-900 border-0 text-white p-10 !rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl -rotate-12">💰</div>
-                                <h4 className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] mb-10 text-center relative z-10">FİNANSAL ÖZET</h4>
-                                <div className="space-y-6 relative z-10">
-                                    <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="space-y-4">
+                            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-6">Finansal Özet</h4>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-xs font-bold text-slate-400">
                                         <span>Ara Toplam</span>
-                                        <span className="font-mono text-white text-base">₺{newOrder.items.reduce((s, i) => s + ((i.amount || i.Miktar) * (i.unitPrice || i.BirimFiyat)), 0).toLocaleString()}</span>
+                                        <span className="font-mono text-white">₺{newOrder.items.reduce((s, i) => s + ((i.amount || i.Miktar) * (i.unitPrice || i.BirimFiyat)), 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-white/5 pb-6">
+                                    <div className="flex justify-between text-xs font-bold text-slate-400 border-b border-slate-700 pb-4">
                                         <span>KDV (%20)</span>
-                                        <span className="font-mono text-white text-base">₺{(newOrder.items.reduce((s, i) => s + ((i.amount || i.Miktar) * (i.unitPrice || i.BirimFiyat)), 0) * 0.2).toLocaleString()}</span>
+                                        <span className="font-mono text-white">₺{(newOrder.items.reduce((s, i) => s + ((i.amount || i.Miktar) * (i.unitPrice || i.BirimFiyat)), 0) * 0.2).toLocaleString()}</span>
                                     </div>
-                                    <div className="pt-4 flex flex-col items-center">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2">GENEL TOPLAM</span>
-                                        <span className="text-5xl font-black text-white tracking-tighter drop-shadow-lg">
+                                    <div className="pt-2 flex flex-col items-end">
+                                        <span className="text-[10px] font-bold text-orange-400 mb-1 uppercase tracking-widest">Genel Toplam</span>
+                                        <span className="text-3xl font-black text-white tracking-tight">
                                             ₺{(newOrder.items.reduce((s, i) => s + ((i.amount || i.Miktar) * (i.unitPrice || i.BirimFiyat)), 0) * 1.2).toLocaleString()}
                                         </span>
                                     </div>
@@ -439,15 +435,15 @@ export default function SatinalmaPage() {
                             </div>
                             <button
                                 onClick={handleCreateOrder}
-                                className="w-full py-6 bg-[#4f46e5] text-white font-black rounded-3xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20 text-lg uppercase tracking-widest active:scale-95"
+                                className="w-full py-4 bg-[#ff7a18] text-white font-bold rounded-xl hover:bg-orange-600 transition-all shadow-md text-sm uppercase tracking-widest"
                             >
-                                Faturayı Onayla & Kaydet
+                                Onayla & Kaydet
                             </button>
                             <button
                                 onClick={() => setIsOrderModalOpen(false)}
-                                className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-xs hover:text-rose-500 transition-colors"
+                                className="w-full py-3 text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-slate-800 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200"
                             >
-                                Vazgeç ve Kapat
+                                Vazgeç
                             </button>
                         </div>
                     </div>
@@ -463,54 +459,54 @@ export default function SatinalmaPage() {
                     large
                 >
                     {previewInvoice && (
-                        <div className="max-w-5xl mx-auto bg-white p-12 lg:p-16 rounded-[48px] shadow-2xl border border-slate-100 flex flex-col min-h-full">
-                            <div className="flex flex-col md:flex-row justify-between items-start mb-20 gap-8">
-                                <div className="space-y-4">
-                                    <p className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">Tedarikçi Bilgileri</p>
-                                    <p className="text-4xl font-black text-slate-900 tracking-tighter leading-tight max-w-md">{previewInvoice.supplier}</p>
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest">{previewInvoice.supplierId}</span>
-                                        <span className="px-3 py-1 bg-indigo-50 text-indigo-500 text-[10px] font-black rounded-lg uppercase tracking-widest">Belge: {previewInvoice.id}</span>
+                        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full max-w-4xl mx-auto">
+                            <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-6">
+                                <div>
+                                    <p className="text-orange-500 font-bold text-[10px] uppercase tracking-widest mb-1">Tedarikçi Bilgileri</p>
+                                    <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2">{previewInvoice.supplier}</h2>
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">{previewInvoice.supplierId}</span>
+                                        <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-bold rounded uppercase">Belge: {previewInvoice.id}</span>
                                     </div>
                                 </div>
-                                <div className="text-left md:text-right space-y-2 orient-right self-end">
-                                    <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">Operasyon Tarihi</p>
-                                    <p className="text-2xl font-black text-slate-800">{previewInvoice.orderDate ? new Date(previewInvoice.orderDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
+                                <div className="text-left md:text-right">
+                                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">Operasyon Tarihi</p>
+                                    <p className="text-lg font-black text-slate-800">{previewInvoice.orderDate ? new Date(previewInvoice.orderDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
                                 </div>
                             </div>
 
                             <div className="flex-1 overflow-x-auto">
                                 <table className="w-full text-left">
-                                    <thead className="border-b-2 border-slate-100">
+                                    <thead className="border-b border-slate-200">
                                         <tr>
-                                            <th className="pb-6 font-black text-[11px] text-slate-400 uppercase tracking-widest">Açıklama / Stok Kalemi</th>
-                                            <th className="pb-6 text-center font-black text-[11px] text-slate-400 uppercase tracking-widest">Miktar</th>
-                                            <th className="pb-6 text-right font-black text-[11px] text-slate-400 uppercase tracking-widest">Birim Fiyat</th>
-                                            <th className="pb-6 text-right font-black text-[11px] text-slate-400 uppercase tracking-widest">Tutar (KDV Dahil)</th>
+                                            <th className="pb-3 font-bold text-[11px] text-slate-500 uppercase tracking-widest">Açıklama / Stok Kalemi</th>
+                                            <th className="pb-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-widest">Miktar</th>
+                                            <th className="pb-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-widest">Birim Fiyat</th>
+                                            <th className="pb-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-widest">Tutar (KDV Dahil)</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50">
+                                    <tbody className="divide-y divide-slate-100">
                                         {previewInvoice.items.map((item: any, idx: number) => (
-                                            <tr key={idx} className="group hover:bg-slate-50/30 transition-colors">
-                                                <td className="py-8 font-black text-slate-700 text-base">{item.name || item.StokAdi}</td>
-                                                <td className="py-8 text-center">
-                                                    <span className="bg-slate-50 px-4 py-2 rounded-xl font-mono font-black text-slate-500 text-xs">
+                                            <tr key={idx} className="group hover:bg-slate-50 transition-colors">
+                                                <td className="py-4 font-bold text-slate-800 text-sm">{item.name || item.StokAdi}</td>
+                                                <td className="py-4 text-center">
+                                                    <span className="bg-slate-100 px-3 py-1 rounded-lg font-bold text-slate-600 text-xs">
                                                         {item.amount || item.Miktar} {item.unit || item.Birim}
                                                     </span>
                                                 </td>
-                                                <td className="py-8 text-right font-mono text-slate-600">₺{(item.unitPrice || item.BirimFiyat || 0).toLocaleString()}</td>
-                                                <td className="py-8 text-right font-mono font-black text-slate-900 text-lg tracking-tighter">₺{((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString()}</td>
+                                                <td className="py-4 text-right font-medium text-slate-600 text-sm">₺{(item.unitPrice || item.BirimFiyat || 0).toLocaleString()}</td>
+                                                <td className="py-4 text-right font-black text-slate-900 text-base">₺{((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="mt-16 pt-12 border-t border-slate-100">
-                                <div className="flex justify-end gap-16 items-center">
-                                    <div className="text-right space-y-1">
-                                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">ÖDENECEK TOPLAM</p>
-                                        <p className="text-5xl font-black text-indigo-600 tracking-tighter">₺{previewInvoice.totalAmount?.toLocaleString() || '0'}</p>
+                            <div className="mt-8 pt-6 border-t border-slate-200">
+                                <div className="flex justify-end">
+                                    <div className="text-right">
+                                        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">ÖDENECEK TOPLAM</p>
+                                        <p className="text-3xl font-black text-orange-600 tracking-tight">₺{previewInvoice.totalAmount?.toLocaleString() || '0'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -519,72 +515,68 @@ export default function SatinalmaPage() {
                 </ModalWrapper>
 
                 {/* ITEM ADD MODAL */}
-                {isItemModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-6 z-[110] animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[40px] w-full max-w-2xl p-10 shadow-2xl overflow-hidden border border-white relative animate-in zoom-in-95 duration-200">
-                            <div className="flex justify-between items-center mb-10">
-                                <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Kalem Ekle / Düzenle</h4>
-                                <button onClick={() => setIsItemModalOpen(false)} className="text-3xl text-slate-300 hover:text-rose-500">✕</button>
-                            </div>
-
-                            <div className="space-y-8">
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">GRUPLAR</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {categories.map(cat => (
-                                            <button
-                                                key={cat}
-                                                onClick={() => setSelectedCategory(cat)}
-                                                className={`px-5 py-2.5 rounded-full text-[10px] font-black border-2 transition-all uppercase tracking-widest ${selectedCategory === cat ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-100' : 'bg-slate-50 text-slate-400 border-transparent hover:border-slate-200'}`}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="max-h-80 overflow-y-auto border border-slate-100 rounded-3xl bg-slate-50/50 p-3 space-y-2 custom-scrollbar">
-                                    {stocks.filter(s => selectedCategory === 'TÜMÜ' || s.category === selectedCategory).map(s => (
-                                        <button
-                                            key={s.id}
-                                            onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.purchasePrice || s.BirimFiyat || 0) })}
-                                            className={`w-full text-left p-5 rounded-2xl border-2 transition-all ${tempItem.materialId === s.id ? 'bg-white border-indigo-500 shadow-xl' : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200'}`}
-                                        >
-                                            <p className={`font-black text-base tracking-tight ${tempItem.materialId === s.id ? 'text-indigo-600' : 'text-slate-800'}`}>{s.name}</p>
-                                            <div className="flex justify-between items-center mt-2">
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Mevcut: <span className="text-slate-600">{s.currentStock || 0} {s.unit}</span></p>
-                                                <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Ref Fiyat: ₺{(s.purchasePrice || s.BirimFiyat || 0).toLocaleString()}</p>
-                                            </div>
-                                        </button>
-                                    ))}
-                                    {stocks.length === 0 && <p className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">Yükleniyor veya Kayıt Bulunamadı...</p>}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-8 pt-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Miktar</label>
-                                        <input type="number" value={tempItem.amount} onChange={e => setTempItem({ ...tempItem, amount: Number(e.target.value) })} className="w-full py-5 bg-slate-100 border-0 rounded-3xl font-black text-center text-xl focus:bg-white focus:ring-4 ring-indigo-50 transition-all outline-none" min="1" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Birim Fiyat (₺)</label>
-                                        <input type="number" value={tempItem.unitPrice} onChange={e => setTempItem({ ...tempItem, unitPrice: Number(e.target.value) })} className="w-full py-5 bg-slate-100 border-0 rounded-3xl font-black text-center font-mono text-xl focus:bg-white focus:ring-4 ring-indigo-50 transition-all outline-none" />
-                                    </div>
-                                </div>
-
-                                <div className="pt-8 flex gap-4">
-                                    <button onClick={() => setIsItemModalOpen(false)} className="flex-1 py-5 font-black text-slate-400 uppercase tracking-widest text-[10px] hover:text-rose-500 transition-colors">Vazgeç</button>
+                <ModalWrapper
+                    isOpen={isItemModalOpen}
+                    onClose={() => setIsItemModalOpen(false)}
+                    title="Kalem Ekle / Düzenle"
+                    icon="📦"
+                >
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1.5 uppercase">Kategoriler</label>
+                            <div className="flex flex-wrap gap-2">
+                                {categories.map(cat => (
                                     <button
-                                        onClick={addItemToOrder}
-                                        disabled={!tempItem.materialId}
-                                        className="flex-[2] py-5 bg-indigo-600 text-white font-black rounded-3xl shadow-xl shadow-indigo-100 uppercase tracking-widest text-[11px] hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95"
+                                        key={cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selectedCategory === cat ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200'}`}
                                     >
-                                        Kalemi Faturaya Ekle
+                                        {cat}
                                     </button>
-                                </div>
+                                ))}
                             </div>
                         </div>
+
+                        <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl bg-slate-50/50 p-2 space-y-1 custom-scrollbar">
+                            {stocks.filter(s => selectedCategory === 'TÜMÜ' || s.category === selectedCategory).map(s => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setTempItem({ ...tempItem, materialId: s.id, unitPrice: (s.purchasePrice || s.BirimFiyat || 0) })}
+                                    className={`w-full text-left p-3 rounded-xl border transition-all flex justify-between items-center ${tempItem.materialId === s.id ? 'bg-orange-50 border-orange-500 shadow-sm' : 'bg-white border-transparent hover:border-slate-200'}`}
+                                >
+                                    <div>
+                                        <p className={`font-bold text-sm ${tempItem.materialId === s.id ? 'text-orange-700' : 'text-slate-800'}`}>{s.name}</p>
+                                        <p className="text-[10px] text-slate-500 font-medium mt-1">Mevcut: {s.currentStock || 0} {s.unit}</p>
+                                    </div>
+                                    <p className="text-xs text-orange-600 font-bold">₺{(s.purchasePrice || s.BirimFiyat || 0).toLocaleString()}</p>
+                                </button>
+                            ))}
+                            {stocks.length === 0 && <p className="text-center py-6 text-slate-400 text-xs font-bold">Yükleniyor veya Kayıt Bulunamadı...</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-800 mb-1.5">Miktar</label>
+                                <input type="number" value={tempItem.amount} onChange={e => setTempItem({ ...tempItem, amount: Number(e.target.value) })} className="w-full p-2.5 bg-white rounded-xl border border-slate-200 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all text-sm font-medium text-slate-800 text-center" min="1" />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-800 mb-1.5">Birim Fiyat (₺)</label>
+                                <input type="number" value={tempItem.unitPrice} onChange={e => setTempItem({ ...tempItem, unitPrice: Number(e.target.value) })} className="w-full p-2.5 bg-white rounded-xl border border-slate-200 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all text-sm font-medium text-slate-800 text-center font-mono" />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-4 border-t border-slate-100">
+                            <button onClick={() => setIsItemModalOpen(false)} className="w-1/3 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">Vazgeç</button>
+                            <button
+                                onClick={addItemToOrder}
+                                disabled={!tempItem.materialId}
+                                className="flex-1 py-3 bg-[#ff7a18] text-white rounded-xl font-bold shadow hover:bg-orange-600 transition-colors disabled:opacity-50"
+                            >
+                                Kalemi Faturaya Ekle
+                            </button>
+                        </div>
                     </div>
-                )}
+                </ModalWrapper>
             </main>
         </div>
     );

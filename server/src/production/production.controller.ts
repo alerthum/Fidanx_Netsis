@@ -118,4 +118,18 @@ export class ProductionController {
     deleteTemperatureLog(@Query('tenantId') tenantId: string, @Param('id') id: string) {
         return this.temperatureService.remove(tenantId, id);
     }
+
+    // Toplu Sarf Fişi ve Maliyet Dağıtımı Entegrasyonu
+    @Post('bulk-consumption')
+    createBulkConsumption(
+        @Query('tenantId') tenantId: string,
+        @Body() body: {
+            locations: string[];
+            items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; partiNo?: string }>;
+            aciklama: string;
+            tarih?: string;
+        }
+    ) {
+        return this.productionService.createBulkConsumption(tenantId || 'demo-tenant', body);
+    }
 }

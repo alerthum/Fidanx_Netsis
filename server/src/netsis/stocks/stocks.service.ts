@@ -15,6 +15,200 @@ export class NetsisStocksService {
         return this.integration.getNextErpCode(tenantId, 'STOCK', prefix);
     }
 
+    async ensureStockCard(stokKodu: string) {
+        const code = String(stokKodu || '').trim();
+        if (!code) {
+            throw new BadRequestException('Netsis stok kodu gerekli.');
+        }
+
+        const rows = await this.db.query(
+            `SELECT TOP 1 STOK_KODU, DBO.TRK(STOK_ADI) AS STOK_ADI FROM TBLSTSABIT WITH (NOLOCK) WHERE RTRIM(STOK_KODU) = RTRIM(@stokKodu)`,
+            { stokKodu: code }
+        );
+        if (!rows.length) {
+            throw new BadRequestException(`Netsis stok kartı bulunamadı: ${code}`);
+        }
+        return rows[0];
+    }
+
+    async findStockCard(stokKodu: string) {
+        const code = String(stokKodu || '').trim();
+        if (!code) return null;
+
+        const rows = await this.db.query(
+            `SELECT TOP 1 STOK_KODU, DBO.TRK(STOK_ADI) AS STOK_ADI FROM TBLSTSABIT WITH (NOLOCK) WHERE RTRIM(STOK_KODU) = RTRIM(@stokKodu)`,
+            { stokKodu: code }
+        );
+        return rows[0] || null;
+    }
+
+    async ensureOrCreateStageStock(data: {
+        kaynakStokKodu: string;
+        hedefStokKodu?: string;
+        hedefStokAdi?: string;
+        hedefSafha?: string;
+        saksiBoyutu?: string;
+        codePrefix?: string;
+    }) {
+        const kaynakStokKodu = String(data.kaynakStokKodu || '').trim();
+        await this.ensureStockCard(kaynakStokKodu);
+
+        let hedefStokKodu = String(data.hedefStokKodu || '').trim();
+        if (!hedefStokKodu) {
+            hedefStokKodu = await this.generateStageStockCode(kaynakStokKodu, data.codePrefix);
+        }
+
+        const mevcut = await this.findStockCard(hedefStokKodu);
+        if (mevcut) {
+            return {
+                created: false,
+                stokKodu: hedefStokKodu,
+                stokAdi: mevcut.STOK_ADI || mevcut.StokAdi || data.hedefStokAdi || hedefStokKodu
+            };
+        }
+
+        const created = await this.createStockCardFromSource({
+            kaynakStokKodu,
+            hedefStokKodu,
+            hedefStokAdi: data.hedefStokAdi,
+            hedefSafha: data.hedefSafha,
+            saksiBoyutu: data.saksiBoyutu
+        });
+        return { created: true, ...created };
+    }
+
+    async createStockCardFromSource(data: {
+        kaynakStokKodu: string;
+        hedefStokKodu: string;
+        hedefStokAdi?: string;
+        hedefSafha?: string;
+        saksiBoyutu?: string;
+    }) {
+        const kaynakStokKodu = String(data.kaynakStokKodu || '').trim();
+        const hedefStokKodu = String(data.hedefStokKodu || '').trim();
+        if (!kaynakStokKodu || !hedefStokKodu) {
+            throw new BadRequestException('Kaynak ve hedef Netsis stok kodu gerekli.');
+        }
+        if (kaynakStokKodu === hedefStokKodu) {
+            throw new BadRequestException('Hedef stok kodu kaynak stok kodundan farklı olmalıdır.');
+        }
+        if (await this.findStockCard(hedefStokKodu)) {
+            throw new BadRequestException(`Netsis stok kartı zaten var: ${hedefStokKodu}`);
+        }
+
+        const kaynak = await this.ensureStockCard(kaynakStokKodu);
+        const hedefStokAdi = String(data.hedefStokAdi || '').trim()
+            || this.deriveStageStockName(kaynak.STOK_ADI || kaynak.StokAdi || hedefStokKodu, data.hedefSafha, data.saksiBoyutu);
+
+        const columns = await this.db.query(`
+            SELECT name FROM sys.columns
+            WHERE object_id = OBJECT_ID('TBLSTSABIT')
+              AND is_identity = 0
+              AND is_computed = 0
+            ORDER BY column_id
+        `) as Array<{ name: string }>;
+
+        const names = columns.map(c => c.name).filter(Boolean);
+        if (!names.includes('STOK_KODU') || !names.includes('STOK_ADI')) {
+            throw new BadRequestException('TBLSTSABIT şeması STOK_KODU/STOK_ADI alanlarını içermiyor.');
+        }
+
+        const quote = (name: string) => `[${name.replace(/]/g, ']]')}]`;
+        const insertCols = names.map(quote).join(', ');
+        const selectCols = names.map(name => {
+            if (name === 'STOK_KODU') return '@hedefStokKodu';
+            if (name === 'STOK_ADI') return '@hedefStokAdi';
+            if (name === 'S_YEDEK1') return '@saksiBoyutu';
+            return quote(name);
+        }).join(', ');
+
+        await this.db.query(`
+            INSERT INTO TBLSTSABIT (${insertCols})
+            SELECT ${selectCols}
+            FROM TBLSTSABIT
+            WHERE RTRIM(STOK_KODU) = RTRIM(@kaynakStokKodu)
+        `, {
+            kaynakStokKodu,
+            hedefStokKodu,
+            hedefStokAdi,
+            saksiBoyutu: data.saksiBoyutu || data.hedefSafha || ''
+        });
+
+        this.logger.log(`Netsis stok kartı kaynak karttan üretildi: ${kaynakStokKodu} -> ${hedefStokKodu}`);
+        return { stokKodu: hedefStokKodu, stokAdi: hedefStokAdi };
+    }
+
+    async createLotMovement(data: {
+        stokKodu: string;
+        gckod: 'G' | 'C';
+        miktar: number;
+        partiNo: string;
+        fisNo?: string;
+        tarih?: string;
+        birimFiyat?: number;
+        aciklama?: string;
+        htur?: number;
+        ftirsip?: string;
+        depoKodu?: string | number;
+    }) {
+        const stokKodu = String(data.stokKodu || '').trim();
+        const partiNo = String(data.partiNo || '').trim();
+        const miktar = Number(data.miktar) || 0;
+
+        if (!stokKodu || !partiNo || miktar <= 0 || !['G', 'C'].includes(data.gckod)) {
+            throw new BadRequestException('Stok kodu, parti/lot no, giriş/çıkış kodu ve pozitif miktar gerekli.');
+        }
+
+        await this.ensureStockCard(stokKodu);
+
+        const fisNo = data.fisNo || await this.generateLotFisNo(data.gckod);
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+        const birimFiyat = Number(data.birimFiyat) || 0;
+        const tutar = miktar * birimFiyat;
+        const depoKodu = data.depoKodu ?? 0;
+
+        return this.db.executeTransaction(async (tx) => {
+            const req = this.db.createRequest(tx, {
+                fisno: fisNo,
+                stokKodu,
+                ftirsip: data.ftirsip || '0',
+                gckod: data.gckod,
+                miktar,
+                birimFiyat,
+                tutar,
+                tarih,
+                aciklama: data.aciklama || `FidanX parti hareketi ${partiNo}`,
+                htur: data.htur ?? 10
+            });
+            const har = await req.query(`
+                INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR)
+                OUTPUT INSERTED.INCKEYNO
+                VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur)
+            `);
+
+            const inckeyNo = har.recordset?.[0]?.INCKEYNO;
+            if (!inckeyNo) {
+                throw new BadRequestException('TBLSTHAR hareket anahtarı (INCKEYNO) alınamadı.');
+            }
+
+            const seriReq = this.db.createRequest(tx, {
+                straInc: inckeyNo,
+                stokKodu,
+                seriNo: partiNo,
+                gckod: data.gckod,
+                miktar,
+                depoKodu
+            });
+            await seriReq.query(`
+                INSERT INTO TBLSERITRA (STRA_INC, STOK_KODU, SERI_NO, GCKOD, MIKTAR, DEPOKOD)
+                VALUES (@straInc, @stokKodu, @seriNo, @gckod, @miktar, @depoKodu)
+            `);
+
+            this.logger.log(`Netsis lot hareketi: ${fisNo} ${stokKodu} ${data.gckod} ${miktar} lot=${partiNo} inc=${inckeyNo}`);
+            return { success: true, fisNo, inckeyNo, stokKodu, partiNo, gckod: data.gckod, miktar };
+        });
+    }
+
     /**
      * Netsis'e sarf (tüketim) hareketi yazar.
      * Üretimde reçete uygulandığında veya operasyonda malzeme kullanıldığında çağrılır.
@@ -24,7 +218,9 @@ export class NetsisStocksService {
         fisNo?: string;
         aciklama?: string;
         tarih?: string;
-        items: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
+        partiNo?: string;
+        projeKodu?: string;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat?: number; partiNo?: string }>;
     }) {
         if (!data.items?.length) {
             throw new BadRequestException('En az bir malzeme kalemi gerekli.');
@@ -47,11 +243,13 @@ export class NetsisStocksService {
                     aciklama: data.aciklama || 'FidanX Sarf',
                     gckod: 'C',
                     htur: 10,
-                    ftirsip: '0'
+                    ftirsip: '0',
+                    projeKodu: data.projeKodu || ''
                 });
                 await req.query(`
-                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR, STHAR_FTIRSIP)
-                    VALUES (@fisno, @stokKodu, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur, @ftirsip)
+                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR, STHAR_FTIRSIP, PROJE_KODU)
+                    OUTPUT INSERTED.INCKEYNO
+                    VALUES (@fisno, @stokKodu, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur, @ftirsip, @projeKodu)
                 `);
             }
 
@@ -68,8 +266,13 @@ export class NetsisStocksService {
         kaynakStokKodu: string;
         hedefStokKodu: string;
         miktar: number;
+        partiNo?: string;
+        kokPartiNo?: string;
         aciklama?: string;
         tarih?: string;
+        kaynakBirimMaliyet?: number;
+        hedefBirimMaliyet?: number;
+        yardimciMalzemeler?: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
     }) {
         const kaynak = String(data.kaynakStokKodu || '').trim();
         const hedef = String(data.hedefStokKodu || '').trim();
@@ -84,6 +287,22 @@ export class NetsisStocksService {
         const fisNo = await this.generateTransferFisNo();
         const tarih = data.tarih || new Date().toISOString().split('T')[0];
         const aciklama = data.aciklama || 'FidanX stok transferi';
+        const partiNo = String(data.kokPartiNo || data.partiNo || '').trim();
+
+        if (partiNo) {
+            return this.transformLot({
+                fisNo,
+                kaynakStokKodu: kaynak,
+                hedefStokKodu: hedef,
+                miktar,
+                partiNo,
+                aciklama,
+                tarih,
+                kaynakBirimMaliyet: data.kaynakBirimMaliyet,
+                hedefBirimMaliyet: data.hedefBirimMaliyet,
+                yardimciMalzemeler: data.yardimciMalzemeler
+            });
+        }
 
         return this.db.executeTransaction(async (tx) => {
             const base = { fisno: fisNo, tarih, aciklama, ftirsip: '0', htur: 10, nf: 0, tutar: 0 };
@@ -112,6 +331,107 @@ export class NetsisStocksService {
 
             this.logger.log(`Netsis stok transferi: ${fisNo} ${kaynak} → ${hedef} (${miktar} ad)`);
             return { success: true, fisNo, kaynak, hedef, miktar };
+        });
+    }
+
+    async transformLot(data: {
+        kaynakStokKodu: string;
+        hedefStokKodu: string;
+        miktar: number;
+        partiNo: string;
+        fisNo?: string;
+        aciklama?: string;
+        tarih?: string;
+        kaynakBirimMaliyet?: number;
+        hedefBirimMaliyet?: number;
+        yardimciMalzemeler?: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
+    }) {
+        const kaynak = String(data.kaynakStokKodu || '').trim();
+        const hedef = String(data.hedefStokKodu || '').trim();
+        const partiNo = String(data.partiNo || '').trim();
+        const miktar = Number(data.miktar) || 0;
+
+        if (!kaynak || !hedef || !partiNo || miktar <= 0) {
+            throw new BadRequestException('Kaynak/hedef stok kodu, parti/lot no ve pozitif miktar gerekli.');
+        }
+        if (kaynak === hedef) {
+            throw new BadRequestException('Şaşırtmada kaynak ve hedef stok kartı farklı olmalıdır.');
+        }
+
+        await this.ensureStockCard(kaynak);
+        await this.ensureStockCard(hedef);
+        for (const item of data.yardimciMalzemeler || []) {
+            await this.ensureStockCard(item.stokKodu);
+        }
+
+        const fisNo = data.fisNo || await this.generateTransferFisNo();
+        const tarih = data.tarih || new Date().toISOString().split('T')[0];
+        const aciklama = data.aciklama || `FidanX şaşırtma ${partiNo}`;
+
+        return this.db.executeTransaction(async (tx) => {
+            const hareketler: Array<{ role: string; stokKodu: string; inckeyNo: number; gckod: 'G' | 'C'; miktar: number }> = [];
+
+            const insertMovement = async (role: string, stokKodu: string, gckod: 'G' | 'C', movMiktar: number, birimFiyat: number, seriNo?: string) => {
+                const req = this.db.createRequest(tx, {
+                    fisno: fisNo,
+                    stokKodu,
+                    ftirsip: '0',
+                    gckod,
+                    miktar: movMiktar,
+                    birimFiyat,
+                    tutar: movMiktar * birimFiyat,
+                    tarih,
+                    aciklama,
+                    htur: 10
+                });
+                const result = await req.query(`
+                    INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_TARIH, STHAR_ACIKLAMA, STHAR_HTUR)
+                    OUTPUT INSERTED.INCKEYNO
+                    VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @tarih, @aciklama, @htur)
+                `);
+                const inckeyNo = result.recordset?.[0]?.INCKEYNO;
+                if (!inckeyNo) throw new BadRequestException('TBLSTHAR hareket anahtarı alınamadı.');
+
+                if (seriNo) {
+                    const seriReq = this.db.createRequest(tx, {
+                        straInc: inckeyNo,
+                        stokKodu,
+                        seriNo,
+                        gckod,
+                        miktar: movMiktar,
+                        depoKodu: 0
+                    });
+                    await seriReq.query(`
+                        INSERT INTO TBLSERITRA (STRA_INC, STOK_KODU, SERI_NO, GCKOD, MIKTAR, DEPOKOD)
+                        VALUES (@straInc, @stokKodu, @seriNo, @gckod, @miktar, @depoKodu)
+                    `);
+                }
+
+                hareketler.push({ role, stokKodu, inckeyNo, gckod, miktar: movMiktar });
+            };
+
+            await insertMovement('kaynak-cikis', kaynak, 'C', miktar, Number(data.kaynakBirimMaliyet) || 0, partiNo);
+            for (const item of data.yardimciMalzemeler || []) {
+                const matMiktar = Number(item.miktar) || 0;
+                if (!item.stokKodu || matMiktar <= 0) continue;
+                await insertMovement('yardimci-sarf', String(item.stokKodu).trim(), 'C', matMiktar, Number(item.birimFiyat) || 0);
+            }
+            await insertMovement('hedef-giris', hedef, 'G', miktar, Number(data.hedefBirimMaliyet) || 0, partiNo);
+
+            const cikis = hareketler.find(h => h.role === 'kaynak-cikis');
+            const giris = hareketler.find(h => h.role === 'hedef-giris');
+            this.logger.log(`Netsis şaşırtma/transformasyon: ${fisNo} ${kaynak} -> ${hedef} (${miktar}) lot=${partiNo}`);
+            return {
+                success: true,
+                fisNo,
+                partiNo,
+                kaynak,
+                hedef,
+                miktar,
+                cikisInckeyNo: cikis?.inckeyNo,
+                girisInckeyNo: giris?.inckeyNo,
+                hareketler
+            };
         });
     }
 
@@ -147,6 +467,61 @@ export class NetsisStocksService {
         if (!numMatch) return `${prefix}00000001`;
         const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
         return `${prefix}${nextNum}`;
+    }
+
+    private async generateLotFisNo(gckod: 'G' | 'C'): Promise<string> {
+        const yil = new Date().getFullYear();
+        const prefix = `${gckod === 'G' ? 'LOTG' : 'LOTC'}${yil}`;
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FISNO FROM TBLSTHAR WITH (NOLOCK)
+            WHERE FISNO LIKE @pattern
+            ORDER BY FISNO DESC
+        `, { pattern: `${prefix}%` });
+
+        if (sonuc.length === 0) return `${prefix}00000001`;
+        const lastNo = sonuc[0].FISNO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}00000001`;
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${nextNum}`;
+    }
+
+    private deriveStageStockName(sourceName: string, hedefSafha?: string, saksiBoyutu?: string) {
+        const base = String(sourceName || '').trim();
+        const suffix = String(saksiBoyutu || hedefSafha || '').trim();
+        if (!suffix) return base;
+
+        const cleanupPatterns = [
+            /\btepsi\b/gi,
+            /\b\d+\s*(lt|l|litre)\b/gi,
+            /\b\d+\s*cm\b/gi,
+            /\bküçük[_\s-]*saksı\b/gi,
+            /\bbüyük[_\s-]*saksı\b/gi,
+            /\bsatışa[_\s-]*hazır\b/gi
+        ];
+
+        let cleaned = base;
+        cleanupPatterns.forEach(pattern => {
+            cleaned = cleaned.replace(pattern, '').replace(/\s{2,}/g, ' ').trim();
+        });
+        return `${cleaned || base} ${suffix}`.replace(/\s{2,}/g, ' ').trim();
+    }
+
+    private async generateStageStockCode(kaynakStokKodu: string, prefix?: string) {
+        const source = String(kaynakStokKodu || '').trim();
+        const effectivePrefix = String(prefix || source.replace(/\d+$/, '') || source).trim();
+        const rows = await this.db.query(`
+            SELECT TOP 1 STOK_KODU FROM TBLSTSABIT WITH (NOLOCK)
+            WHERE STOK_KODU LIKE @pattern
+            ORDER BY STOK_KODU DESC
+        `, { pattern: `${effectivePrefix}%` });
+
+        if (!rows.length) return `${effectivePrefix}001`;
+        const lastCode = String(rows[0].STOK_KODU || '').trim();
+        const match = lastCode.match(/(\d+)$/);
+        if (!match) return `${effectivePrefix}001`;
+        const next = (parseInt(match[1], 10) + 1).toString().padStart(match[1].length, '0');
+        return `${lastCode.slice(0, -match[1].length)}${next}`;
     }
 
     async getStocks(tenantId: string, filters?: { grupKodu?: string; tedarikci?: string; arama?: string }) {

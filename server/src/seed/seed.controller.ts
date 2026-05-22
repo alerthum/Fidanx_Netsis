@@ -1,8 +1,10 @@
-import { Controller, Delete, Query, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Delete, Query, Post, Get, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Controller('seed')
 export class SeedController {
+    private readonly logger = new Logger(SeedController.name);
+
     constructor(private db: DatabaseService) { }
 
     @Get('setup-trk')
@@ -38,89 +40,198 @@ export class SeedController {
 
     @Post()
     async seed(@Query('tenantId') tenantId: string) {
-        // 1. Tenant Kaydı
+        // 1. Tenant Kaydı ve Ayarlar
         const existingTenant = await this.db.query(`SELECT Id FROM Tenants WHERE TenantId = @tenantId`, { tenantId });
         if (existingTenant.length === 0) {
-            await this.db.query(`INSERT INTO Tenants (TenantId, Name, SettingsJson) VALUES (@tenantId, 'FidanX İşletmesi', @settings)`, {
+            await this.db.query(`INSERT INTO Tenants (TenantId, Name, SettingsJson) VALUES (@tenantId, 'FidanX Botanik Bahçe', @settings)`, {
                 tenantId,
                 settings: JSON.stringify({
                     categories: ['Süs Bitkisi', 'Meyve Fidanı', 'Ağaç', 'Çalı'],
-                    productionStages: ['VİYOL', 'KÜÇÜK_SAKSI', 'BÜYÜK_SAKSI', 'SATIŞA_HAZIR'],
+                    productionStages: ['TEPSİ', 'KÜÇÜK_SAKSI', 'BÜYÜK_SAKSI', 'SATIŞA_HAZIR'],
                     locations: ['Sera A', 'Sera B', 'Açık Alan 1', 'Açık Alan 2', 'Depo'],
                 })
             });
         }
 
-        // 2. Önce temizlik
+        // 2. Önce eski/yeni tüm verileri temizle
         await this.clear(tenantId);
 
-        // 3. Bitkiler
-        const plantData = [
-            { name: 'Leylandi', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 2200, wholesalePrice: 104.5, retailPrice: 225, viyolCount: 643, cuttingCount: 45010 },
-            { name: 'Alev çalısı', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 300, wholesalePrice: 83.5, retailPrice: 150, viyolCount: 44, cuttingCount: 3080 },
-            { name: 'Arap yasemini', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 30, wholesalePrice: 160, retailPrice: 300, viyolCount: 8, cuttingCount: 560 }
+        // 3. Netsis Test Stok Kartları (Yoksa eklenir)
+        const sampleStocks = [
+            { code: '150-01-001', name: 'Leylandi Tepsi', grup: 'SUS_BITKISI' },
+            { code: '150-01-002', name: 'Leylandi 2 Lt', grup: 'SUS_BITKISI' },
+            { code: '150-01-003', name: 'Leylandi 5 Lt', grup: 'SUS_BITKISI' },
+            { code: '157-01-001', name: 'Bitki İlacı X', grup: 'YARDIMCI' },
+            { code: '157-02-001', name: '2L Saksı', grup: 'YARDIMCI' },
+            { code: '157-03-001', name: 'Torf Toprak', grup: 'YARDIMCI' }
         ];
 
-        const plantIds: Record<string, number> = {};
+        for (const s of sampleStocks) {
+            try {
+                const exists = await this.db.query(`SELECT STOK_KODU FROM TBLSTSABIT WHERE RTRIM(STOK_KODU) = @code`, { code: s.code });
+                if (exists.length === 0) {
+                    await this.db.query(`
+                        INSERT INTO TBLSTSABIT (STOK_KODU, STOK_ADI, GRUP_KODU, OLCU_BR1)
+                        VALUES (@code, @name, @grup, 'ADET')
+                    `, { code: s.code, name: s.name, grup: s.grup });
+                }
+            } catch (err: any) {
+                // Şema kısıtlaması durumunda minimal insert dene
+                try {
+                    await this.db.query(`INSERT INTO TBLSTSABIT (STOK_KODU, STOK_ADI) VALUES (@code, @name)`, { code: s.code, name: s.name });
+                } catch (err2: any) {
+                    this.logger.warn(`Seed: Netsis stok kartı eklenemedi (${s.code}): ${err2.message}`);
+                }
+            }
+        }
+
+        // 4. Demo Amaçlı Legacy Plants Tablosu Verisi (Net Belirtilmiş Demo Veri)
+        const plantData = [
+            { name: 'Leylandi (Legacy Demo)', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 2200, wholesalePrice: 104.5, retailPrice: 225, viyolCount: 643, cuttingCount: 45010 },
+            { name: 'Alev Çalısı (Legacy Demo)', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 300, wholesalePrice: 83.5, retailPrice: 150, viyolCount: 44, cuttingCount: 3080 }
+        ];
+
         for (const p of plantData) {
-            const res = await this.db.query(`INSERT INTO Plants (TenantId, Name, Category, Type, CurrentStock, WholesalePrice, RetailPrice, ViyolCount, CuttingCount) OUTPUT INSERTED.Id VALUES (@tenantId, @name, @cat, @type, @stock, @wp, @rp, @vc, @cc)`, {
+            await this.db.query(`
+                INSERT INTO Plants (TenantId, Name, Category, Type, CurrentStock, WholesalePrice, RetailPrice, ViyolCount, CuttingCount) 
+                VALUES (@tenantId, @name, @cat, @type, @stock, @wp, @rp, @vc, @cc)
+            `, {
                 tenantId, name: p.name, cat: p.category, type: p.type, stock: p.currentStock, wp: p.wholesalePrice, rp: p.retailPrice, vc: p.viyolCount, cc: p.cuttingCount
             });
-            plantIds[p.name] = res[0].Id;
         }
 
-        // 4. Tedarikçiler
-        const suppliers = [
-            { name: 'Ödemiş Ceza İnfaz Kurumu', address: 'Ödemiş, İzmir' },
-            { name: 'Adnan Aktaş', address: 'İzmir' }
-        ];
-        const supplierIds: Record<string, number> = {};
-        for (const s of suppliers) {
-            const res = await this.db.query(`INSERT INTO Customers (TenantId, Name, Address) OUTPUT INSERTED.Id VALUES (@tenantId, @name, @addr)`, {
-                tenantId, name: s.name, addr: s.address
-            });
-            supplierIds[s.name] = res[0].Id;
-        }
+        // 5. Yeni FDX Üretim Partileri & Şecere (Şaşırtma Spliti Gösteren Senaryo)
+        // 5.1. Kök Parti: Leylandi Tepsi
+        const kRes = await this.db.query(`
+            INSERT INTO FDX_BitkiPartileri 
+            (TenantId, PartiNo, KokPartiNo, NetsisStokKodu, StokAdi, BitkiAdi, Safha, SaksiBoyutu, Konum, BaslangicMiktar, MevcutMiktar, Miktar, FireMiktar, SatilanMiktar, BirimMaliyet, ToplamMaliyet, AlisFaturaNo, Durum, BaslangicTarihi, OlusturmaTarihi, KaynakSeriNo)
+            OUTPUT INSERTED.Id
+            VALUES 
+            (@tenantId, 'LOT-2026-LEYLANDI-001', 'LOT-2026-LEYLANDI-001', '150-01-001', 'Leylandi Tepsi', 'Leylandi', 'TEPSİ', 'Tepsi', 'Sera A', 20000, 14950, 14950, 50, 0, 8.0, 119600.0, 'FAT-2026-001', 'AKTIF', '2026-01-10', '2026-01-10', 'LOT-2026-LEYLANDI-001')
+        `, { tenantId });
+        const kokPartiId = kRes[0].Id;
 
-        // 5. Üretim Partileri
-        const productionBatches = [
-            { lotId: 'LOT-2025-LEYLANDI-001', plantName: 'Leylandi', quantity: 45010, viyolCount: 643, startDate: '2025-11-24', stage: 'VİYOL', location: 'Sera A' },
-            { lotId: 'LOT-2025-ALEVCALISI-004', plantName: 'Alev çalısı', quantity: 3080, viyolCount: 44, startDate: '2025-12-17', stage: 'VİYOL', location: 'Sera A' }
-        ];
-        for (const b of productionBatches) {
-            const res = await this.db.query(`INSERT INTO ProductionBatches (TenantId, LotId, PlantName, Quantity, ViyolCount, StartDate, Stage, Location) OUTPUT INSERTED.Id VALUES (@tenantId, @lot, @name, @qty, @vc, @date, @stage, @loc)`, {
-                tenantId, lot: b.lotId, name: b.plantName, qty: b.quantity, vc: b.viyolCount, date: new Date(b.startDate), stage: b.stage, loc: b.location
-            });
-            const batchId = res[0].Id;
-            await this.db.query(`INSERT INTO ProductionHistory (BatchId, Action) VALUES (@batchId, 'Parti oluşturuldu (Seed)')`, { batchId });
-        }
+        // 5.2. Şaşırtılan Çocuk Parti: Leylandi 2 Lt (5000 adet şaşırtılmış, ek saksı/torf maliyetleri eklenmiş)
+        const cRes = await this.db.query(`
+            INSERT INTO FDX_BitkiPartileri 
+            (TenantId, PartiNo, KokPartiNo, NetsisStokKodu, StokAdi, BitkiAdi, Safha, SaksiBoyutu, Konum, BaslangicMiktar, MevcutMiktar, Miktar, FireMiktar, SatilanMiktar, BirimMaliyet, ToplamMaliyet, KaynakPartiId, Durum, BaslangicTarihi, OlusturmaTarihi, KaynakSeriNo)
+            OUTPUT INSERTED.Id
+            VALUES 
+            (@tenantId, 'LOT-2026-LEYLANDI-001-S', 'LOT-2026-LEYLANDI-001', '150-01-002', 'Leylandi 2 Lt', 'Leylandi', 'KÜÇÜK_SAKSI', '2 Lt', 'Sera B', 5000, 4980, 4980, 20, 0, 12.0, 59760.0, @kokPartiId, 'AKTIF', '2026-02-15', '2026-02-15', 'LOT-2026-LEYLANDI-001')
+        `, { tenantId, kokPartiId });
+        const cocukPartiId = cRes[0].Id;
 
-        // 6. Sıcaklık ve Gübre
-        await this.db.query(`INSERT INTO TemperatureLogs (TenantId, LogDate, SeraIciSabah, SeraIciOgle, SeraIciAksam) VALUES (@tenantId, @date, 1.5, 24.5, 23.1)`, { tenantId, date: new Date() });
+        // 5.3. Kök Parti İşlem Detayları
+        await this.db.query(`
+            INSERT INTO FDX_PartiIslemleri 
+            (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, Miktar, MaliyetTutar, ToplamMaliyetEtkisi, IslemYapan, IslemTarihi)
+            VALUES 
+            (@tenantId, @kokPartiId, 'LOT-2026-LEYLANDI-001', 'ALIS_GIRIS', 'Alış faturasından parti oluşturuldu.', '150-01-001', 20000, 160000.0, 160000.0, 'Sistem', '2026-01-10')
+        `, { tenantId, kokPartiId });
+
+        await this.db.query(`
+            INSERT INTO FDX_PartiIslemleri 
+            (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, HedefStokKodu, Miktar, HedefSafha, HedefKonum, HedefPartiId, IslemYapan, IslemTarihi)
+            VALUES 
+            (@tenantId, @kokPartiId, 'LOT-2026-LEYLANDI-001', 'SASIRTMA_CIKIS', '5000 adet bitki KÜÇÜK_SAKSI safhasına (Parti: LOT-2026-LEYLANDI-001-S) şaşırtıldı.', '150-01-001', '150-01-002', 5000, 'KÜÇÜK_SAKSI', 'Sera B', @cocukPartiId, 'Sistem', '2026-02-15')
+        `, { tenantId, kokPartiId, cocukPartiId });
+
+        await this.db.query(`
+            INSERT INTO FDX_PartiIslemleri 
+            (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, FireMiktari, MaliyetTutar, IslemYapan, IslemTarihi)
+            VALUES 
+            (@tenantId, @kokPartiId, 'LOT-2026-LEYLANDI-001', 'FIRE', 'Tepsi kuruma kaynaklı 50 adet fire verildi.', '150-01-001', 50, 400.0, 'Sistem', '2026-03-01')
+        `, { tenantId, kokPartiId });
+
+        // 5.4. Çocuk Parti İşlem Detayları
+        await this.db.query(`
+            INSERT INTO FDX_PartiIslemleri 
+            (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, HedefStokKodu, Miktar, EkMaliyet, ToplamMaliyetEtkisi, HedefSafha, IslemYapan, IslemTarihi)
+            VALUES 
+            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001-S', 'SASIRTMA_GIRIS', 'LOT-2026-LEYLANDI-001 partisinden şaşırtılarak oluşturuldu. Ek saksı ve torf maliyetleri eklendi.', '150-01-001', '150-01-002', 5000, 20000.0, 60000.0, 'KÜÇÜK_SAKSI', 'Sistem', '2026-02-15')
+        `, { tenantId, cocukPartiId });
+
+        await this.db.query(`
+            INSERT INTO FDX_PartiIslemleri 
+            (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, FireMiktari, MaliyetTutar, IslemYapan, IslemTarihi)
+            VALUES 
+            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001-S', 'FIRE', 'Saksılama sonrası adaptasyon kaybı 20 adet.', '150-01-002', 20, 240.0, 'Sistem', '2026-03-05')
+        `, { tenantId, cocukPartiId });
+
+        // 6. Sıcaklık ve Konum Bazlı Kayıtlar (Yeni FDX_SicaklikKayitlari & Legacy)
+        await this.db.query(`
+            INSERT INTO FDX_SicaklikKayitlari (TenantId, Konum, OlcumTarihi, IcSicaklik, DisSicaklik, Nem, MazotLt, OlcumPeriyodu, Not_) 
+            VALUES (@tenantId, 'Sera A', GETDATE(), 22.4, 14.5, 65.0, 12.5, 'SABAH', 'Seed ile oluşturuldu')
+        `, { tenantId });
+
+        await this.db.query(`
+            INSERT INTO FDX_SicaklikKayitlari (TenantId, Konum, OlcumTarihi, IcSicaklik, DisSicaklik, Nem, MazotLt, OlcumPeriyodu, Not_) 
+            VALUES (@tenantId, 'Sera B', GETDATE(), 24.1, 15.2, 60.0, 15.0, 'OGLE', 'Seed ile oluşturuldu')
+        `, { tenantId });
+
+        await this.db.query(`INSERT INTO TemperatureLogs (TenantId, LogDate, SeraIciSabah, SeraIciOgle, SeraIciAksam) VALUES (@tenantId, @date, 18.5, 24.5, 21.0)`, { tenantId, date: new Date() });
         await this.db.query(`INSERT INTO FertilizerLogs (TenantId, LogDate, Fungusit, AminoAsit) VALUES (@tenantId, @date, 1, 1)`, { tenantId, date: new Date() });
 
-        // 7. Aktiviteler
-        await this.db.query(`INSERT INTO ActivityLogs (TenantId, Action, Title, Icon, Color) VALUES (@tenantId, 'Veri Yükleme', 'Örnek veriler MSSQL veritabanına yüklendi', '📊', 'bg-emerald-50 text-emerald-600')`, { tenantId });
+        // 7. Giderler (Expenses)
+        await this.db.query(`
+            INSERT INTO Expenses (TenantId, Title, Amount, ExpenseType, LogDate)
+            VALUES 
+            (@tenantId, 'Şubat Dönemi Personel Maaşları', 32000.0, 'İşçilik', '2026-02-28'),
+            (@tenantId, 'Sera Isıtma Elektrik Bedeli', 14500.0, 'Enerji', '2026-02-25'),
+            (@tenantId, 'Genel Nakliye Gideri', 6000.0, 'Diğer', '2026-02-20')
+        `, { tenantId });
+
+        // 8. Sistem Aktivite Kaydı
+        await this.db.query(`
+            INSERT INTO ActivityLogs (TenantId, Action, Title, Icon, Color) 
+            VALUES (@tenantId, 'Veri Yükleme', 'Netsis entegre parti ve maliyet örnek verileri başarıyla yüklendi.', '📊', 'bg-emerald-50 text-emerald-600')
+        `, { tenantId });
 
         return {
             success: true,
-            message: `${tenantId} için örnek veriler yüklendi.`
+            message: `${tenantId} için yeni Netsis/FDX entegre örnek verileri yüklendi.`
         };
     }
 
     @Delete('clear')
     async clear(@Query('tenantId') tenantId: string) {
-        const tables = ['ActivityLogs', 'TemperatureLogs', 'FertilizerLogs', 'ProductionCostHistory', 'ProductionHistory', 'ProductionBatches', 'PurchaseItems', 'Purchases', 'OrderItems', 'Orders', 'Sales', 'Suppliers', 'Plants', 'RecipeItems', 'Recipes', 'SupportHistory', 'SupportTickets', 'Expenses'];
-
-        // Customers tablosu Suppliers olarak da kullanıldığı için dikkatli silinmeli veya hepsi silinecekse:
-        // ForeignKey kısıtlamaları nedeniyle tersten silmek veya ROLLBACK/DELETE ile yönetmek lazım.
-        // Basitlik için FK'sız varsayarak siliyoruz:
+        const tables = [
+            'FDX_Barkodlar',
+            'FDX_PartiMaliyetleri',
+            'FDX_PartiIslemleri',
+            'FDX_BitkiPartileri',
+            'FDX_SicaklikKayitlari',
+            'ActivityLogs',
+            'TemperatureLogs',
+            'FertilizerLogs',
+            'ProductionCostHistory',
+            'ProductionHistory',
+            'ProductionBatches',
+            'PurchaseItems',
+            'Purchases',
+            'OrderItems',
+            'Orders',
+            'Sales',
+            'Suppliers',
+            'Plants',
+            'RecipeItems',
+            'Recipes',
+            'SupportHistory',
+            'SupportTickets',
+            'Expenses'
+        ];
 
         for (const table of tables) {
-            try { await this.db.query(`DELETE FROM ${table} WHERE TenantId = @tenantId`, { tenantId }); } catch (e) { }
+            try {
+                await this.db.query(`DELETE FROM ${table} WHERE TenantId = @tenantId`, { tenantId });
+            } catch (err: any) {
+                // Foreign key vs. nedeniyle hata verse bile devam et
+            }
         }
-        // Customers/Suppliers özel durum:
-        await this.db.query(`DELETE FROM Customers WHERE TenantId = @tenantId`, { tenantId });
+
+        try {
+            await this.db.query(`DELETE FROM Customers WHERE TenantId = @tenantId`, { tenantId });
+        } catch (err) { }
 
         return { message: `${tenantId} verileri temizlendi.` };
     }

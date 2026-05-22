@@ -6,6 +6,7 @@ import { NetsisInvoicesService } from '../netsis/invoices/invoices.service';
 @Injectable()
 export class PurchasesService {
     private readonly logger = new Logger(PurchasesService.name);
+
     constructor(
         private db: DatabaseService,
         private activity: ActivityService,
@@ -13,6 +14,8 @@ export class PurchasesService {
     ) { }
 
     async create(tenantId: string, data: any) {
+        await this.ensurePurchaseItemNetsisColumns();
+
         const sql = `
             INSERT INTO Purchases (TenantId, SupplierId, SupplierName, OrderDate, Status, Category) 
             OUTPUT INSERTED.Id
@@ -31,12 +34,20 @@ export class PurchasesService {
 
         if (data.items && Array.isArray(data.items)) {
             for (const item of data.items) {
-                await this.db.query(`INSERT INTO PurchaseItems (PurchaseId, MaterialId, Amount, UnitPrice) VALUES (@pId, @mId, @amount, @price)`, {
-                    pId: purchaseId,
-                    mId: item.materialId,
-                    amount: Number(item.amount),
-                    price: Number(item.unitPrice) || 0
-                });
+                const stokKodu = String(item.materialId || item.stokKodu || item.StokKodu || item.sku || item.id || '').trim();
+                const stokAdi = item.materialName || item.stokAdi || item.StokAdi || item.name || null;
+
+                await this.db.query(
+                    `INSERT INTO PurchaseItems (PurchaseId, MaterialId, MaterialName, Amount, UnitPrice)
+                     VALUES (@pId, @mId, @mName, @amount, @price)`,
+                    {
+                        pId: purchaseId,
+                        mId: stokKodu || null,
+                        mName: stokAdi,
+                        amount: Number(item.amount),
+                        price: Number(item.unitPrice) || 0
+                    }
+                );
             }
         }
 
@@ -60,12 +71,22 @@ export class PurchasesService {
     }
 
     async findAll(tenantId: string) {
+        await this.ensurePurchaseItemNetsisColumns();
+
         const purchases = await this.db.query(`SELECT * FROM Purchases WHERE TenantId = @tenantId ORDER BY OrderDate DESC`, { tenantId }) as any[];
         if (!Array.isArray(purchases)) return [];
 
         const list: any[] = [];
         for (const p of purchases) {
-            const items = await this.db.query(`SELECT pi.*, p.Name as materialName FROM PurchaseItems pi LEFT JOIN Plants p ON pi.MaterialId = p.ErpCode WHERE pi.PurchaseId = @pId`, { pId: p.Id });
+            const items = await this.db.query(
+                `SELECT
+                    pi.*,
+                    COALESCE(pi.MaterialName, pi.MaterialId) as materialName,
+                    pi.MaterialId as stokKodu
+                 FROM PurchaseItems pi
+                 WHERE pi.PurchaseId = @pId`,
+                { pId: p.Id }
+            );
             list.push({
                 ...p,
                 id: p.Id.toString(),
@@ -81,7 +102,6 @@ export class PurchasesService {
     }
 
     async createSupplier(tenantId: string, data: any) {
-        // Otomatik kod üretimi (320-01-xxx)
         const prefix = '320-01';
         const results = await this.db.query(
             `SELECT TOP 1 ErpCode FROM Customers WHERE TenantId = @tenantId AND ErpCode LIKE @prefix + '%' ORDER BY ErpCode DESC`,
@@ -107,7 +127,7 @@ export class PurchasesService {
         const order = results[0];
 
         if (status === 'Tamamlandı' && order.Status !== 'Tamamlandı') {
-            await this.fulfillOrder(tenantId, id);
+            await this.fulfillOrder(id);
         }
 
         await this.db.query(`UPDATE Purchases SET Status = @status, ReceivedDate = @recAt WHERE Id = @id`, {
@@ -126,32 +146,30 @@ export class PurchasesService {
         return { id, status };
     }
 
-    private async fulfillOrder(tenantId: string, purchaseId: string) {
-        const items = await this.db.query(`SELECT pi.*, p.SupplierId FROM PurchaseItems pi JOIN Purchases p ON pi.PurchaseId = p.Id WHERE pi.PurchaseId = @pId`, { pId: purchaseId }) as any[];
+    private async fulfillOrder(purchaseId: string) {
+        await this.ensurePurchaseItemNetsisColumns();
+
+        const items = await this.db.query(`SELECT MaterialId, Amount FROM PurchaseItems WHERE PurchaseId = @pId`, { pId: purchaseId }) as any[];
         if (!Array.isArray(items)) return;
 
-        for (const item of items) {
-            if (item.MaterialId) {
-                await this.db.query(`UPDATE Plants SET CurrentStock = CurrentStock + @amount, SupplierId = COALESCE(@sId, SupplierId) WHERE Id = @mId AND TenantId = @tenantId`, {
-                    amount: item.Amount,
-                    sId: item.SupplierId || null,
-                    mId: item.MaterialId,
-                    tenantId
-                });
-            }
+        // Stok ana kaynağı Netsis'tir. Lokal Plants.CurrentStock artırılmaz.
+        // Gerçek stok girişi alış faturası / Netsis TBLSTHAR üzerinden yapılır.
+        const missingCodes = items.filter(i => !String(i.MaterialId || '').trim()).length;
+        if (missingCodes > 0) {
+            this.logger.warn(`Satınalma #${purchaseId}: ${missingCodes} kalemde Netsis STOK_KODU eksik.`);
         }
-
-        await this.activity.log(tenantId, {
-            action: 'Stok Girişi',
-            title: `Satınalma tamamlandı. Stoklar güncellendi.`,
-            icon: '📥',
-            color: 'bg-emerald-50 text-emerald-600'
-        });
     }
 
     async delete(tenantId: string, id: string) {
         await this.db.query(`DELETE FROM PurchaseItems WHERE PurchaseId = @id`, { id });
         await this.db.query(`DELETE FROM Purchases WHERE Id = @id AND TenantId = @tenantId`, { id, tenantId });
         return { id };
+    }
+
+    private async ensurePurchaseItemNetsisColumns() {
+        await this.db.query(`
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PurchaseItems') AND name = 'MaterialName')
+                ALTER TABLE PurchaseItems ADD MaterialName NVARCHAR(200) NULL;
+        `);
     }
 }

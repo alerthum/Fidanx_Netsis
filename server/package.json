@@ -26,6 +26,7 @@
     "@nestjs/core": "^11.1.14",
     "@nestjs/platform-express": "^11.1.14",
     "@nestjs/swagger": "^11.2.5",
+    "fidanx-netsis": "file:..",
     "firebase-admin": "^12.7.0",
     "mssql": "^12.2.0",
     "reflect-metadata": "^0.2.2",

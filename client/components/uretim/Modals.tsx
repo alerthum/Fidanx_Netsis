@@ -3,7 +3,7 @@ import React from 'react';
 
 // Ortak Kullanılan Input Bileşenleri
 export const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 select-none">
+    <label className="block text-[11px] font-bold text-slate-800 mb-1.5 select-none">
         {children}
     </label>
 );
@@ -11,14 +11,14 @@ export const Label = ({ children }: { children: React.ReactNode }) => (
 export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className={`w-full p-3.5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-slate-800 ${props.className || ''}`}
+        className={`w-full p-2.5 bg-white rounded-xl border border-slate-200 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all text-sm font-medium text-slate-800 ${props.className || ''}`}
     />
 );
 
 export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     <select
         {...props}
-        className={`w-full p-3.5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-slate-800 appearance-none cursor-pointer ${props.className || ''}`}
+        className={`w-full p-2.5 bg-white rounded-xl border border-slate-200 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all text-sm font-medium text-slate-800 appearance-none cursor-pointer ${props.className || ''}`}
     >
         {props.children}
     </select>
@@ -37,26 +37,26 @@ export function ModalWrapper({ isOpen, onClose, title, subtitle, children, icon 
 
     if (large) {
         return createPortal(
-            <div className="fx-modal-backdrop">
-                <div className="fx-modal-large">
-                    <div className="fx-modal-header">
-                        <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-950 text-white flex items-center justify-center text-3xl shadow-xl">
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[4px] flex items-center justify-center p-4 z-[9999] animate-fade-in">
+                <div className="bg-white rounded-[1.5rem] w-full max-w-5xl shadow-2xl flex flex-col h-[90vh] overflow-hidden relative">
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-xl shadow-sm">
                                 {icon}
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">{title}</h3>
-                                {subtitle && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{subtitle}</p>}
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight">{title}</h3>
+                                {subtitle && <p className="text-xs font-medium text-slate-500">{subtitle}</p>}
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all text-3xl"
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all text-xl"
                         >
                             ✕
                         </button>
                     </div>
-                    <div className="fx-modal-body bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto bg-slate-50/50 p-6">
                         {children}
                     </div>
                 </div>
@@ -66,27 +66,29 @@ export function ModalWrapper({ isOpen, onClose, title, subtitle, children, icon 
     }
 
     return createPortal(
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[6px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-[9999] animate-fade-in touch-none sm:touch-auto">
-            <div className="bg-white rounded-t-[2.5rem] sm:rounded-[2rem] w-full sm:max-w-xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden transform transition-all relative border border-white/20">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[4px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-[9999] animate-fade-in touch-none sm:touch-auto">
+            <div className="bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden transform transition-all relative">
                 {/* Header */}
-                <div className="px-8 py-7 border-b border-slate-100 flex items-start gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-sm border border-emerald-100 flex-shrink-0">
-                        {icon}
-                    </div>
-                    <div className="flex-1 mt-1">
-                        <h3 className="text-xl font-black text-slate-900 leading-tight uppercase tracking-tight">{title}</h3>
-                        {subtitle && <p className="text-[10px] font-black text-slate-400 mt-1.5 uppercase tracking-widest">{subtitle}</p>}
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-lg flex-shrink-0">
+                            {icon}
+                        </div>
+                        <div className="flex-1 mt-0.5">
+                            <h3 className="text-base font-black text-slate-900 leading-tight">{title}</h3>
+                            {subtitle && <p className="text-[11px] font-medium text-slate-500 mt-0.5">{subtitle}</p>}
+                        </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-12 h-12 -mr-3 -mt-3 rounded-2xl flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-95 text-2xl"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all text-lg"
                     >
                         ✕
                     </button>
                 </div>
 
                 {/* Body (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
                     {children}
                 </div>
             </div>
@@ -193,9 +195,9 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                     <Input type="number" placeholder="0.00" value={form.ekMaliyetTutar || ''} onChange={e => setForm({ ...form, ekMaliyetTutar: Number(e.target.value) })} />
                 </div>
                 <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-sm font-bold text-slate-600">Şaşırtılacak Adet</span>
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mak: {batch.mevcutMiktar}</span>
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-bold text-slate-700">Şaşırtılacak Adet</span>
+                        <span className="text-xs font-bold text-slate-500">Mak: {batch.mevcutMiktar}</span>
                     </div>
                     <div className="flex items-center">
                         <input
@@ -204,20 +206,20 @@ export function TransplantModal({ isOpen, onClose, batch, stages, locations, onS
                             max={batch.mevcutMiktar}
                             value={form.sasirtilanMiktar}
                             onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                         />
                     </div>
-                    <div className="mt-4 flex items-center gap-3">
-                        <Input type="number" min="1" max={batch.mevcutMiktar} value={form.sasirtilanMiktar} onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })} className="text-center text-xl font-black py-4 !border-emerald-200 !text-emerald-700 bg-emerald-50/50 focus:!bg-white" />
+                    <div className="mt-3">
+                        <Input type="number" min="1" max={batch.mevcutMiktar} value={form.sasirtilanMiktar} onChange={e => setForm({ ...form, sasirtilanMiktar: Number(e.target.value) })} className="text-center font-bold" />
                     </div>
                 </div>
 
-                <div className="col-span-2 mt-4 flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
+                <div className="col-span-2 mt-2 flex gap-3">
+                    <button onClick={onClose} className="w-1/3 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
                         disabled={!form.hedefSafha || form.sasirtilanMiktar <= 0 || form.sasirtilanMiktar > batch.mevcutMiktar}
-                        className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 py-3 bg-[#ff7a18] text-white rounded-xl font-bold shadow hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Onayla & Böl
                     </button>
@@ -271,12 +273,12 @@ export function SatisModal({ isOpen, onClose, batch, onSave }: any) {
                     </div>
                 </div>
 
-                <div className="col-span-2 flex gap-3">
-                    <button onClick={onClose} className="py-4 px-6 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
+                <div className="col-span-2 flex gap-3 mt-2">
+                    <button onClick={onClose} className="w-1/3 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
                         disabled={form.satisAdet <= 0 || form.satisAdet > batch.mevcutMiktar}
-                        className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        className="flex-1 py-3 bg-[#ff7a18] text-white rounded-xl font-bold shadow hover:bg-orange-600 transition-colors disabled:opacity-50"
                     >
                         Satış Kaydet
                     </button>
@@ -316,11 +318,11 @@ export function FireModal({ isOpen, onClose, batch, onSave }: any) {
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                    <button onClick={onClose} className="py-4 px-6 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-colors">İptal</button>
+                    <button onClick={onClose} className="w-1/3 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">İptal</button>
                     <button
                         onClick={() => onSave(form)}
                         disabled={form.fireMiktar <= 0 || form.fireMiktar > batch.mevcutMiktar || !form.sebep}
-                        className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black shadow-lg shadow-red-200 hover:bg-red-600 transition-colors disabled:opacity-50"
+                        className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
                         Fire Düş
                     </button>

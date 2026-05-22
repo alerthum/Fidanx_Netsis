@@ -28,13 +28,13 @@
 | 3 | **Netsis Müşteriler** | `netsis/customers/` | ✅ | TBLCASABIT (120/320 kodları) |
 | 4 | **Netsis Dashboard** | `netsis/dashboard/dashboard.service.ts` | ✅ | Stok özeti, kritik stoklar, top müşteriler |
 | 5 | **Netsis Finans** | `netsis/finance/finance.service.ts` | ✅ | Banka, kasa, çek/senet, ödemeler |
-| 6 | **Üretim** | `production/production.service.ts` | ⚠️ | Parti takibi var ama eksik (barkod, saksı geçişi yok) |
-| 7 | **Satışlar** | `sales/sales.service.ts` | ⚠️ | Lokal tablo, Netsis'e yazma TODO |
-| 8 | **Bitkiler** | `plants/plants.service.ts` | ⚠️ | Lokal tablo, Netsis ile çakışma riski |
+| 6 | **Üretim** | `production/production.service.ts` | ✅/⚠️ | FDX parti takibi, şaşırtma, fire, satış, maliyet dağıtımı ve şecere var; Netsis serbest üretim sonu doğrulanmadı |
+| 7 | **Satışlar** | `sales/sales.service.ts` + `netsis/invoices` | ✅/⚠️ | Satış faturası Netsis motoru üzerinden yazılabiliyor; sipariş kalemleri `StokKodu/StokAdi` ile tutulur, lokal `Plants` stoku düşülmez |
+| 8 | **Bitkiler / Plants** | `plants/plants.service.ts` | ⚠️ | Eski lokal yardımcı tablo. POST/PUT/Silme kapalı; ana stok/bitki kartı Netsis'tir |
 | 9 | **Reçeteler** | `recipes/recipes.service.ts` | ✅ | Malzeme listesi (BOM) |
 | 10 | **Finans/Giderler** | `finans/expenses.service.ts` | ⚠️ | Lokal, Netsis ile entegre değil |
 | 11 | **Maliyet** | `finans/costing.service.ts` | ⚠️ | Basit hesaplama, Netsis serbest üretim yok |
-| 12 | **Entegrasyon** | `integration/integration.service.ts` | ⚠️ | Sync var, pushInvoice TODO durumda |
+| 12 | **Entegrasyon** | `integration/integration.service.ts` | ✅ | Cari/stok sync aktif. Eski `pushInvoice` deprecated; faturalar `netsis/invoices` üzerinden (`createInvoice`, `GET .../push`, `syncFidanxSaleToNetsis` / alış için purchase sync). |
 
 ### 1.3 Mevcut Frontend Sayfaları
 
@@ -52,7 +52,7 @@
 | Raporlar | `/raporlar` | ⚠️ Kısmi veri |
 | Finans | `/finans` | ✅ Netsis banka/kasa/çek |
 | Firmalar | `/firmalar` | ✅ Netsis CRM |
-| Scanner | `/scanner` | ❌ Mock/Simülasyon |
+| Scanner | `/scanner` | ⚠️ Kamera okuma var; sahada doğrulanmalı |
 | Ayarlar | `/ayarlar` | ✅ |
 | Destek | `/destek` | ✅ |
 
@@ -69,7 +69,7 @@ ProductionCostHistory→ Maliyet geçmişi
 Recipes              → Reçeteler (BOM)
 RecipeItems          → Reçete kalemleri
 Tenants              → Kiracı/İşletme bilgileri
-Plants               → Bitki/Ürün kartları (Lokal)
+Plants               → Eski lokal bitki/ürün kartları (ana kaynak değil; Netsis stok kartı esas)
 Customers            → Müşteri kartları (Lokal)
 Sales                → Satış kayıtları
 Orders               → Sipariş başlıkları
@@ -86,37 +86,37 @@ SupportHistory       → Destek geçmişi
 
 ### 2.1 KRİTİK EKSİKLİKLER
 
-#### 🔴 E1: Üretim Şaşırtma (Saksı Değişim) Mekanizması Eksik
-**Mevcut:** `ProductionBatches` tablosu sadece `Stage` alanı ile aşama takip ediyor. Şaşırtma yapıldığında maliyet eklenmesi ve parti bölünmesi yapılmıyor.  
-**Gerekli:** Şaşırtma butonuyla saksı değişimi yapılması, eklenen saksı/toprak/torf maliyetinin partiye yansıması, parti bölünebilmesi (500 adetten 200'ünü şaşırt gibi).
+#### 🟡 E1: Üretim Şaşırtma (Saksı Değişim) Mekanizması
+**Mevcut:** Yeni `FDX_BitkiPartileri` ve `FDX_PartiIslemleri` akışında şaşırtma, parti bölme, hedef safha ve ek maliyet mantığı var.  
+**Kalan:** Canlı saha senaryosu, reçete/malzeme sarfı ve Netsis stok hareketi doğrulaması yapılmalı.
 
-#### 🔴 E2: Barkod/QR Sistemi Mock Durumda
-**Mevcut:** `scanner/page.tsx` sadece simülasyon. Gerçek kamera erişimi ve barkod okuma yok.  
-**Gerekli:** Gerçek cihaz kamerası ile barkod/QR okutma. Satış, üretim geçişi ve stok sorgulama.
+#### 🔴 E2: Barkod/QR (Saha kullanımı olgunluğu)
+**Mevcut:** `/scanner` sayfasında gerçek kamera ile okuma (`html5-qrcode`) mevcut.  
+**Önerilen:** Sahada doğrulama (ışık, cihaz), satış ve şaşırtma ile entegrasyon senaryolarının testi.
 
 #### 🔴 E3: Netsis Serbest Üretim Sonu Kaydı Entegrasyonu Yok
 **Mevcut:** Üretim işlemleri sadece lokal `ProductionBatches` tablosunda. Netsis'e yansımıyor.  
 **Gerekli:** Netsis'in serbest üretim modülü kullanılarak üretim kayıtlarının ERP'ye yazılması.
 
-#### 🔴 E4: Bitki Şeceresi (Genealogy/Traceability) Yok
-**Mevcut:** `ProductionHistory` sadece basit text logları tutuyor. Bitkinin tüm yaşam döngüsü izlenemiyor.  
-**Gerekli:** Her saksıya barkod basılması, okutulduğunda o bitkinin tarihçesinin (alım, dikme, ilaçlama, gübre, saksı değişimi, maliyet) tamamen görülebilmesi.
+#### 🟡 E4: Bitki Şeceresi (Genealogy/Traceability)
+**Mevcut:** `FDX_PartiIslemleri` ve `GET /production/batches/:id/lineage` ile parti bazlı yaşam döngüsü görülebiliyor.  
+**Kalan:** Tekil saksı/barkod seviyesinde saha testi ve etiketleme standardı netleşmeli.
 
-#### 🔴 E5: Gerçek Maliyet Hesaplama Sistemi Eksik
-**Mevcut:** `costing.service.ts` sadece `ProductionCostHistory` üzerinden basit toplam yapıyor. İşçilik, enerji, genel giderler dahil değil.  
-**Gerekli:** Tüm giderlerin (işçilik, enerji, nakliye, ilaç, gübre, saksı, toprak) birim bitki maliyetine yansıması.
+#### 🟡 E5: Gerçek Maliyet Hesaplama Sistemi
+**Mevcut:** Parti bazlı birikimli maliyet, şaşırtma maliyeti, toplu işlem/gider dağıtımı ve fire sonrası birim maliyet güncellemesi var.  
+**Kalan:** Muhasebe kabulü, gider kaynaklarının Netsis/Expenses eşleştirmesi ve rapor doğrulaması yapılmalı.
 
 ### 2.2 ORTA ÖNCELİKLİ EKSİKLİKLER
 
 | # | Eksiklik | Açıklama |
 |---|----------|----------|
-| E6 | **Plants-Netsis Çakışması** | `Plants` tablosu lokal stok tutuyor ama stok sayfa Netsis'ten okuyor. İki farklı veri kaynağı. Plants tablosu kaldırılmalı veya sadece ek bilgi (barkod, kritik stok) için kullanılmalı |
-| E7 | **Satış Faturası Netsis'e Yazılmıyor** | `pushInvoice` fonksiyonu TODO durumda |
-| E8 | **Sera Sıcaklık Kayıtlarında Sera Ayrımı** | Sera/konum tanımları ayarlarda mevcut (Sera 1, Sera 2, Açık Alan, Depo) ama `TemperatureLogs` sera ayrımı yapmıyor |
+| E6 | **Plants-Netsis Çakışması** | Temel karar uygulandı: stok ve bitki kartı Netsis'te tutulur. `Plants` yazma yolları kapatıldı; satış/satınalma kalemleri Netsis `STOK_KODU` ile çalışır |
+| E7 | **Satış/alış fişinin Netsis yazımı** | `IntegrationService.pushInvoice` **deprecated**. Yazım `NetsisInvoicesService.createInvoice`, `syncFidanxSaleToNetsis` / purchase sync ve `GET /netsis/invoices/push` ile yapılır; canlı senaryolarda doğrulanmalı. |
+| E8 | **Sera Sıcaklık Kayıtlarında Sera Ayrımı** | Yeni `FDX_SicaklikKayitlari` konum bazlıdır; eski `TemperatureLogs` geriye dönük destek için okunur |
 | E9 | **İlaç/Gübre Stok Düşümü** | `FertilizerLogs` sadece checkbox tutuyor, hangi ilaçtan ne kadar kullanıldığı yok |
-| E10 | **Ölüm/Fire Kaydı** | Ölen bitkilerin stoktan düşülmesi mekanizması yok |
-| E11 | **Sipariş-Stok Eşleşmesi** | `OrderItems.PlantId` ile Netsis `StokKodu` uyumsuz |
-| E12 | **Mobil Uygulama Hazırlığı** | PWA yapısı yok, Google Play/App Store için altyapı eksik |
+| E10 | **Ölüm/Fire Kaydı** | Parti bazlı fire kaydı var; Netsis stok etkisi ve muhasebe yöntemi canlı senaryo ile netleşmeli |
+| E11 | **Sipariş-Stok Eşleşmesi** | `OrderItems` için `StokKodu/StokAdi` alanları eklendi; eski `PlantId` sadece geriye dönük kolon olarak kalır |
+| E12 | **Mobil uygulama / mağaza** | Web tarafında PWA (kurulum istemi, SW) eklenmiştir; App Store / Play yayını ayrı adımdır. |
 
 ### 2.3 İYİLEŞTİRME ÖNERİLERİ
 
@@ -132,42 +132,38 @@ SupportHistory       → Destek geçmişi
 
 ## 3. ÖNERİLEN MİMARİ DEĞİŞİKLİKLER
 
-### 3.1 Stok Yönetimi Stratejisi: Tek Stok Kartı + FidanX Parti Takibi
+### 3.1 Stok Yönetimi Stratejisi: Aşamaya Göre Netsis Stok Kartı + Parti/Lot Sürekliliği
 
 > [!IMPORTANT]
-> **Netsis'te her bitki türü TEK BİR stok kartı olarak kalır.** Saksı boyutu ve büyüme aşaması Netsis'te değil, FidanX parti tablosunda takip edilir. Bitki HER AŞAMADA satılabilir (sadece fiyat farklıdır). `Plants` tablosu kaldırılacak veya sadece Netsis'te olmayan ek bilgiler için kullanılacak.
+> **Bitkiler artık üretim/satış aşamasına göre ayrı Netsis stok kartlarıdır.** Saksı boyutu veya safha sadece FidanX açıklaması değildir; Netsis stok hareketinde de hangi aşamadaki ürünün girdiği/çıktığı görünmelidir. `Plants` eski/yedek lokal tablodur ve stok kartı veya stok miktarı ana kaynağı değildir.
 
-**Netsis Stok Kodlama (Basit):**
+**Netsis Stok Kodlama:**
 
 ```
-150-01-XXX  → Bitki Fidanları (Leylandi, Zeytin vb.) – HER BİTKİ TEK KART
-150-02-XXX  → Saksı / Ambalaj Malzemeleri (2L Saksı, 5L Saksı, 10L Saksı...)
-150-03-XXX  → Hammadde (Toprak, Gübre, Torf, İlaç)
-157-XX-XXX  → Yardımcı Malzeme
+150/151/152/... → Bitki stok kartları aşamaya göre ayrılır
+  Örn: Leylandi Tepsi, Leylandi 2 Lt, Leylandi 5 Lt, Leylandi 10 Lt, Leylandi 30 Lt
+
+157-01 → Bitki ilaçları ve gübre
+157-02 → Saksı ve viyoller
+157-03 → Toprak / cüruf / torf vb.
 ```
 
 > [!NOTE]
-> **Eski yaklaşım (KALDIRILDI):** Her saksı boyutu için ayrı stok kartı (151-01-001 Leylandi 2L, 151-01-002 Leylandi 5L, 152-01-001 Leylandi Mamul) → Bu yaklaşım kaldırıldı çünkü standart üretim yok, bitki her aşamada satılabilir.
+> 150-151-152 klasik üretim mantığı körü körüne uygulanmayacak. Gelen bitki doğrudan satılabilir veya yetiştirme sürecine girebilir. Bu nedenle ana model “süreç bazlı bitki yetiştiriciliği”dir.
 
-**Yeni Yaklaşım – Tek Stok Kartı + Parti Detayı:**
+**Yeni Yaklaşım – Aşama Kartı + Parti/Lot Sürekliliği:**
 
 ```
-Netsis Tarafı (Basit):
-├── 150-01-001  Leylandi Fidanı          → Tek stok kartı
-├── 150-01-002  Zeytin Fidanı            → Tek stok kartı
-├── 150-02-001  2L Saksı                 → Malzeme
-├── 150-02-002  5L Saksı                 → Malzeme
-├── 150-03-001  Torf                     → Hammadde
-└── 150-03-002  Gübre XYZ                → Hammadde
+Netsis:
+- TBLSTSABIT: Leylandi Tepsi, Leylandi 2 Lt, Leylandi 5 Lt gibi ayrı stok kartları
+- TBLSTHAR: Her giriş/çıkış stok kodu bazında yazılır
+- TBLSERITRA: TBLSTHAR.INCKEYNO = TBLSERITRA.STRA_INC bağıyla parti/lot yazılır
+- TBLSERITRA.SERI_NO = FidanX PartiNo/LotNo
 
-FidanX Tarafı (Detaylı Takip – PARTİ BAZLI):
-├── PARTİ: LOT-2026-001
-│   ├── Bitki: Leylandi (150-01-001)
-│   ├── Safha: KÜÇÜK_SAKSI (5L)          ← Ayarlardaki dinamik safhalar
-│   ├── Konum: Sera 1 / A Bölgesi        ← Ayarlardaki konumlar
-│   ├── Miktar: 500 adet
-│   ├── Birim Maliyet: ₺45.20 (birikmeli)
-│   └── Geçmiş: Alış→Dikim→İlaçlama→Şaşırtma→Şaşırtma→Satış...
+FidanX:
+- FDX_BitkiPartileri: Parti durumu, konum, safha, miktar, birim/toplam maliyet
+- FDX_PartiIslemleri: Şaşırtma, fire, bakım, satış, maliyet ve Netsis INCKEYNO bağlantıları
+- KokPartiNo: Stok kodu değişse bile köken lotu korur
 ```
 
 ### 3.2 Üretim Akışı: Parti Merkezli Basit Yapı
@@ -374,29 +370,29 @@ CREATE TABLE FDX_SicaklikKayitlari (
 - Ara üretim işlemleri (şaşırtma, ilaçlama vb.) **sadece FidanX'te** kalır
 - `pushInvoice`: Satış faturası → tblFATUIRS + TBLSTHAR
 
-#### 2.2 Netsis Entegrasyonu (Basitleştirilmiş)
+#### 2.2 Netsis Entegrasyonu (Parti/Lot Uyumlu)
 
 > [!NOTE]
-> **Eski yaklaşım:** Her şaşırtmada Netsis'e stok geçişi yazılacaktı (151-01-001 çıkış → 151-01-002 giriş). Bu kaldırıldı çünkü tek stok kartı kullanıyoruz.
+> FidanX işlemleri artık Netsis stok hareketinden kopuk düşünülmeyecek. Stok kodu değişen her aşama geçişinde TBLSTHAR hareketi ve ona bağlı TBLSERITRA lot satırı oluşmalıdır.
 
-**Yeni yaklaşım – Netsis'e sadece alış ve satış yazılır:**
+**Yeni yaklaşım – Netsis'te izlenecek hareketler:**
 
 ```
 Netsis'e Yazılacak İşlemler:
-1. ALIŞ  → Zaten fatura ile Netsis'te (mevcut sistem)
-2. SATIŞ → Satış faturası yazılacak (TODO)
-   - 150-01-001 Leylandi Fidanı → ÇIKIŞ (STHAR_GCKOD='C')
-   - Cari hesaba borç → TBLCAHAR
-3. SARF  → İlaç/gübre/saksı stok düşümü (opsiyonel)
-   - 150-02-001 2L Saksı → ÇIKIŞ (şaşırtmada kullanıldı)
-   - 150-03-001 Torf → ÇIKIŞ (şaşırtmada kullanıldı)
-
-Netsis'e YAZILMAYACAK İşlemler (sadece FidanX'te):
-- Şaşırtma safha değişimi
-- Günlük bakım işlemleri (sulama, budama)
-- Fire kayıtları
-- Maliyet dağıtımları
-- Konum/sera transferleri
+1. ALIŞ
+   - Leylandi Tepsi stok giriş hareketi
+   - TBLSERITRA.SERI_NO = LOT-2026-001
+2. ŞAŞIRTMA / TRANSFORMASYON
+   - Kaynak stoktan çıkış: Leylandi Tepsi
+   - Hedef stoka giriş: Leylandi 2 Lt
+   - Yardımcı malzeme çıkışı: 157-02 saksı, 157-03 torf vb.
+   - Aynı kök parti/lot korunur
+3. FIRE
+   - İlgili stok kodu ve parti/lot için çıkış
+   - FidanX maliyeti kalan sağlam miktara yayar
+4. SATIŞ
+   - Satış hangi aşamadaysa o stok kartından yapılır
+   - Fatura kaleminde parti/lot TBLSERITRA'ya yazılır
 ```
 
 ---

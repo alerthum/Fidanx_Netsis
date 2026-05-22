@@ -43,14 +43,15 @@ export default function RaporlarPage() {
     const fetchAllData = async () => {
         setIsLoading(true);
         try {
-            const [stocksRes, prodRes, summaryRes, salesRes, purchRes, tempRes, fertRes] = await Promise.all([
+            const [stocksRes, prodRes, summaryRes, salesRes, purchRes, tempRes, fertRes, expensesRes] = await Promise.all([
                 fetch(`${API_URL}/netsis/stocks/list`),
-                fetch(`${API_URL}/production?tenantId=demo-tenant`),
+                fetch(`${API_URL}/production/batches?tenantId=demo-tenant`),
                 fetch(`${API_URL}/netsis/invoices/summary`),
                 fetch(`${API_URL}/netsis/invoices?faturaTuru=1`),
                 fetch(`${API_URL}/netsis/invoices?faturaTuru=2`),
                 fetch(`${API_URL}/production/sicaklik?tenantId=demo-tenant`),
-                fetch(`${API_URL}/production/fertilizer-logs?tenantId=demo-tenant`)
+                fetch(`${API_URL}/production/fertilizer-logs?tenantId=demo-tenant`),
+                fetch(`${API_URL}/finans/expenses?tenantId=demo-tenant`)
             ]);
 
             if (stocksRes.ok) {
@@ -77,7 +78,12 @@ export default function RaporlarPage() {
                 setFertilizerLogs(Array.isArray(d) ? d : []);
             }
 
-            setExpenses([]);
+            if (expensesRes.ok) {
+                const d = await expensesRes.json().catch(() => []);
+                setExpenses(Array.isArray(d) ? d : []);
+            } else {
+                setExpenses([]);
+            }
 
             const [profRes, seraRes] = await Promise.allSettled([
                 fetch(`${API_URL}/production/reports/profitability?tenantId=demo-tenant`),
@@ -110,10 +116,11 @@ export default function RaporlarPage() {
     // Calculations
     const totalStock = plants.reduce((sum, p) => sum + (p.currentStock || 0), 0);
     const totalBatches = production.length;
-    const totalCuttings = production.reduce((sum, b) => sum + (Number(b.quantity) || 0), 0);
+    const totalCuttings = production.reduce((sum, b) => sum + (Number(b.quantity ?? b.mevcutMiktar) || 0), 0);
     const totalSalesIncome = sales.reduce((sum, s) => sum + (s.ToplamTutar || 0), 0);
     const totalPurchaseCost = purchases.reduce((sum, p) => sum + (p.ToplamTutar || 0), 0);
-    const totalExpense = totalPurchaseCost; // Basitleştirilmiş
+    const totalOperationalExpense = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalExpense = totalPurchaseCost + totalOperationalExpense;
     const netProfit = totalSalesIncome - totalExpense;
 
     // Monthly breakdown
@@ -136,7 +143,7 @@ export default function RaporlarPage() {
     const getExpenseByCategory = () => {
         const cats: Record<string, number> = {};
         expenses.forEach(e => {
-            const cat = e.category || 'Diğer';
+            const cat = e.category || e.type || 'Diğer';
             cats[cat] = (cats[cat] || 0) + (Number(e.amount) || 0);
         });
         return Object.entries(cats).sort((a, b) => b[1] - a[1]);
@@ -145,15 +152,15 @@ export default function RaporlarPage() {
     // Plant cost analysis from production batches
     const getPlantCosts = () => {
         return production
-            .filter(b => b.quantity > 0)
+            .filter(b => Number(b.quantity ?? b.mevcutMiktar) > 0)
             .map(b => ({
-                name: b.name || b.plantName || 'İsimsiz',
-                lotId: b.lotId,
-                quantity: b.quantity,
-                totalCost: b.accumulatedCost || 0,
-                unitCost: b.quantity > 0 ? (b.accumulatedCost || 0) / b.quantity : 0,
-                location: b.location || 'Belirsiz',
-                stage: b.stage || '-'
+                name: b.name || b.plantName || b.bitkiAdi || 'İsimsiz',
+                lotId: b.lotId || b.partiNo,
+                quantity: Number(b.quantity ?? b.mevcutMiktar) || 0,
+                totalCost: Number(b.accumulatedCost ?? b.toplamMaliyet) || 0,
+                unitCost: Number(b.birimMaliyet) || ((Number(b.quantity ?? b.mevcutMiktar) || 0) > 0 ? (Number(b.accumulatedCost ?? b.toplamMaliyet) || 0) / (Number(b.quantity ?? b.mevcutMiktar) || 1) : 0),
+                location: b.location || b.konum || 'Belirsiz',
+                stage: b.stage || b.safha || '-'
             }))
             .sort((a, b) => b.unitCost - a.unitCost);
     };
@@ -179,7 +186,7 @@ export default function RaporlarPage() {
             <main className="flex-1 min-w-0">
                 <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-row justify-between items-center sticky top-0 z-30 shadow-sm gap-4">
                     <div>
-                        <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Gelişmiş Raporlar</h1>
+                        <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Geli?mi? Raporlar</h1>
                         <p className="hidden lg:block text-xs lg:text-sm text-slate-500">İşletmenizin tüm verilerini tek ekrandan inceleyin.</p>
                     </div>
                     <div className="flex gap-3">
@@ -518,7 +525,7 @@ export default function RaporlarPage() {
                                             })()}
                                         </div>
                                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">⚡ Enerji Giderleri</h3>
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">? Enerji Giderleri</h3>
                                             {(() => {
                                                 const energyExpenses = expenses.filter(e => e.category === 'Enerji');
                                                 const energyTotal = energyExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -754,7 +761,7 @@ export default function RaporlarPage() {
                                                                     <span className="block text-[9px] font-black text-orange-400 uppercase mb-1 text-center">Sera İçi</span>
                                                                     <div className="flex justify-between text-xs font-bold text-orange-600">
                                                                         <span>S:{si.sabah ?? '-'}</span>
-                                                                        <span>Ö:{si.ogle ?? '-'}</span>
+                                                                        <span>O:{si.ogle ?? '-'}</span>
                                                                         <span>A:{si.aksam ?? '-'}</span>
                                                                     </div>
                                                                 </div>
@@ -762,7 +769,7 @@ export default function RaporlarPage() {
                                                                     <span className="block text-[9px] font-black text-blue-400 uppercase mb-1 text-center">Dışarı</span>
                                                                     <div className="flex justify-between text-xs font-bold text-blue-600">
                                                                         <span>S:{sd.sabah ?? '-'}</span>
-                                                                        <span>Ö:{sd.ogle ?? '-'}</span>
+                                                                        <span>O:{sd.ogle ?? '-'}</span>
                                                                         <span>A:{sd.aksam ?? '-'}</span>
                                                                     </div>
                                                                 </div>
@@ -958,3 +965,4 @@ function TemperatureChart({ data }: { data: any[] }) {
         </div>
     );
 }
+

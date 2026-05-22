@@ -41,9 +41,39 @@ export class NetsisStocksController {
         fisNo?: string;
         aciklama?: string;
         tarih?: string;
-        items: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
+        partiNo?: string;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat?: number; partiNo?: string }>;
     }) {
         return this.stocksService.createConsumption(body);
+    }
+
+    @Post('lot-movement')
+    async createLotMovement(@Body() body: {
+        stokKodu: string;
+        gckod: 'G' | 'C';
+        miktar: number;
+        partiNo: string;
+        fisNo?: string;
+        tarih?: string;
+        birimFiyat?: number;
+        aciklama?: string;
+        htur?: number;
+        ftirsip?: string;
+        depoKodu?: string | number;
+    }) {
+        return this.stocksService.createLotMovement(body);
+    }
+
+    @Post('stage-card')
+    async ensureOrCreateStageStock(@Body() body: {
+        kaynakStokKodu: string;
+        hedefStokKodu?: string;
+        hedefStokAdi?: string;
+        hedefSafha?: string;
+        saksiBoyutu?: string;
+        codePrefix?: string;
+    }) {
+        return this.stocksService.ensureOrCreateStageStock(body);
     }
 
     /** Kaynak stoktan çıkış, hedef stoğa giriş (şaşırtma / saksı değişimi). */
@@ -52,8 +82,13 @@ export class NetsisStocksController {
         kaynakStokKodu: string;
         hedefStokKodu: string;
         miktar: number;
+        partiNo?: string;
+        kokPartiNo?: string;
         aciklama?: string;
         tarih?: string;
+        kaynakBirimMaliyet?: number;
+        hedefBirimMaliyet?: number;
+        yardimciMalzemeler?: Array<{ stokKodu: string; miktar: number; birimFiyat?: number }>;
     }) {
         return this.stocksService.transferBetweenStocks(body);
     }

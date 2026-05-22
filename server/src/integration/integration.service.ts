@@ -35,7 +35,6 @@ export class IntegrationService {
 
         try {
             const pool = await sql.connect(sqlConfig);
-            // Cari Tip A veya S olan, 120 veya 320 ile başlayanlar
             const result = await pool.request().query(
                 `SELECT CARI_KOD, CARI_ISIM, VERGI_NUMARASI, CARI_TIP FROM TBLCASABIT 
                  WHERE LEFT(CARI_KOD, 3) IN ('120', '320')`
@@ -70,61 +69,16 @@ export class IntegrationService {
     }
 
     async syncStocks(tenantId: string) {
-        const config = await this.getNetsisConfig(tenantId);
-        if (!config || config.erpType !== 'NETSIS' || !config.sqlServerIp) {
-            this.logger.warn(`Kiracı ${tenantId} için Netsis yapılandırması bulunamadı.`);
-            return;
-        }
+        this.logger.warn(
+            `syncStocks çağrısı atlandı (tenant=${tenantId}). ` +
+            `Stok/bitki kartlarında ana kaynak Netsis TBLSTSABIT/TBLSTHAR; lokal Plants tablosuna kopyalama yapılmaz.`
+        );
 
-        const sqlConfig: sql.config = {
-            user: config.sqlUser,
-            password: config.sqlPass,
-            database: config.sqlDbName,
-            server: config.sqlServerIp,
-            options: {
-                encrypt: false,
-                trustServerCertificate: true,
-            },
+        return {
+            skipped: true,
+            sourceOfTruth: 'Netsis',
+            message: 'Stok kartları doğrudan Netsis veritabanından okunur; lokal Plants tablosuna senkron yapılmadı.'
         };
-
-        try {
-            const pool = await sql.connect(sqlConfig);
-            // Kullanıcının verdiği sorgu:
-            const result = await pool.request().query(
-                `SELECT dbo.trk(GRUP_ISIM) as GrupIsim, sbt.STOK_KODU, dbo.trk(STOK_ADI) as STOK_ADI, OLCU_BR1, S_YEDEK1 
-                 FROM TBLSTSABIT sbt 
-                 LEFT JOIN TBLSTGRUP gr ON sbt.GRUP_KODU = gr.GRUP_KOD`
-            );
-
-            for (const row of result.recordset) {
-                const existing = await this.db.query(`SELECT Id FROM Plants WHERE ErpCode = @code AND TenantId = @tenantId`, {
-                    code: row.STOK_KODU,
-                    tenantId
-                });
-
-                if (existing.length === 0) {
-                    await this.db.query(`INSERT INTO Plants (TenantId, ErpCode, Name, Category, Type, CurrentStock, Unit) VALUES (@tenantId, @code, @name, @cat, @type, 0, @unit)`, {
-                        tenantId,
-                        code: row.STOK_KODU,
-                        name: row.STOK_ADI,
-                        cat: row.GrupIsim || 'Netsis',
-                        type: 'NETSIS',
-                        unit: row.OLCU_BR1
-                    });
-                } else {
-                    await this.db.query(`UPDATE Plants SET Name = @name, Category = @cat, Unit = @unit WHERE Id = @id`, {
-                        name: row.STOK_ADI,
-                        cat: row.GrupIsim || 'Netsis',
-                        unit: row.OLCU_BR1,
-                        id: existing[0].Id
-                    });
-                }
-            }
-            this.logger.log(`Kiracı ${tenantId} için Netsis'ten ${result.recordset.length} stok senkronize edildi.`);
-            await pool.close();
-        } catch (err) {
-            this.logger.error(`Kiracı ${tenantId} için Netsis stok senkronizasyon hatası:`, err);
-        }
     }
 
     /**
@@ -140,22 +94,19 @@ export class IntegrationService {
     }
 
     async getNextErpCode(tenantId: string, module: 'CUSTOMER' | 'STOCK', prefix: string) {
-        // Netsis'ten son kodu çekip bir artırarak dönüyoruz
         const table = module === 'CUSTOMER' ? 'TBLCASABIT' : 'TBLSTSABIT';
         const column = module === 'CUSTOMER' ? 'CARI_KOD' : 'STOK_KODU';
 
-        const sql = `
-            SELECT TOP 1 ${column} as LastCode 
-            FROM ${table} WITH (NOLOCK) 
-            WHERE ${column} LIKE @prefix + '%' 
-            ORDER BY ${column} DESC
-        `;
-
-        const results = await this.db.query(sql, { prefix });
+        const results = await this.db.query(
+            `SELECT TOP 1 ${column} as LastCode
+             FROM ${table} WITH (NOLOCK)
+             WHERE ${column} LIKE @prefix + '%'
+             ORDER BY ${column} DESC`,
+            { prefix }
+        );
         if (results.length === 0) return `${prefix}001`;
 
         const lastCode = results[0].LastCode;
-        // Sayısal kısmı ayıklamaya çalışıyoruz
         const numericPartMatch = lastCode.match(/\d+$/);
         if (!numericPartMatch) return `${lastCode}001`;
 

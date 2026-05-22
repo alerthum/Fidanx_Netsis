@@ -468,17 +468,17 @@ export default function FirmalarPage() {
                                     <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {movements.map((m, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50 transition">
-                                                <td className="px-6 py-3 whitespace-nowrap font-mono text-slate-500">
+                                                <td className="px-6 py-3 whitespace-nowrap font-medium text-slate-600">
                                                     {m.Tarih ? new Date(m.Tarih).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 whitespace-nowrap font-mono text-slate-400">
+                                                <td className="px-6 py-3 whitespace-nowrap font-medium text-slate-500">
                                                     {m.VadeTarihi ? new Date(m.VadeTarihi).toLocaleDateString() : '-'}
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <button
                                                         type="button"
                                                         onClick={() => fetchInvoiceDetails(m.BelgeNo || '')}
-                                                        className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline text-left"
+                                                        className="font-semibold text-blue-600 hover:text-blue-800 hover:underline text-left"
                                                     >
                                                         {m.BelgeNo || m.HareketTuru}
                                                     </button>
@@ -487,10 +487,10 @@ export default function FirmalarPage() {
                                                 <td className="px-6 py-3 text-right font-bold text-rose-600">
                                                     {m.Borc > 0 ? `₺${m.Borc.toLocaleString()}` : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-bold text-emerald-600">
+                                                <td className="px-6 py-3 text-right font-semibold text-emerald-600">
                                                     {m.Alacak > 0 ? `₺${m.Alacak.toLocaleString()}` : '-'}
                                                 </td>
-                                                <td className={`px-6 py-3 text-right font-black bg-slate-50/50 ${m.Bakiye > 0 ? 'text-rose-700' : m.Bakiye < 0 ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                <td className={`px-6 py-3 text-right font-bold bg-slate-50/50 ${m.Bakiye > 0 ? 'text-rose-700' : m.Bakiye < 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
                                                     ₺{Math.abs(m.Bakiye).toLocaleString()} {m.Bakiye > 0 ? '(B)' : m.Bakiye < 0 ? '(A)' : ''}
                                                 </td>
                                             </tr>
@@ -540,9 +540,9 @@ export default function FirmalarPage() {
                             )}
 
                             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center px-8">
-                                <div className="text-xs">
-                                    <span className="text-slate-400 font-bold uppercase mr-2">Net Durum:</span>
-                                    <span className={`font-black ${movements.length > 0 && movements[movements.length - 1].Bakiye > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                <div className="text-sm">
+                                    <span className="text-slate-500 font-bold uppercase mr-3">Net Durum:</span>
+                                    <span className={`font-bold ${movements.length > 0 && movements[movements.length - 1].Bakiye > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                         {movements.length > 0 ? `₺${Math.abs(movements[movements.length - 1].Bakiye).toLocaleString()} ${movements[movements.length - 1].Bakiye > 0 ? 'BORÇ' : 'ALACAK'}` : '0 TL'}
                                     </span>
                                 </div>

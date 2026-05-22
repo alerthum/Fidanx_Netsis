@@ -222,11 +222,11 @@ export default function SeraTab({ tenantId, API_URL, locations }: any) {
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tarih</label>
+                            <Label>Tarih</Label>
                             <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Konum</label>
+                            <Label>Konum</Label>
                             <Select value={form.konum} onChange={e => setForm({ ...form, konum: e.target.value })} required>
                                 <option value="">Sera / Bölüm Seçiniz...</option>
                                 {locations.map((l: any) => <option key={l} value={l}>{l}</option>)}
@@ -236,72 +236,72 @@ export default function SeraTab({ tenantId, API_URL, locations }: any) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* İç Sıcaklık Card */}
-                        <div className="bg-orange-50/60 border border-orange-100 rounded-2xl p-4">
-                            <h4 className="text-orange-800 font-bold text-sm mb-4 flex items-center gap-2">
+                        <div className="bg-orange-50/60 border border-orange-100 rounded-xl p-3">
+                            <h4 className="text-orange-800 font-bold text-xs mb-3 flex items-center gap-2">
                                 🌡️ İç Sıcaklık (°C)
                             </h4>
                             <div className="grid grid-cols-3 gap-2">
                                 <div>
-                                    <label className="block text-[9px] font-bold text-orange-400 uppercase tracking-widest mb-1">Sabah</label>
-                                    <input type="number" step="0.1" value={form.icSabah} onChange={e => setForm({ ...form, icSabah: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-1">Sabah</label>
+                                    <input type="number" step="0.1" value={form.icSabah} onChange={e => setForm({ ...form, icSabah: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 text-sm" placeholder="-" />
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-orange-400 uppercase tracking-widest mb-1">Öğle</label>
-                                    <input type="number" step="0.1" value={form.icOgle} onChange={e => setForm({ ...form, icOgle: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-1">Öğle</label>
+                                    <input type="number" step="0.1" value={form.icOgle} onChange={e => setForm({ ...form, icOgle: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 text-sm" placeholder="-" />
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-orange-400 uppercase tracking-widest mb-1">Akşam</label>
-                                    <input type="number" step="0.1" value={form.icAksam} onChange={e => setForm({ ...form, icAksam: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-1">Akşam</label>
+                                    <input type="number" step="0.1" value={form.icAksam} onChange={e => setForm({ ...form, icAksam: e.target.value })} className="w-full text-center py-2 rounded-xl border border-orange-200 text-slate-700 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 text-sm" placeholder="-" />
                                 </div>
                             </div>
                         </div>
 
                         {/* Dış Sıcaklık Card */}
-                        <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
-                            <h4 className="text-blue-800 font-bold text-sm mb-4 flex items-center gap-2">
+                        <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3">
+                            <h4 className="text-blue-800 font-bold text-xs mb-3 flex items-center gap-2">
                                 ☁ Dış Sıcaklık (°C)
                             </h4>
                             <div className="grid grid-cols-3 gap-2">
                                 <div>
-                                    <label className="block text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-1">Sabah</label>
-                                    <input type="number" step="0.1" value={form.disSabah} onChange={e => setForm({ ...form, disSabah: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Sabah</label>
+                                    <input type="number" step="0.1" value={form.disSabah} onChange={e => setForm({ ...form, disSabah: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm" placeholder="-" />
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-1">Öğle</label>
-                                    <input type="number" step="0.1" value={form.disOgle} onChange={e => setForm({ ...form, disOgle: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Öğle</label>
+                                    <input type="number" step="0.1" value={form.disOgle} onChange={e => setForm({ ...form, disOgle: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm" placeholder="-" />
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-1">Akşam</label>
-                                    <input type="number" step="0.1" value={form.disAksam} onChange={e => setForm({ ...form, disAksam: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-400" placeholder="-" />
+                                    <label className="block text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Akşam</label>
+                                    <input type="number" step="0.1" value={form.disAksam} onChange={e => setForm({ ...form, disAksam: e.target.value })} className="w-full text-center py-2 rounded-xl border border-blue-200 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm" placeholder="-" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">MAZOT TÜKETİMİ (LİTRE)</label>
+                        <Label>MAZOT TÜKETİMİ (LİTRE)</Label>
                         <Input type="number" step="0.1" value={form.mazot} onChange={e => setForm({ ...form, mazot: e.target.value })} placeholder="0.0" />
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">NOT / AÇIKLAMA</label>
+                        <Label>NOT / AÇIKLAMA</Label>
                         <textarea
                             value={form.note}
                             onChange={e => setForm({ ...form, note: e.target.value })}
                             placeholder="Varsa notlarınız..."
                             rows={3}
-                            className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-sm"
+                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
                         ></textarea>
                     </div>
 
-                    <div className="flex gap-4 pt-2">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black transition-colors hover:bg-slate-200">
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/3 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">
                             İptal
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading || !form.konum}
-                            className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                            className="flex-1 py-3 bg-[#ff7a18] text-white rounded-xl font-bold shadow hover:bg-orange-600 transition-colors disabled:opacity-50"
                         >
                             {isLoading ? 'Kaydediliyor...' : 'Kaydet'}
                         </button>

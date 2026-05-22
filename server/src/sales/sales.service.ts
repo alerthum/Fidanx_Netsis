@@ -37,7 +37,6 @@ export class SalesService {
     }
 
     async createCustomer(tenantId: string, data: any) {
-        // Otomatik kod üretimi (120-01-xxx)
         const prefix = '120-01';
         const results = await this.db.query(
             `SELECT TOP 1 ErpCode FROM Customers WHERE TenantId = @tenantId AND ErpCode LIKE @prefix + '%' ORDER BY ErpCode DESC`,
@@ -58,13 +57,22 @@ export class SalesService {
     }
 
     async getOrders(tenantId: string) {
-        const sql = `SELECT * FROM Orders WHERE TenantId = @tenantId ORDER BY OrderDate DESC`;
-        const orders = await this.db.query(sql, { tenantId }) as any[];
+        await this.ensureOrderItemNetsisColumns();
+
+        const orders = await this.db.query(`SELECT * FROM Orders WHERE TenantId = @tenantId ORDER BY OrderDate DESC`, { tenantId }) as any[];
         if (!Array.isArray(orders)) return [];
 
         const list: any[] = [];
         for (const o of orders) {
-            const items = await this.db.query(`SELECT oi.*, p.Name as plantName FROM OrderItems oi LEFT JOIN Plants p ON oi.PlantId = p.Id WHERE oi.OrderId = @orderId`, { orderId: o.Id }) as any[];
+            const items = await this.db.query(
+                `SELECT
+                    oi.*,
+                    COALESCE(oi.StokAdi, oi.StokKodu, CAST(oi.PlantId AS NVARCHAR(50))) as plantName,
+                    oi.StokKodu as stokKodu
+                 FROM OrderItems oi
+                 WHERE oi.OrderId = @orderId`,
+                { orderId: o.Id }
+            ) as any[];
             list.push({
                 ...o,
                 id: o.Id.toString(),
@@ -75,6 +83,8 @@ export class SalesService {
     }
 
     async createOrder(tenantId: string, data: any) {
+        await this.ensureOrderItemNetsisColumns();
+
         const sql = `
             INSERT INTO Orders (TenantId, CustomerId, OrderDate, Status, TotalAmount) 
             OUTPUT INSERTED.Id
@@ -92,12 +102,20 @@ export class SalesService {
 
         if (data.items && Array.isArray(data.items)) {
             for (const item of data.items) {
-                await this.db.query(`INSERT INTO OrderItems (OrderId, PlantId, Quantity, UnitPrice) VALUES (@orderId, @plantId, @qty, @price)`, {
-                    orderId,
-                    plantId: item.plantId || item.id,
-                    qty: Number(item.qty || item.quantity) || 0,
-                    price: Number(item.price || item.unitPrice) || 0
-                });
+                const stokKodu = String(item.stokKodu || item.StokKodu || item.sku || item.plantId || item.id || '').trim();
+                const stokAdi = item.stokAdi || item.StokAdi || item.name || item.plantName || null;
+
+                await this.db.query(
+                    `INSERT INTO OrderItems (OrderId, PlantId, StokKodu, StokAdi, Quantity, UnitPrice)
+                     VALUES (@orderId, NULL, @stokKodu, @stokAdi, @qty, @price)`,
+                    {
+                        orderId,
+                        stokKodu: stokKodu || null,
+                        stokAdi,
+                        qty: Number(item.qty || item.quantity) || 0,
+                        price: Number(item.price || item.unitPrice) || 0
+                    }
+                );
             }
         }
 
@@ -111,7 +129,7 @@ export class SalesService {
         const order = results[0];
 
         if (status === 'Tamamlandı' && order.Status !== 'Tamamlandı') {
-            await this.fulfillOrder(tenantId, orderId);
+            await this.fulfillOrder(orderId);
         }
 
         await this.db.query(`UPDATE Orders SET Status = @status, CompletedAt = @compAt WHERE Id = @id`, {
@@ -123,18 +141,26 @@ export class SalesService {
         return { id: orderId, status };
     }
 
-    private async fulfillOrder(tenantId: string, orderId: string) {
-        const items = await this.db.query(`SELECT * FROM OrderItems WHERE OrderId = @orderId`, { orderId }) as any[];
+    private async fulfillOrder(orderId: string) {
+        await this.ensureOrderItemNetsisColumns();
+
+        const items = await this.db.query(`SELECT StokKodu, Quantity FROM OrderItems WHERE OrderId = @orderId`, { orderId }) as any[];
         if (!Array.isArray(items)) return;
 
-        for (const item of items) {
-            if (item.PlantId) {
-                await this.db.query(`UPDATE Plants SET CurrentStock = CASE WHEN CurrentStock - @qty < 0 THEN 0 ELSE CurrentStock - @qty END WHERE Id = @plantId AND TenantId = @tenantId`, {
-                    qty: item.Quantity,
-                    plantId: item.PlantId,
-                    tenantId
-                });
-            }
+        // Stok ana kaynağı Netsis'tir. Lokal Plants.CurrentStock düşülmez.
+        // Gerçek stok çıkışı satış faturası / Netsis TBLSTHAR üzerinden yapılır.
+        const missingCodes = items.filter(i => !String(i.StokKodu || '').trim()).length;
+        if (missingCodes > 0) {
+            console.warn(`Sipariş #${orderId}: ${missingCodes} kalemde Netsis STOK_KODU eksik.`);
         }
+    }
+
+    private async ensureOrderItemNetsisColumns() {
+        await this.db.query(`
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'StokKodu')
+                ALTER TABLE OrderItems ADD StokKodu NVARCHAR(50) NULL;
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'StokAdi')
+                ALTER TABLE OrderItems ADD StokAdi NVARCHAR(200) NULL;
+        `);
     }
 }

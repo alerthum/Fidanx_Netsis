@@ -35,45 +35,25 @@ interface Plant {
 export default function StoklarPage() {
     const [plants, setPlants] = useState<Plant[]>([]);
     const [companies, setCompanies] = useState<any[]>([]); // For Supplier Dropdown
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [newPlant, setNewPlant] = useState<Partial<Plant>>({
-        name: '',
-        category: '',
-        sku: '',
-        kod1: '',
-        kod2: '',
-        kod3: '',
-        kod4: '',
-        kod5: '',
-        type: 'CUTTING',
-        volume: '',
-        dimensions: '',
-        potType: '',
-        supplierId: '',
-        turkishName: '', // Türkçe İsim (Yeni)
-        currentStock: 0,
-        wholesalePrice: 0,
-        retailPrice: 0,
-        purchasePrice: 0,
-        criticalStock: 0 // Varsayılan 0; kullanıcı isterse değiştirir
-    });
-
     const [error, setError] = useState<string | null>(null);
     const [isMovementsModalOpen, setIsMovementsModalOpen] = useState(false);
     const [movements, setMovements] = useState<any[]>([]);
     const [selectedPlantName, setSelectedPlantName] = useState('');
 
-    const API_URL = '/api';
+    const [stockSupplierData, setStockSupplierData] = useState<any[]>([]);
+    const [grouping, setGrouping] = useState<'NONE' | 'CATEGORY' | 'SUPPLIER' | 'STOCK_SUPPLIER'>('NONE');
+    const [stockFilters, setStockFilters] = useState({ arama: '', tedarikci: '', grupKodu: '' });
+    /** Hareket modalı için; liste yüklemesi ile karışmasın */
+    const [movementsLoading, setMovementsLoading] = useState(false);
 
-    useEffect(() => {
-        fetchPlants();
-        fetchCompanies();
-    }, []);
+    const API_URL = '/api';
 
     const fetchPlants = async () => {
         setIsLoading(true);
         setError(null);
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 45000);
         try {
             // Netsis'ten gerçek stok verilerini çekiyoruz
             const params = new URLSearchParams();
@@ -81,7 +61,7 @@ export default function StoklarPage() {
             if (stockFilters.tedarikci) params.set('tedarikci', stockFilters.tedarikci);
             if (stockFilters.grupKodu) params.set('grupKodu', stockFilters.grupKodu);
             const qs = params.toString();
-            const res = await fetch(`${API_URL}/netsis/stocks/list${qs ? '?' + qs : ''}`);
+            const res = await fetch(`${API_URL}/netsis/stocks/list${qs ? '?' + qs : ''}`, { signal: controller.signal });
             if (!res.ok) {
                 const errText = await res.text();
                 throw new Error(errText || 'Sunucu hatası');
@@ -105,16 +85,18 @@ export default function StoklarPage() {
                 type: s.Tip,
                 supplierId: '',
                 tedarikciAdi: '',
-                potType: (s.SaksıKodu ?? s.S_YEDEK1 ?? '') ? (s.SaksıKodu ?? s.S_YEDEK1) : undefined,
+                potType: s.S_YEDEK1 || undefined,
                 createdAt: new Date().toISOString()
             })) : [];
 
             setPlants(mappedData);
         } catch (err: any) {
             console.error('Stoklar yüklenemedi:', err);
-            setError(err.message || 'Sunucuya bağlanılamadı.');
+            const msg = err?.name === 'AbortError' ? 'İstek zaman aşımı (API yanıt vermedi).' : (err.message || 'Sunucuya bağlanılamadı.');
+            setError(msg);
             setPlants([]);
         } finally {
+            clearTimeout(t);
             setIsLoading(false);
         }
     };
@@ -129,65 +111,14 @@ export default function StoklarPage() {
     };
 
 
-    const [isEditing, setIsEditing] = useState(false);
-    const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
 
-    const handleEditPlant = (plant: Plant) => {
-        setNewPlant({
-            name: plant.name,
-            category: plant.category || '',
-            sku: plant.sku || '',
-            kod1: plant.kod1 || '',
-            kod2: plant.kod2 || '',
-            kod3: plant.kod3 || '',
-            kod4: plant.kod4 || '',
-            kod5: plant.kod5 || '',
-            type: plant.type || 'CUTTING',
-            volume: plant.volume || '',
-            dimensions: plant.dimensions || '',
-            potType: plant.potType || '',
-            supplierId: plant.supplierId ? String(plant.supplierId) : '',
-            turkishName: plant.turkishName || '',
-            currentStock: plant.currentStock || 0,
-            wholesalePrice: plant.wholesalePrice || 0,
-            retailPrice: plant.retailPrice || 0,
-            purchasePrice: plant.purchasePrice || 0,
-            criticalStock: plant.criticalStock ?? 0
-        });
-        setSelectedPlantId(plant.id);
-        setIsEditing(true);
-        setIsModalOpen(true);
-    };
-
-    const handleAddPlant = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const fetchStockSupplierData = async () => {
         try {
-            const url = isEditing
-                ? `${API_URL}/plants/${selectedPlantId}?tenantId=demo-tenant`
-                : `${API_URL}/plants?tenantId=demo-tenant`;
-
-            const method = isEditing ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newPlant),
-            });
-            if (res.ok) {
-                setIsModalOpen(false);
-                setNewPlant({ name: '', category: '', sku: '', kod1: '', kod2: '', kod3: '', kod4: '', kod5: '', type: 'CUTTING', volume: '', dimensions: '', potType: '', supplierId: '', currentStock: 0, wholesalePrice: 0, retailPrice: 0, purchasePrice: 0, criticalStock: 0 });
-                setIsEditing(false);
-                setSelectedPlantId(null);
-                fetchPlants();
-            }
-        } catch (err) {
-            alert('Sunucuya bağlanılamadı.');
-        }
+            const res = await fetch(`${API_URL}/netsis/stocks/list-with-suppliers?tenantId=demo-tenant`);
+            const data = await res.json();
+            setStockSupplierData(Array.isArray(data) ? data : []);
+        } catch (err) { }
     };
-
-    const [stockSupplierData, setStockSupplierData] = useState<any[]>([]); // Netsis alış faturalarından stok-cari
-    const [grouping, setGrouping] = useState<'NONE' | 'CATEGORY' | 'SUPPLIER' | 'STOCK_SUPPLIER'>('NONE');
-    const [stockFilters, setStockFilters] = useState({ arama: '', tedarikci: '', grupKodu: '' });
 
     useEffect(() => {
         fetchCompanies();
@@ -198,17 +129,9 @@ export default function StoklarPage() {
         fetchPlants();
     }, [stockFilters.arama, stockFilters.tedarikci, stockFilters.grupKodu]);
 
-    const fetchStockSupplierData = async () => {
-        try {
-            const res = await fetch(`${API_URL}/netsis/stocks/list-with-suppliers?tenantId=demo-tenant`);
-            const data = await res.json();
-            setStockSupplierData(Array.isArray(data) ? data : []);
-        } catch (err) { }
-    };
-
     const fetchMovements = async (stokKodu: string, name: string) => {
         if (!stokKodu?.trim()) return;
-        setIsLoading(true);
+        setMovementsLoading(true);
         setSelectedPlantName(name);
         try {
             const res = await fetch(`${API_URL}/netsis/stocks/movements?stokKodu=${encodeURIComponent(stokKodu.trim())}`);
@@ -219,19 +142,11 @@ export default function StoklarPage() {
             setMovements([]);
             setIsMovementsModalOpen(true);
         } finally {
-            setIsLoading(false);
+            setMovementsLoading(false);
         }
     };
 
-    const generateNextCode = async () => {
-        try {
-            const res = await fetch(`${API_URL}/netsis/stocks/next-code?prefix=150`);
-            const code = await res.text();
-            setNewPlant(prev => ({ ...prev, sku: code }));
-        } catch (err) {
-            alert('Kod üretilemedi.');
-        }
-    };
+
 
     // Grouping Logic
     const getGroupedPlants = () => {
@@ -318,7 +233,7 @@ export default function StoklarPage() {
 
         const groups: Record<string, Plant[]> = {};
         plants.forEach(plant => {
-            let key = 'Diğer';
+            let key = 'Di?er';
             if (grouping === 'CATEGORY') key = plant.grupIsim || plant.category || 'Kategorisiz';
 
             if (!groups[key]) groups[key] = [];
@@ -336,7 +251,7 @@ export default function StoklarPage() {
                 <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky top-0 lg:top-0 z-30 shadow-sm gap-4">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Stok Listesi</h1>
-                        <p className="text-xs lg:text-sm text-slate-500">Tüm fidan türleri, ana ağaçlar ve grup kodları.</p>
+                        <p className="text-xs lg:text-sm text-slate-500">Stok kartları ve miktarlar Netsis veritabanından anlık okunur.</p>
                     </div>
                     <div className="flex flex-wrap gap-3 w-full sm:w-auto items-center">
                         <div className="flex flex-wrap gap-2 items-center">
@@ -371,14 +286,11 @@ export default function StoklarPage() {
                         </div>
                         <ExportButton title="Mevcut Stok Durumu" tableId="stok-table" />
                         <button
-                            onClick={() => {
-                                setIsEditing(false);
-                                setNewPlant({ name: '', category: '', sku: '', kod1: '', kod2: '', kod3: '', kod4: '', kod5: '', type: 'CUTTING', volume: '', dimensions: '', potType: '', supplierId: '', turkishName: '', currentStock: 0, wholesalePrice: 0, retailPrice: 0, purchasePrice: 0, criticalStock: 0 });
-                                setIsModalOpen(true);
-                            }}
-                            className="flex-1 sm:flex-none bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 shadow-md transition active:scale-95"
+                            type="button"
+                            onClick={() => alert('Stok kartı ana kaynağı Netsis veritabanıdır. Yeni bitki, saksı veya hammadde kartını Netsis tarafında açın; FidanX stok listesini anlık Netsis verisinden okur.')}
+                            className="flex-1 sm:flex-none bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 shadow-md transition active:scale-95"
                         >
-                            + Yeni Stok Ekle
+                            Netsis'te Stok Aç
                         </button>
                     </div>
                 </header>
@@ -568,10 +480,10 @@ export default function StoklarPage() {
                                                                         HAREKET
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleEditPlant(plant)}
-                                                                        className="bg-slate-50 text-slate-400 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all"
+                                                                        onClick={() => alert('Stok düzenleme FidanX içinde yapılmaz. Ana stok kartını Netsis tarafında güncelleyin.')}
+                                                                        className="bg-slate-50 text-slate-400 hover:bg-slate-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all"
                                                                     >
-                                                                        DÜZENLE
+                                                                        NETSIS
                                                                     </button>
                                                                 </>
                                                             )}
@@ -638,7 +550,7 @@ export default function StoklarPage() {
                                                     {!isStockSupplierMode && (
                                                         <div className="flex gap-2 mt-3">
                                                             <button onClick={() => alert(`Barkod Basılıyor: ${plant.sku || plant.id}`)} className="bg-slate-800 text-white px-3 py-1.5 rounded text-[10px] font-black active:scale-95">BARKOD</button>
-                                                            <button onClick={() => handleEditPlant(plant)} className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded text-[10px] font-black active:scale-95">DÜZENLE</button>
+                                                            <button onClick={() => alert('Stok düzenleme FidanX içinde yapılmaz. Ana stok kartını Netsis tarafında güncelleyin.')} className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded text-[10px] font-black active:scale-95">NETSIS</button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -668,237 +580,6 @@ export default function StoklarPage() {
                     )}
                 </div>
 
-                {/* Modal */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-slate-200">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-slate-800">{isEditing ? 'Stok Düzenle' : 'Yeni Stok Kaydı'}</h3>
-                                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl transition">×</button>
-                            </div>
-
-                            <form onSubmit={handleAddPlant} className="grid grid-cols-2 gap-6">
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Fidan Adı</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={newPlant.name}
-                                        onChange={(e) => setNewPlant({ ...newPlant, name: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                        placeholder="Zeytin (Ayvalık)"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={newPlant.turkishName || ''}
-                                        onChange={(e) => setNewPlant({ ...newPlant, turkishName: e.target.value })}
-                                        className="w-full px-4 py-2 mt-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-xs shadow-sm transition bg-slate-50"
-                                        placeholder="Türkçe Karşılığı (Örn: Alev Çalısı)"
-                                    />
-                                </div>
-                                <div className="col-span-2 grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Kategori</label>
-                                        <input
-                                            type="text"
-                                            value={newPlant.category}
-                                            onChange={(e) => setNewPlant({ ...newPlant, category: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                        />
-                                    </div>
-                                    <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50 mb-4">
-                                        <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5">ERP Stok Kodu (SKU)</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={newPlant.sku}
-                                                onChange={(e) => setNewPlant({ ...newPlant, sku: e.target.value })}
-                                                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm font-mono"
-                                                placeholder="Örn: 150-001"
-                                            />
-                                            {!isEditing && (
-                                                <button
-                                                    type="button"
-                                                    onClick={generateNextCode}
-                                                    className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black hover:bg-emerald-700 transition"
-                                                    title="Sıradaki Kodu Üret"
-                                                >
-                                                    OTO
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Fidan Tipi</label>
-                                    <select
-                                        value={newPlant.type}
-                                        onChange={(e) => setNewPlant({ ...newPlant, type: e.target.value as 'CUTTING' | 'MOTHER_TREE' | 'GRAFT' | 'PACKAGING' | 'RAW_MATERIAL' })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                    >
-                                        <option value="MOTHER_TREE">🌳 Ana Ağaç (Damlama/Çelik Kaynağı)</option>
-                                        <option value="CUTTING">🌱 Üretim Materyali (Dal/Fide)</option>
-                                        <option value="RAW_MATERIAL">🧱 Hammadde (Toprak/Gübre/Perlit)</option>
-                                        <option value="PACKAGING">📦 Ambalaj / Saksı / Kap</option>
-                                        <option value="GRAFT">🌿 Aşı Materyali</option>
-                                    </select>
-                                </div>
-
-                                {/* New Fields: Supplier & Pot Type */}
-                                <div className="col-span-2 grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                    <div>
-                                        <label className="block text-xs font-bold text-emerald-600 uppercase mb-1.5 tracking-wider">Tedarikçi Firma</label>
-                                        <select
-                                            value={newPlant.supplierId || ''}
-                                            onChange={(e) => setNewPlant({ ...newPlant, supplierId: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition bg-white"
-                                        >
-                                            <option value="">Seçiniz...</option>
-                                            {companies.map((c, idx) => (
-                                                <option key={c.id || `company-${idx}`} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-emerald-600 uppercase mb-1.5 tracking-wider">Stok Kodu</label>
-                                        <input
-                                            type="text"
-                                            readOnly={isEditing}
-                                            value={newPlant.sku}
-                                            onChange={(e) => !isEditing && setNewPlant({ ...newPlant, sku: e.target.value })}
-                                            className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition ${isEditing ? 'bg-slate-50 text-slate-400 italic' : 'bg-white'}`}
-                                            placeholder="Örn: ST001"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-emerald-600 uppercase mb-1.5 tracking-wider">Mevcut Stok</label>
-                                        <input
-                                            type="number"
-                                            readOnly={isEditing}
-                                            value={newPlant.currentStock}
-                                            onChange={(e) => !isEditing && setNewPlant({ ...newPlant, currentStock: Number(e.target.value) })}
-                                            className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition ${isEditing ? 'bg-slate-50 text-slate-400 italic' : 'bg-white'}`}
-                                        />
-                                        {isEditing && <p className="text-[10px] text-rose-500 mt-1">Stok miktarı faturalarla değişir.</p>}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Mevcut Stok Miktarı</label>
-                                    <input
-                                        type="number"
-                                        value={newPlant.currentStock}
-                                        onChange={(e) => setNewPlant({ ...newPlant, currentStock: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                        placeholder="0"
-                                    />
-                                </div>
-
-                                <div className="col-span-2 grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Alış Fiyatı (Maliyet)</label>
-                                        <input
-                                            type="number"
-                                            value={newPlant.purchasePrice}
-                                            onChange={(e) => setNewPlant({ ...newPlant, purchasePrice: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition bg-emerald-50/20"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Toptan Fiyat (₺)</label>
-                                        <input
-                                            type="number"
-                                            value={newPlant.wholesalePrice}
-                                            onChange={(e) => setNewPlant({ ...newPlant, wholesalePrice: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 lg:col-span-1">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Perakende Fiyat</label>
-                                        <input
-                                            type="number"
-                                            value={newPlant.retailPrice}
-                                            onChange={(e) => setNewPlant({ ...newPlant, retailPrice: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 text-sm shadow-sm transition"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-xs font-bold text-rose-500 uppercase mb-1.5 tracking-wider">Kritik Stok Seviyesi (Bildirim)</label>
-                                        <input
-                                            type="number"
-                                            value={newPlant.criticalStock}
-                                            onChange={(e) => setNewPlant({ ...newPlant, criticalStock: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-4 py-3 rounded-lg border border-rose-200 bg-rose-50/30 outline-none focus:border-rose-500 text-sm shadow-sm transition"
-                                            placeholder="10"
-                                        />
-                                    </div>
-                                </div>
-
-                                {newPlant.type === 'PACKAGING' && (
-                                    <div className="col-span-2 grid grid-cols-2 gap-4 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 animate-in fade-in slide-in-from-left-2 transition-all">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-emerald-600 uppercase mb-1.5">Hacim / Kapasite (Litre)</label>
-                                            <input
-                                                type="text"
-                                                value={newPlant.volume}
-                                                onChange={(e) => setNewPlant({ ...newPlant, volume: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-emerald-200 outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm"
-                                                placeholder="Örn: 5L, 10L"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-emerald-600 uppercase mb-1.5">Ölçüler (Çap x Boy)</label>
-                                            <input
-                                                type="text"
-                                                value={newPlant.dimensions}
-                                                onChange={(e) => setNewPlant({ ...newPlant, dimensions: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-emerald-200 outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm"
-                                                placeholder="Örn: 20x25 cm"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="col-span-2 p-6 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Grup Kodları (ERP & Raporlama)</div>
-                                    <div className="grid grid-cols-5 gap-3">
-                                        {[1, 2, 3, 4, 5].map(i => (
-                                            <div key={i}>
-                                                <label className="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Kod {i}</label>
-                                                <input
-                                                    type="text"
-                                                    value={(newPlant as any)[`kod${i}`]}
-                                                    onChange={(e) => setNewPlant({ ...newPlant, [`kod${i}`]: e.target.value })}
-                                                    className="w-full px-2 py-2 rounded-lg border border-slate-200 text-xs text-center focus:border-emerald-500 transition"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="col-span-2 flex gap-4 mt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 px-4 py-3 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition"
-                                    >
-                                        Vazgeç
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:bg-emerald-700 active:scale-95 transition"
-                                    >
-                                        Stok Kartını Kaydedin
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
 
                 {/* Movements Modal */}
                 {isMovementsModalOpen && (
@@ -926,7 +607,14 @@ export default function StoklarPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 italic text-xs">
-                                        {movements.map((m, idx) => (
+                                        {movementsLoading ? (
+                                            <tr>
+                                                <td colSpan={7} className="px-6 py-12 text-center font-sans not-italic text-slate-500">
+                                                    <span className="inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin align-middle mr-2" />
+                                                    Hareketler yükleniyor…
+                                                </td>
+                                            </tr>
+                                        ) : movements.map((m, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50 transition">
                                                 <td className="px-6 py-4 whitespace-nowrap font-mono text-slate-500">
                                                     {(m.Tarih || m.tarih) ? new Date(m.Tarih || m.tarih).toLocaleDateString() : '-'}
@@ -969,3 +657,4 @@ export default function StoklarPage() {
         </div>
     );
 }
+

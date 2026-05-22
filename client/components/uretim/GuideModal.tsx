@@ -134,6 +134,29 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                             </div>
                         </section>
 
+                        {/* Tamamlanan ve Bekleyen İşler Özeti */}
+                        <section className="mb-10">
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 mb-4">
+                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (22 Mayıs 2026)</h5>
+                                <ul className="text-xs text-emerald-950 space-y-2 list-disc pl-4">
+                                    <li><strong>Satış sayfasında zorunlu parti seçimi:</strong> Bitki ürünleri (150 prefix) için artık parti seçmeden satış yapılamıyor. Miktar kontrolü ve yeşil rozet ile parti görselleştirmesi tamamlandı.</li>
+                                    <li><strong>Çift yönlü FidanX ↔ Netsis satış senkronizasyonu:</strong> Fatura kesildiğinde hem Netsis TBLSERITRA lot takibi, hem FidanX MevcutMiktar düşümü + SatilanMiktar artışı + maliyet güncellenmesi atomik transaction ile yapılıyor.</li>
+                                    <li><strong>Toplu Sarf Fişi Entegrasyonu:</strong> Operasyon sayfasına yeni 📦 Toplu Sarf sekmesi eklendi. Netsis malzeme arama, sepete ekleme, konumlara göre maliyet dağıtımı ve Netsis sarf fişi (PROJE_KODU ile) kesimi tek akışta yapılıyor.</li>
+                                </ul>
+                            </div>
+
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
+                                <h5 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-3">⏳ Bekleyen / Sıradaki İşler</h5>
+                                <ul className="text-xs text-amber-950 space-y-2 list-disc pl-4">
+                                    <li><strong>Canlı Netsis doğrulama:</strong> Satış faturası, sarf fişi ve stok transferi senaryolarını gerçek Netsis test DB'si üzerinde canlı doğrulama.</li>
+                                    <li><strong>Netsis serbest üretim sonu kaydı:</strong> Şaşırtma sırasında Netsis tarafında üretim sonu kaydı – mimari karar + geliştirme.</li>
+                                    <li><strong>Ana sayfa dashboard:</strong> Sıcaklık widget'ı ve özet göstergeler için API bağlantısı.</li>
+                                    <li><strong>Firebase sera geçmişi:</strong> Varsa SQL'e taşıma ve API hedef DB netliği.</li>
+                                    <li><strong>Eski seed/demo kalıntıları:</strong> Gözden geçirilsin; canlı stok kartı akışı Netsis dışına çıkmasın.</li>
+                                </ul>
+                            </div>
+                        </section>
+
                         {/* Adım Adım Akış Tablosu */}
                         <section>
                             <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-6 flex items-center gap-3">
@@ -408,6 +431,18 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                             'Kârlılık analizi dashboard ✅',
                                         ]
                                     },
+                                    {
+                                        faz: 'Faz F', title: 'Satış Parti Takibi & Toplu Sarf', status: 'completed', color: 'indigo',
+                                        items: [
+                                            'Satış sayfasında zorunlu parti seçimi (bitki ürünleri) ✅',
+                                            'Miktar kontrolü – stoktan fazla satış engeli ✅',
+                                            'Çift yönlü satış senkronizasyonu (Netsis lot + FidanX parti) ✅',
+                                            'Toplu Sarf Fişi – Operasyon sayfası "Toplu Sarf" sekmesi ✅',
+                                            'Netsis malzeme arama & sepet sistemi ✅',
+                                            'Sarf fişi PROJE_KODU ile konum bazlı Netsis kaydı ✅',
+                                            'FidanX tarafında partilere orantısal maliyet dağıtımı ✅',
+                                        ]
+                                    },
                                 ].map((faz) => (
                                     <div key={faz.faz} className={`p-5 rounded-2xl border ${faz.status === 'done' ? `bg-${faz.color}-50 border-${faz.color}-200` : 'bg-white border-slate-200'}`}>
                                         <div className="flex items-center justify-between mb-3">
@@ -453,6 +488,13 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '22.05.2026', desc: 'Faz F: Toplu Sarf Fişi Entegrasyonu – Operasyon sayfasına "📦 Toplu Sarf" sekmesi eklendi. Netsis\'ten malzeme arama, sepete ekleme, konum seçimi ve tek tuşla Netsis sarf fişi + FidanX maliyet dağıtımı', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz F: NetsisStocksService.createConsumption → PROJE_KODU (sera/konum) desteği eklendi', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz F: ProductionService.createBulkConsumption – Netsis sarf + FidanX distributeOperationCost + FDX_Giderler atomik orkestrasyon', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz F: POST /api/production/bulk-consumption endpoint\'i eklendi', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz F: Satış sayfası zorunlu parti seçimi (150 prefix bitki ürünleri) – miktar kontrolü + yeşil rozet', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Faz F: NetsisInvoicesService.createInvoice → FidanX parti güncelleme + TBLSERITRA lot takibi senkronizasyonu', type: 'feature' },
+                                            { date: '22.05.2026', desc: 'Kılavuz güncellendi: Faz F eklendi, bekleyen işler yenilendi', type: 'fix' },
                                             { date: '02.04.2026', desc: 'Faz E: Kârlılık analizi dashboard (bitki bazlı maliyet/satış/fire tablosu)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz E: Sera verimlilik raporu (konum bazlı parti/bitki/maliyet/fire/verimlilik)', type: 'feature' },
                                             { date: '02.04.2026', desc: 'Faz E: Bitki şeceresi (parti lineage - tam izlenebilirlik timeline)', type: 'feature' },

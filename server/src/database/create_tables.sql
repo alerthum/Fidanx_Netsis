@@ -269,11 +269,19 @@ BEGIN
     CREATE TABLE OrderItems (
         Id INT IDENTITY(1,1) PRIMARY KEY,
         OrderId INT NOT NULL,
-        PlantId INT,
+        PlantId INT, -- Eski lokal Plants referansı; yeni akışta kullanılmaz
+        StokKodu NVARCHAR(50), -- Netsis TBLSTSABIT.STOK_KODU
+        StokAdi NVARCHAR(200),
         Quantity FLOAT DEFAULT 0,
         UnitPrice FLOAT DEFAULT 0
     );
 END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'StokKodu')
+    ALTER TABLE OrderItems ADD StokKodu NVARCHAR(50) NULL;
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'StokAdi')
+    ALTER TABLE OrderItems ADD StokAdi NVARCHAR(200) NULL;
 
 -- 16. Satınalmalar (Purchases)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Purchases')
@@ -296,11 +304,15 @@ BEGIN
     CREATE TABLE PurchaseItems (
         Id INT IDENTITY(1,1) PRIMARY KEY,
         PurchaseId INT NOT NULL,
-        MaterialId NVARCHAR(100), -- Plants.ErpCode or StokKodu
+        MaterialId NVARCHAR(100), -- Netsis TBLSTSABIT.STOK_KODU
+        MaterialName NVARCHAR(200),
         Amount FLOAT DEFAULT 0,
         UnitPrice FLOAT DEFAULT 0
     );
 END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PurchaseItems') AND name = 'MaterialName')
+    ALTER TABLE PurchaseItems ADD MaterialName NVARCHAR(200) NULL;
 
 -- 18. Destek Talepleri (SupportTickets)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SupportTickets')
@@ -333,12 +345,16 @@ BEGIN
         Id INT IDENTITY(1,1) PRIMARY KEY,
         TenantId NVARCHAR(50) NOT NULL,
         PartiNo NVARCHAR(50) NOT NULL UNIQUE,    
+        KokPartiNo NVARCHAR(50),
         NetsisStokKodu NVARCHAR(50) NOT NULL,     
+        StokAdi NVARCHAR(200),
         BitkiAdi NVARCHAR(200),
         Safha NVARCHAR(100) NOT NULL,             
+        SaksiBoyutu NVARCHAR(50),
         Konum NVARCHAR(200),                      
         BaslangicMiktar INT NOT NULL,
         MevcutMiktar INT NOT NULL,
+        Miktar INT,
         FireMiktar INT DEFAULT 0,
         SatilanMiktar INT DEFAULT 0,
         BirimMaliyet FLOAT DEFAULT 0,             
@@ -347,10 +363,28 @@ BEGIN
         AlisFaturaNo NVARCHAR(50),                
         Durum NVARCHAR(50) DEFAULT 'AKTIF',       
         BaslangicTarihi DATETIME DEFAULT GETDATE(),
+        OlusturmaTarihi DATETIME DEFAULT GETDATE(),
+        KaynakNetsisInckeyNo INT,
+        KaynakSeriNo NVARCHAR(100),
         CreatedAt DATETIME DEFAULT GETDATE(),
         CONSTRAINT FK_FDX_BitkiPartileri_Kaynak FOREIGN KEY (KaynakPartiId) REFERENCES FDX_BitkiPartileri(Id)
     );
 END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'KokPartiNo')
+    ALTER TABLE FDX_BitkiPartileri ADD KokPartiNo NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'StokAdi')
+    ALTER TABLE FDX_BitkiPartileri ADD StokAdi NVARCHAR(200) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'SaksiBoyutu')
+    ALTER TABLE FDX_BitkiPartileri ADD SaksiBoyutu NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'Miktar')
+    ALTER TABLE FDX_BitkiPartileri ADD Miktar INT NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'OlusturmaTarihi')
+    ALTER TABLE FDX_BitkiPartileri ADD OlusturmaTarihi DATETIME DEFAULT GETDATE();
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'KaynakNetsisInckeyNo')
+    ALTER TABLE FDX_BitkiPartileri ADD KaynakNetsisInckeyNo INT NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_BitkiPartileri') AND name = 'KaynakSeriNo')
+    ALTER TABLE FDX_BitkiPartileri ADD KaynakSeriNo NVARCHAR(100) NULL;
 
 -- 21. FDX_PartiIslemleri
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FDX_PartiIslemleri')
@@ -359,13 +393,23 @@ BEGIN
         Id INT IDENTITY(1,1) PRIMARY KEY,
         TenantId NVARCHAR(50) NOT NULL,
         PartiId INT NOT NULL,
+        PartiNo NVARCHAR(50),
         IslemTipi NVARCHAR(50) NOT NULL,          
         Aciklama NVARCHAR(MAX),
+        KaynakStokKodu NVARCHAR(50),
+        HedefStokKodu NVARCHAR(50),
         Miktar INT,                               
+        FireMiktari INT,
         MaliyetTutar FLOAT DEFAULT 0,             
         BirimMaliyetEtkisi FLOAT DEFAULT 0,       
         KullanilanMalzeme NVARCHAR(200),          
         KullanilanMiktar FLOAT,                   
+        KullanilanYardimciMalzemeler NVARCHAR(MAX),
+        IscilikMaliyeti FLOAT DEFAULT 0,
+        EkMaliyet FLOAT DEFAULT 0,
+        ToplamMaliyetEtkisi FLOAT DEFAULT 0,
+        NetsisCikisInckeyNo INT,
+        NetsisGirisInckeyNo INT,
         HedefKonum NVARCHAR(200),                 
         HedefSafha NVARCHAR(100),                 
         HedefPartiId INT,
@@ -373,6 +417,45 @@ BEGIN
         IslemTarihi DATETIME DEFAULT GETDATE(),
         CONSTRAINT FK_FDX_PartiIslemleri_Parti FOREIGN KEY (PartiId) REFERENCES FDX_BitkiPartileri(Id),
         CONSTRAINT FK_FDX_PartiIslemleri_HedefParti FOREIGN KEY (HedefPartiId) REFERENCES FDX_BitkiPartileri(Id)
+    );
+END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'PartiNo')
+    ALTER TABLE FDX_PartiIslemleri ADD PartiNo NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'KaynakStokKodu')
+    ALTER TABLE FDX_PartiIslemleri ADD KaynakStokKodu NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'HedefStokKodu')
+    ALTER TABLE FDX_PartiIslemleri ADD HedefStokKodu NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'FireMiktari')
+    ALTER TABLE FDX_PartiIslemleri ADD FireMiktari INT NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'KullanilanYardimciMalzemeler')
+    ALTER TABLE FDX_PartiIslemleri ADD KullanilanYardimciMalzemeler NVARCHAR(MAX) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'IscilikMaliyeti')
+    ALTER TABLE FDX_PartiIslemleri ADD IscilikMaliyeti FLOAT DEFAULT 0;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'EkMaliyet')
+    ALTER TABLE FDX_PartiIslemleri ADD EkMaliyet FLOAT DEFAULT 0;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'ToplamMaliyetEtkisi')
+    ALTER TABLE FDX_PartiIslemleri ADD ToplamMaliyetEtkisi FLOAT DEFAULT 0;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'NetsisCikisInckeyNo')
+    ALTER TABLE FDX_PartiIslemleri ADD NetsisCikisInckeyNo INT NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('FDX_PartiIslemleri') AND name = 'NetsisGirisInckeyNo')
+    ALTER TABLE FDX_PartiIslemleri ADD NetsisGirisInckeyNo INT NULL;
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FDX_PartiMaliyetleri')
+BEGIN
+    CREATE TABLE FDX_PartiMaliyetleri (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId NVARCHAR(50) NOT NULL,
+        PartiId INT NOT NULL,
+        PartiNo NVARCHAR(50) NOT NULL,
+        MaliyetTipi NVARCHAR(50) NOT NULL,
+        Tutar FLOAT DEFAULT 0,
+        Miktar FLOAT DEFAULT 0,
+        BirimMaliyet FLOAT DEFAULT 0,
+        NetsisInckeyNo INT NULL,
+        Aciklama NVARCHAR(MAX),
+        Tarih DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_FDX_PartiMaliyetleri_Parti FOREIGN KEY (PartiId) REFERENCES FDX_BitkiPartileri(Id)
     );
 END
 

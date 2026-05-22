@@ -59,12 +59,32 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  /** Global prefix `api` ile setup('api') Swagger ve GET /api (AppController) çakışır. */
+  SwaggerModule.setup('swagger', app, document);
 
   const port = process.env.PORT || 3201; // Vercel için dinamik, local için 3201
   console.log(`\n\n[FIDANX] Server starting on port ${port}...`);
   if (!process.env.PORT) {
-    console.log(`[FIDANX] Swagger Docs: http://localhost:${port}/api\n\n`);
+    console.log(`[FIDANX] Swagger Docs: http://localhost:${port}/api/swagger`);
+    console.log(`[FIDANX] API ön eki: /api — örn. GET http://localhost:${port}/api\n\n`);
+  }
+
+  const adapter = app.getHttpAdapter();
+  if (adapter?.get && typeof adapter.get === 'function') {
+    adapter.get('/', (_req: unknown, res: { json: (b: unknown) => void }) => {
+      res.json({
+        name: 'Fidanx API',
+        swaggerUi: `/api/swagger`,
+        apiPrefix: '/api',
+        note: 'Arayüz Next.js ile (örn. localhost:3200); burası yalın REST API.',
+      });
+    });
+    adapter.get('/swagger', (_req: unknown, res: { redirect: (code: number, path: string) => void }) => {
+      res.redirect(302, '/api/swagger');
+    });
+    adapter.get('/favicon.ico', (_req: unknown, res: { status: (n: number) => { send: () => void } }) => {
+      res.status(204).send();
+    });
   }
 
   await app.listen(port, '0.0.0.0');

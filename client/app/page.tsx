@@ -4,6 +4,12 @@ import Sidebar from '@/components/Sidebar';
 import TurkeyMap from '@/components/TurkeyMap';
 import Link from 'next/link';
 
+function formatInvoiceTime(raw: unknown): string {
+  if (raw == null || raw === '') return '—';
+  const d = new Date(raw as string | number | Date);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [stats, setStats] = useState({ totalStock: 0, totalOrders: 0, totalExpenses: 0, viyolCount: 0, celikCount: 0 });
@@ -14,26 +20,21 @@ export default function DashboardPage() {
 
   const [tempStats, setTempStats] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchStats();
-    fetchActivities();
-  }, []);
-
   const fetchActivities = async () => {
     try {
       // Netsis'ten son fatura hareketlerini "aktivite" olarak gösteriyoruz
       const res = await fetch(`${API_URL}/netsis/invoices?pageSize=10`);
-      const data = await res.json();
-      if (data && data.items) {
-        setActivities(data.items.map((inv: any) => ({
-          id: inv.BelgeNo,
-          title: inv.CariAdi,
-          action: inv.FaturaTuruLabel,
-          date: inv.Tarih,
-          icon: inv.FaturaTuru === '1' ? '📤' : '📥',
-          color: inv.FaturaTuru === '1' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
-        })));
-      }
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (!data?.items || !Array.isArray(data.items)) return;
+      setActivities(data.items.map((inv: any) => ({
+        id: inv.BelgeNo,
+        title: inv.CariAdi,
+        action: inv.FaturaTuruLabel,
+        date: inv.Tarih,
+        icon: inv.FaturaTuru === '1' ? '📤' : '📥',
+        color: inv.FaturaTuru === '1' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+      })));
     } catch (err) { }
   };
 
@@ -136,6 +137,11 @@ export default function DashboardPage() {
 
     } catch (err) { console.error('Stats fetch error:', err); }
   };
+
+  useEffect(() => {
+    fetchStats();
+    fetchActivities();
+  }, []);
 
 
 
@@ -255,7 +261,7 @@ export default function DashboardPage() {
                             stat.periyot === 'OGLE' ? 'bg-indigo-600' :
                               'bg-indigo-400'
                             }`}
-                          style={{ height: `${Math.min(100, (parseFloat(stat.temp) / 45) * 100)}%` }}
+                          style={{ height: `${Math.min(100, ((Number(stat.temp) || 0) / 45) * 100)}%` }}
                         ></div>
                       </div>
 
@@ -290,7 +296,7 @@ export default function DashboardPage() {
                           {item.action}
                         </span>
                         <span className="text-[10px] text-slate-300 font-bold">
-                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatInvoiceTime(item.date)}
                         </span>
                       </div>
                     </div>

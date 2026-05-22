@@ -430,6 +430,73 @@ export class ProductionService {
         return { processedBatches: batches.length, totalDistributed: totalCost };
     }
 
+    // --- Toplu Sarf Fişi ve Maliyet Dağıtımı Entegrasyonu ---
+    async createBulkConsumption(tenantId: string, data: {
+        locations: string[];
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; partiNo?: string }>;
+        aciklama: string;
+        tarih?: string;
+    }) {
+        if (!data.locations || data.locations.length === 0) {
+            throw new BadRequestException('En az bir konum/sera seçilmelidir.');
+        }
+        if (!data.items || data.items.length === 0) {
+            throw new BadRequestException('En az bir tüketilecek malzeme kalemi girilmelidir.');
+        }
+
+        // 1. Toplam Tüketim Maliyetini Hesapla
+        const totalCost = data.items.reduce((sum, item) => sum + (item.miktar * (item.birimFiyat || 0)), 0);
+        if (totalCost <= 0) {
+            throw new BadRequestException('Toplam tüketim tutarı sıfırdan büyük olmalıdır.');
+        }
+
+        // 2. Netsis'e Sarf Fişi Gönder (PROJE_KODU olarak ilk konumu set edelim)
+        const projeKodu = String(data.locations[0] || '').trim();
+        const netsisResult = await this.netsisStocks.createConsumption({
+            aciklama: data.aciklama || 'FidanX Toplu Tüketim',
+            tarih: data.tarih,
+            projeKodu,
+            items: data.items.map(it => ({
+                stokKodu: it.stokKodu,
+                miktar: it.miktar,
+                birimFiyat: it.birimFiyat,
+                partiNo: it.partiNo
+            }))
+        });
+
+        // 3. FidanX tarafındaki ilgili konumlardaki aktif bitki partilerine maliyeti dağıt
+        const distributionResult = await this.distributeOperationCost(
+            tenantId,
+            data.locations,
+            totalCost,
+            { title: `${data.aciklama} (Netsis Fiş: ${netsisResult.fisNo})` }
+        );
+
+        // 4. Genel Üretim Gideri olarak FDX_Giderler tablosuna da kaydet (Uyum için)
+        try {
+            await this.db.query(`
+                INSERT INTO FDX_Giderler (TenantId, GiderAdi, Tutar, Tip, Tarih, Aciklama)
+                VALUES (@tenantId, @giderAdi, @tutar, 'MALZEME_SARF', @tarih, @aciklama)
+            `, {
+                tenantId,
+                giderAdi: `${data.aciklama} - Malzeme Sarfı`,
+                tutar: totalCost,
+                tarih: data.tarih || new Date().toISOString().split('T')[0],
+                aciklama: `Netsis Sarf Fiş No: ${netsisResult.fisNo}. Etkilenen parti sayısı: ${distributionResult?.processedBatches || 0}`
+            });
+        } catch (err) {
+            this.logger.error('FDX_Giderler tablosuna gider yazılırken hata oluştu: ' + err.message);
+        }
+
+        return {
+            success: true,
+            fisNo: netsisResult.fisNo,
+            totalCost,
+            processedBatches: distributionResult?.processedBatches || 0,
+            totalDistributed: distributionResult?.totalDistributed || 0
+        };
+    }
+
     async getLineage(tenantId: string, batchId: string) {
         const visited = new Set<string>();
         const lineage: any[] = [];

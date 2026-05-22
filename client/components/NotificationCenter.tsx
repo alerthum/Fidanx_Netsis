@@ -12,31 +12,27 @@ export default function NotificationCenter() {
 
     useEffect(() => {
         checkAlerts();
-        // Check every 5 minutes
         const interval = setInterval(checkAlerts, 5 * 60 * 1000);
         return () => clearInterval(interval);
-    }, [pathname]); // Re-check on navigation
+    }, [pathname]);
 
     const checkAlerts = async () => {
         try {
-            const res = await fetch(`${API_URL}/plants?tenantId=demo-tenant`);
-            if (res.ok) {
-                const raw = await res.json().catch(() => []);
-                const plants = Array.isArray(raw) ? raw : [];
-                const stockAlerts = plants
-                    .filter((p: any) => (p.currentStock || 0) <= (p.criticalStock || 10))
-                    .map((p: any) => ({
-                        id: `stock-${p.id}`,
-                        type: 'CRITICAL',
-                        title: 'Kritik Stok Seviyesi',
-                        message: `${p.name} stoğu azaldı (${p.currentStock} adet).`,
-                        link: '/stoklar',
-                        date: new Date()
-                    }));
+            const res = await fetch(`${API_URL}/netsis/dashboard/critical-stocks`);
+            if (!res.ok) return;
 
-                // We can add other alerts here (e.g. overdue tasks)
-                setAlerts([...stockAlerts]);
-            }
+            const raw = await res.json().catch(() => []);
+            const stocks = Array.isArray(raw) ? raw : [];
+            const stockAlerts = stocks.map((p: any) => ({
+                id: `stock-${p.StokKodu || p.stokKodu}`,
+                type: 'CRITICAL',
+                title: 'Kritik Stok Seviyesi',
+                message: `${p.StokAdi || p.stokAdi || p.StokKodu} stoku azaldı (${p.MevcutMiktar ?? 0} ${p.Birim || 'adet'}).`,
+                link: '/stoklar',
+                date: new Date()
+            }));
+
+            setAlerts(stockAlerts);
         } catch (err) {
             console.error('Bildirim kontrolü yapılamadı', err);
         }
@@ -46,7 +42,6 @@ export default function NotificationCenter() {
 
     return (
         <div className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50">
-            {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative bg-rose-600 text-white w-14 h-14 rounded-full shadow-2xl hover:bg-rose-700 transition active:scale-95 flex items-center justify-center group"
@@ -57,12 +52,11 @@ export default function NotificationCenter() {
                 </span>
             </button>
 
-            {/* Popup */}
             {isOpen && (
                 <div className="absolute bottom-16 right-0 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="bg-rose-50 border-b border-rose-100 p-4 flex justify-between items-center">
                         <h3 className="font-bold text-rose-800 text-sm">⚠️ Kritik Bildirimler</h3>
-                        <button onClick={() => setIsOpen(false)} className="text-rose-400 hover:text-rose-600">✕</button>
+                        <button onClick={() => setIsOpen(false)} className="text-rose-400 hover:text-rose-600">×</button>
                     </div>
                     <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
                         {alerts.map((alert) => (

@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 
 export default function OperationsPage() {
-    const [activeTab, setActiveTab] = useState('app'); // 'app' | 'maintenance' | 'measure'
+    const [activeTab, setActiveTab] = useState('app'); // 'app' | 'maintenance' | 'consumption'
     const [logs, setLogs] = useState<any[]>([]);
     const [recipes, setRecipes] = useState<any[]>([]);
+    const [stocks, setStocks] = useState<any[]>([]);
     const [settings, setSettings] = useState<any>({});
     const [isLoading, setIsLoading] = useState(false);
 
@@ -19,6 +20,12 @@ export default function OperationsPage() {
         measurements: {},
         operationDate: new Date().toISOString().split('T')[0]
     });
+
+    // Toplu Sarf Tab State
+    const [consumptionItems, setConsumptionItems] = useState<Array<{ stokKodu: string; name: string; miktar: number; birimFiyat: number }>>([]);
+    const [selectedMaterialId, setSelectedMaterialId] = useState('');
+    const [materialAmount, setMaterialAmount] = useState(1);
+    const [materialSearchQuery, setMaterialSearchQuery] = useState('');
 
     const API_URL = '/api';
 
@@ -38,6 +45,12 @@ export default function OperationsPage() {
             if (recRes.ok) {
                 const recData = await recRes.json().catch(() => []);
                 setRecipes(Array.isArray(recData) ? recData : []);
+            }
+
+            const stockRes = await fetch(`${API_URL}/netsis/stocks/list?tenantId=demo-tenant`);
+            if (stockRes.ok) {
+                const stockData = await stockRes.json().catch(() => []);
+                setStocks(Array.isArray(stockData) ? stockData : []);
             }
 
             fetchLogs();
@@ -137,6 +150,61 @@ export default function OperationsPage() {
         }
     };
 
+    const handleBulkConsumptionSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.locations || formData.locations.length === 0) {
+            return alert('Lütfen en az bir sera veya konum seçin.');
+        }
+        if (consumptionItems.length === 0) {
+            return alert('Lütfen en az bir tüketilecek malzeme kalemi ekleyin.');
+        }
+
+        setIsLoading(true);
+
+        const payload = {
+            locations: formData.locations,
+            items: consumptionItems.map(it => ({
+                stokKodu: it.stokKodu,
+                miktar: it.miktar,
+                birimFiyat: it.birimFiyat
+            })),
+            aciklama: formData.description || 'Toplu Gübreleme/İlaçlama Malzeme Tüketimi',
+            tarih: formData.operationDate
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/production/bulk-consumption?tenantId=demo-tenant`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(`Toplu Sarf Fişi başarıyla kesildi.\nNetsis Fiş No: ${data.fisNo}\nToplam Tutar: ₺${data.totalCost.toLocaleString('tr-TR')}\nEtkilenen Parti Sayısı: ${data.processedBatches}`);
+                
+                // Clear state
+                setConsumptionItems([]);
+                setFormData({ 
+                    locations: [], 
+                    recipeId: '', 
+                    expenseType: '', 
+                    description: '', 
+                    cost: 0, 
+                    measurements: {}, 
+                    operationDate: new Date().toISOString().split('T')[0] 
+                });
+                fetchLogs();
+            } else {
+                const errText = await res.text();
+                alert('Tüketim kaydedilirken hata oluştu: ' + errText);
+            }
+        } catch (err) {
+            alert('Sunucu bağlantı hatası.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
@@ -152,21 +220,30 @@ export default function OperationsPage() {
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="flex border-b border-slate-200">
                                 <button
+                                    type="button"
                                     onClick={() => setActiveTab('app')}
-                                    className={`flex-1 py-3 lg:py-4 text-xs font-black uppercase tracking-widest transition ${activeTab === 'app' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50'}`}
+                                    className={`flex-1 py-3 lg:py-4 text-xs font-black uppercase tracking-widest transition ${activeTab === 'app' ? 'bg-blue-50 text-blue-600 font-extrabold border-b-2 border-blue-600 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`}
                                 >
-                                    💧 Uygulama
+                                    💧 Reçete
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => setActiveTab('maintenance')}
-                                    className={`flex-1 py-3 lg:py-4 text-xs font-black uppercase tracking-widest transition ${activeTab === 'maintenance' ? 'bg-amber-50 text-amber-600' : 'text-slate-400 hover:bg-slate-50'}`}
+                                    className={`flex-1 py-3 lg:py-4 text-xs font-black uppercase tracking-widest transition ${activeTab === 'maintenance' ? 'bg-amber-50 text-amber-600 font-extrabold border-b-2 border-amber-600 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`}
                                 >
-                                    🚜 Bakım
+                                    🚜 Gider
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('consumption')}
+                                    className={`flex-1 py-3 lg:py-4 text-xs font-black uppercase tracking-widest transition ${activeTab === 'consumption' ? 'bg-rose-50 text-rose-600 font-extrabold border-b-2 border-rose-600 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`}
+                                >
+                                    📦 Toplu Sarf
                                 </button>
                             </div>
 
                             <div className="p-4 lg:p-6">
-                                <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-6">
+                                <form onSubmit={activeTab === 'consumption' ? handleBulkConsumptionSubmit : handleSubmit} className="space-y-5 lg:space-y-6">
 
                                     {/* DATE PICKER */}
                                     <div>
@@ -261,25 +338,189 @@ export default function OperationsPage() {
                                         </>
                                     )}
 
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ek Maliyet (TL)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-slate-500 text-sm font-bold"
-                                            placeholder="0.00"
-                                            value={formData.cost || ''}
-                                            onChange={e => setFormData({ ...formData, cost: e.target.value })}
-                                        />
-                                    </div>
+                                    {activeTab === 'consumption' && (
+                                        <div className="space-y-4 border-t border-slate-100 pt-4">
+                                            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-xs text-rose-700 font-medium">
+                                                ℹ️ <strong>Toplu Sarf Fişi:</strong> Seçtiğiniz konumlardaki <strong>tüm aktif bitki partilerine</strong>, eklediğiniz malzemelerin toplam tutarı otomatik olarak mevcut miktarları oranında dağıtılır ve Netsis'te Sarf Fişi kesilir.
+                                            </div>
+
+                                            {/* Malzeme Arama & Ekleme */}
+                                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+                                                <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">📦 Malzeme Ekle</span>
+                                                
+                                                <div className="space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Malzeme adı veya kodu ara..."
+                                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none focus:border-rose-500 font-bold bg-white"
+                                                        value={materialSearchQuery}
+                                                        onChange={e => setMaterialSearchQuery(e.target.value)}
+                                                    />
+                                                    
+                                                    {materialSearchQuery.trim() && (
+                                                        <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100 text-xs shadow-md">
+                                                            {stocks
+                                                                .filter(s => 
+                                                                    (s.STOK_ADI || '').toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+                                                                    (s.STOK_KODU || '').toLowerCase().includes(materialSearchQuery.toLowerCase())
+                                                                )
+                                                                .slice(0, 5)
+                                                                .map(s => (
+                                                                    <button
+                                                                        type="button"
+                                                                        key={s.STOK_KODU}
+                                                                        onClick={() => {
+                                                                            setSelectedMaterialId(s.STOK_KODU);
+                                                                            setMaterialSearchQuery('');
+                                                                        }}
+                                                                        className="w-full px-3 py-2 text-left hover:bg-rose-50/50 flex flex-col transition"
+                                                                    >
+                                                                        <span className="font-bold text-slate-700">{s.STOK_ADI}</span>
+                                                                        <span className="text-[10px] text-slate-400">{s.STOK_KODU} (Maliyet: ₺{s.BIRIM_MALIYET || s.BIRIM_FIYAT || s.STHAR_NF || 0})</span>
+                                                                    </button>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {selectedMaterialId && (() => {
+                                                    const mat = stocks.find(s => s.STOK_KODU === selectedMaterialId);
+                                                    if (!mat) return null;
+                                                    return (
+                                                        <div className="space-y-3 pt-2 border-t border-slate-200">
+                                                            <div className="text-xs bg-white p-2 rounded border border-slate-200">
+                                                                <p className="font-bold text-slate-700">{mat.STOK_ADI}</p>
+                                                                <p className="text-[10px] text-slate-400">{mat.STOK_KODU}</p>
+                                                            </div>
+                                                            
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div>
+                                                                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Miktar</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0.01"
+                                                                        step="any"
+                                                                        className="w-full px-3 py-1.5 rounded border border-slate-200 text-xs font-bold"
+                                                                        value={materialAmount}
+                                                                        onChange={e => setMaterialAmount(parseFloat(e.target.value) || 0)}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Birim Fiyat (₺)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="any"
+                                                                        className="w-full px-3 py-1.5 rounded border border-slate-200 text-xs font-bold"
+                                                                        defaultValue={mat.BIRIM_MALIYET || mat.BIRIM_FIYAT || mat.STHAR_NF || 0}
+                                                                        id="bulk_unit_price"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const priceInput = document.getElementById('bulk_unit_price') as HTMLInputElement;
+                                                                    const price = priceInput ? parseFloat(priceInput.value) || 0 : (mat.BIRIM_MALIYET || mat.BIRIM_FIYAT || mat.STHAR_NF || 0);
+                                                                    
+                                                                    if (materialAmount <= 0) return alert('Miktar sıfırdan büyük olmalıdır.');
+                                                                    
+                                                                    // Check if already in list
+                                                                    const existing = consumptionItems.find(it => it.stokKodu === mat.STOK_KODU);
+                                                                    if (existing) {
+                                                                        setConsumptionItems(consumptionItems.map(it => 
+                                                                            it.stokKodu === mat.STOK_KODU ? { ...it, miktar: it.miktar + materialAmount } : it
+                                                                        ));
+                                                                    } else {
+                                                                        setConsumptionItems([...consumptionItems, {
+                                                                            stokKodu: mat.STOK_KODU,
+                                                                            name: mat.STOK_ADI,
+                                                                            miktar: materialAmount,
+                                                                            birimFiyat: price
+                                                                        }]);
+                                                                    }
+                                                                    
+                                                                    setSelectedMaterialId('');
+                                                                    setMaterialAmount(1);
+                                                                }}
+                                                                className="w-full bg-slate-800 text-white text-xs py-2 rounded-lg font-bold hover:bg-slate-700 transition"
+                                                            >
+                                                                + Listeye Ekle
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+
+                                            {/* Tüketim Listesi */}
+                                            {consumptionItems.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Tüketilecek Malzemeler</label>
+                                                    <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 bg-white max-h-48 overflow-y-auto">
+                                                        {consumptionItems.map((it, idx) => (
+                                                            <div key={idx} className="p-3 flex justify-between items-center text-xs">
+                                                                <div className="min-w-0 pr-2">
+                                                                    <p className="font-bold text-slate-700 truncate">{it.name}</p>
+                                                                    <p className="text-[10px] text-slate-400">{it.stokKodu} • {it.miktar} adet x ₺{it.birimFiyat.toLocaleString('tr-TR')}</p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    <span className="font-bold text-rose-600">₺{(it.miktar * it.birimFiyat).toLocaleString('tr-TR')}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setConsumptionItems(consumptionItems.filter((_, i) => i !== idx))}
+                                                                        className="text-slate-400 hover:text-red-500 transition p-1"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex justify-between items-center p-3 bg-rose-50 border border-rose-100 rounded-xl">
+                                                        <span className="text-xs font-black text-rose-800 uppercase tracking-wide">Toplam Maliyet:</span>
+                                                        <span className="text-sm font-black text-rose-800">
+                                                            ₺{consumptionItems.reduce((sum, it) => sum + (it.miktar * it.birimFiyat), 0).toLocaleString('tr-TR')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">İşlem Açıklaması</label>
+                                                <textarea
+                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-rose-500 text-sm bg-slate-50"
+                                                    rows={3}
+                                                    placeholder="Örn: Sera 1 genel gübreleme ve mineral sarfiyatı..."
+                                                    value={formData.description}
+                                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab !== 'consumption' && (
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ek Maliyet (TL)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-slate-500 text-sm font-bold"
+                                                placeholder="0.00"
+                                                value={formData.cost || ''}
+                                                onChange={e => setFormData({ ...formData, cost: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
 
                                     <button
                                         type="submit"
                                         disabled={isLoading}
                                         className={`w-full py-4 rounded-xl font-bold shadow-lg text-white transition active:scale-95 text-base lg:text-lg uppercase tracking-wide
                                             ${activeTab === 'app' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' :
-                                                'bg-amber-600 hover:bg-amber-700 shadow-amber-200'}`}
+                                              activeTab === 'maintenance' ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200' :
+                                              'bg-rose-600 hover:bg-rose-700 shadow-rose-200'}`}
                                     >
-                                        {isLoading ? 'Kaydediliyor...' : 'İşlemi Kaydet'}
+                                        {isLoading ? 'Kaydediliyor...' : activeTab === 'consumption' ? 'Netsis & FidanX Sarfı Gerçekleştir' : 'İşlemi Kaydet'}
                                     </button>
                                 </form>
                             </div>

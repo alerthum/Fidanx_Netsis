@@ -17,7 +17,7 @@ export class NetsisInvoicesService {
         tarih?: string;
         vadeTarihi?: string;
         aciklama?: string;
-        items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; kdvOrani?: number }>;
+        items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; kdvOrani?: number; partiNo?: string; depoKodu?: string | number }>;
     }) {
         if (!data.cariKodu || !data.items?.length) {
             throw new BadRequestException('Cari kodu ve en az bir kalem gerekli.');
@@ -70,10 +70,69 @@ export class NetsisInvoicesService {
                     tarih,
                     htur: 1
                 });
-                await sReq.query(`
+                const hareket = await sReq.query(`
                     INSERT INTO TBLSTHAR (FISNO, STOK_KODU, STHAR_FTIRSIP, STHAR_GCKOD, STHAR_GCMIK, STHAR_NF, STHAR_BF, STHAR_TUTAR, STHAR_KDV, STHAR_TARIH, STHAR_HTUR)
+                    OUTPUT INSERTED.INCKEYNO
                     VALUES (@fisno, @stokKodu, @ftirsip, @gckod, @miktar, @birimFiyat, @birimFiyat, @tutar, @kdvOrani, @tarih, @htur)
                 `);
+
+                const partiNo = String(item.partiNo || '').trim();
+                const inckeyNo = hareket.recordset?.[0]?.INCKEYNO;
+                if (partiNo && inckeyNo) {
+                    const seriReq = this.db.createRequest(tx, {
+                        straInc: inckeyNo,
+                        stokKodu: item.stokKodu,
+                        seriNo: partiNo,
+                        gckod,
+                        miktar: item.miktar || 0,
+                        depoKodu: item.depoKodu ?? 0
+                    });
+                    await seriReq.query(`
+                        INSERT INTO TBLSERITRA (STRA_INC, STOK_KODU, SERI_NO, GCKOD, MIKTAR, DEPOKOD)
+                        VALUES (@straInc, @stokKodu, @seriNo, @gckod, @miktar, @depoKodu)
+                    `);
+
+                    // Eğer satış faturası ise (gckod === 'C'), FidanX tarafındaki bitki partisi miktarını da düşürelim
+                    if (gckod === 'C') {
+                        const checkReq = this.db.createRequest(tx, { partiNo });
+                        const partiRes = await checkReq.query(`SELECT TOP 1 Id, MevcutMiktar, BirimMaliyet, SatilanMiktar, ToplamMaliyet FROM FDX_BitkiPartileri WHERE PartiNo = @partiNo`);
+                        if (partiRes.recordset && partiRes.recordset.length > 0) {
+                            const parti = partiRes.recordset[0];
+                            const satisAdet = Number(item.miktar) || 0;
+                            const kalanMiktar = Math.max(0, (parti.MevcutMiktar || 0) - satisAdet);
+                            const satilanToplamMaliyet = (parti.BirimMaliyet || 0) * satisAdet;
+                            const yeniToplamMaliyet = Math.max(0, (parti.ToplamMaliyet || 0) - satilanToplamMaliyet);
+                            const yeniSatilanAdet = (parti.SatilanMiktar || 0) + satisAdet;
+
+                            const updateReq = this.db.createRequest(tx, {
+                                kalanMiktar,
+                                yeniToplamMaliyet,
+                                yeniSatilanAdet,
+                                partiId: parti.Id
+                            });
+                            await updateReq.query(`
+                                UPDATE FDX_BitkiPartileri 
+                                SET MevcutMiktar = @kalanMiktar, ToplamMaliyet = @yeniToplamMaliyet, SatilanMiktar = @yeniSatilanAdet 
+                                WHERE Id = @partiId
+                            `);
+
+                            const islemAciklama = `${satisAdet} adet ürün satıldı (Fatura No: ${faturaNo}).`;
+                            const logReq = this.db.createRequest(tx, {
+                                partiId: parti.Id,
+                                partiNo,
+                                islemAciklama,
+                                stokKodu: item.stokKodu,
+                                satisAdet,
+                                maliyetTutar: satisAdet * item.birimFiyat
+                            });
+                            await logReq.query(`
+                                INSERT INTO FDX_PartiIslemleri 
+                                (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, Miktar, MaliyetTutar, IslemTarihi)
+                                VALUES ('demo-tenant', @partiId, @partiNo, 'SATIS', @islemAciklama, @stokKodu, @satisAdet, @maliyetTutar, GETDATE())
+                            `);
+                        }
+                    }
+                }
             }
 
             const cReq = this.db.createRequest(tx, {
