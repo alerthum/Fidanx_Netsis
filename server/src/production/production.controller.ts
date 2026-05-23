@@ -137,4 +137,14 @@ export class ProductionController {
     getLocationInventory(@Query('tenantId') tenantId: string, @Param('id') id: string) {
         return this.locationsService.getInventoryAtLocation(tenantId || 'demo-tenant', parseInt(id));
     }
+
+    @Get('locations/qr/:qr')
+    getLocationByQr(@Query('tenantId') tenantId: string, @Param('qr') qr: string) {
+        return this.locationsService.findByQr(tenantId || 'demo-tenant', qr);
+    }
+
+    @Post('locations/assign')
+    assignBatchToLocation(@Query('tenantId') tenantId: string, @Body() body: { lokasyonId: number, partiId: number, miktar: number }) {
+        return this.locationsService.assignBatchToLocation(tenantId || 'demo-tenant', body.lokasyonId, body.partiId, body.miktar);
+    }
 }

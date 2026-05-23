@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ModalWrapper, Label, Input, Select } from './Modals';
 
 export default function LokasyonlarTab({ API_URL, tenantId }: { API_URL: string, tenantId: string }) {
@@ -73,12 +74,17 @@ export default function LokasyonlarTab({ API_URL, tenantId }: { API_URL: string,
                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">Lokasyon & Karekod Yönetimi</h2>
                     <p className="text-sm font-medium text-slate-500 mt-1">Seralar, açık alanlar ve sabit QR barkod atamaları.</p>
                 </div>
-                <button
-                    onClick={() => setIsLocationModalOpen(true)}
-                    className="bg-indigo-600 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all text-sm w-full sm:w-auto"
-                >
-                    + Yeni Lokasyon Ekle
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Link href="/tarama" className="bg-emerald-600 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all text-sm text-center flex items-center justify-center gap-2">
+                        📷 Saha Tarayıcı
+                    </Link>
+                    <button
+                        onClick={() => setIsLocationModalOpen(true)}
+                        className="bg-indigo-600 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all text-sm text-center"
+                    >
+                        + Yeni Ekle
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

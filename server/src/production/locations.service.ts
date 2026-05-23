@@ -24,6 +24,14 @@ export class LocationsService {
         return rows[0] || null;
     }
 
+    async findByQr(tenantId: string, qr: string) {
+        const rows = await this.db.query(`
+            SELECT * FROM FDX_Lokasyonlar WITH (NOLOCK)
+            WHERE QRKodu = @qr AND TenantId = @tenantId AND AktifMi = 1
+        `, { qr, tenantId });
+        return rows[0] || null;
+    }
+
     async create(tenantId: string, data: {
         lokasyonKodu: string;
         lokasyonAdi: string;
@@ -87,5 +95,37 @@ export class LocationsService {
             WHERE PL.TenantId = @tenantId AND PL.LokasyonId = @lokasyonId AND PL.Miktar > 0
             ORDER BY P.BitkiAdi ASC
         `, { tenantId, lokasyonId });
+    }
+
+    // QR taraması ile Partiyi Lokasyona bağla (Ekle veya Güncelle)
+    async assignBatchToLocation(tenantId: string, lokasyonId: number, partiId: number, miktar: number) {
+        // Lokasyon var mı?
+        const lokasyon = await this.findOne(tenantId, lokasyonId);
+        if (!lokasyon) throw new Error('Lokasyon bulunamadı.');
+
+        // Daha önce bu lokasyonda bu parti var mıydı?
+        const existing = await this.db.query(`
+            SELECT Id, Miktar FROM FDX_PartiLokasyon WITH (NOLOCK)
+            WHERE TenantId = @tenantId AND PartiId = @partiId AND LokasyonId = @lokasyonId
+        `, { tenantId, partiId, lokasyonId });
+
+        if (existing.length > 0) {
+            // Varsa miktarı güncelle
+            await this.db.query(`
+                UPDATE FDX_PartiLokasyon 
+                SET Miktar = Miktar + @miktar, YerlestirmeTarihi = GETDATE()
+                WHERE Id = @id
+            `, { miktar, id: existing[0].Id });
+            this.logger.log(`Parti [${partiId}] lokasyonda güncellendi: ${lokasyon.LokasyonAdi} (+${miktar})`);
+        } else {
+            // Yoksa yeni kayıt at
+            await this.db.query(`
+                INSERT INTO FDX_PartiLokasyon (TenantId, PartiId, LokasyonId, Miktar, YerlestirmeTarihi)
+                VALUES (@tenantId, @partiId, @lokasyonId, @miktar, GETDATE())
+            `, { tenantId, partiId, lokasyonId, miktar });
+            this.logger.log(`Parti [${partiId}] lokasyona yerleştirildi: ${lokasyon.LokasyonAdi} (Adet: ${miktar})`);
+        }
+
+        return { success: true, lokasyonId, partiId, aktarilanMiktar: miktar };
     }
 }
