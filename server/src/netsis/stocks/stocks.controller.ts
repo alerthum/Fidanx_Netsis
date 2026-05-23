@@ -92,4 +92,36 @@ export class NetsisStocksController {
     }) {
         return this.stocksService.transferBetweenStocks(body);
     }
+
+    /** Stok Dönüşüm (Sayım Geçiş) — Eski stokları saksı boyutuna göre yeni stok kartlarına böler */
+    @Post('stock-migration')
+    async stockMigration(@Body() body: {
+        tenantId?: string;
+        eskiStokKodu: string;
+        fireMiktar?: number;
+        fireAciklama?: string;
+        kalemler: Array<{
+            yeniStokKodu?: string;
+            yeniStokAdi?: string;
+            saksiBoyutu: string;
+            miktar: number;
+            birimMaliyet?: number;
+            partiNo?: string;
+            lokasyonAdi?: string;
+            grupKodu?: string;
+            kod1?: string;
+            kod2?: string;
+        }>;
+    }) {
+        return this.stocksService.stockMigration({
+            ...body,
+            tenantId: body.tenantId || 'demo-tenant',
+        });
+    }
+
+    /** Netsis stok seri/lot bazlı bakiye sorgulama */
+    @Get('serial-balances')
+    async getSerialBalances(@Query('stokKodu') stokKodu: string) {
+        return this.stocksService.getStockSerialBalances(stokKodu);
+    }
 }

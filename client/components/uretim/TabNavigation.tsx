@@ -6,6 +6,7 @@ export default function TabNavigation({ activeTab, setActiveTab }: { activeTab: 
         { id: 'partiler', icon: '📝', label: 'Partiler & Şaşırtma', desc: 'Ana üretim takip ekranı' },
         { id: 'toplu', icon: '💧', label: 'Toplu İşlemler', desc: 'Sulama, İlaçlama vb.' },
         { id: 'sera', icon: '🌡️', label: 'Sera & Sıcaklık', desc: 'Konum bazlı iklim takibi' },
+        { id: 'lokasyonlar', icon: '📍', label: 'Lokasyon Yönetimi', desc: 'Sabit konumlar ve atamalar' },
         { id: 'maliyet', icon: '📊', label: 'Maliyet & Analiz', desc: 'Kârlılık ve maliyet dağılımı' }
     ];
 

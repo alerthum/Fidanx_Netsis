@@ -83,6 +83,12 @@ export class NetsisStocksService {
         hedefStokAdi?: string;
         hedefSafha?: string;
         saksiBoyutu?: string;
+        grupKodu?: string;
+        kod1?: string;  // Saksı Büyüklüğü (Netsis KOD_1)
+        kod2?: string;  // Kategori/Alt tür (Netsis KOD_2)
+        kod3?: string;
+        kod4?: string;
+        kod5?: string;
     }) {
         const kaynakStokKodu = String(data.kaynakStokKodu || '').trim();
         const hedefStokKodu = String(data.hedefStokKodu || '').trim();
@@ -119,6 +125,13 @@ export class NetsisStocksService {
             if (name === 'STOK_KODU') return '@hedefStokKodu';
             if (name === 'STOK_ADI') return '@hedefStokAdi';
             if (name === 'S_YEDEK1') return '@saksiBoyutu';
+            // Netsis raporlama alanları: Saksı büyüklüğü, kategori vb.
+            if (name === 'GRUP_KODU' && data.grupKodu) return '@grupKodu';
+            if (name === 'KOD_1' && data.kod1) return '@kod1';
+            if (name === 'KOD_2' && data.kod2) return '@kod2';
+            if (name === 'KOD_3' && data.kod3) return '@kod3';
+            if (name === 'KOD_4' && data.kod4) return '@kod4';
+            if (name === 'KOD_5' && data.kod5) return '@kod5';
             return quote(name);
         }).join(', ');
 
@@ -131,10 +144,16 @@ export class NetsisStocksService {
             kaynakStokKodu,
             hedefStokKodu,
             hedefStokAdi,
-            saksiBoyutu: data.saksiBoyutu || data.hedefSafha || ''
+            saksiBoyutu: data.saksiBoyutu || data.hedefSafha || '',
+            grupKodu: data.grupKodu || '',
+            kod1: data.kod1 || '',
+            kod2: data.kod2 || '',
+            kod3: data.kod3 || '',
+            kod4: data.kod4 || '',
+            kod5: data.kod5 || '',
         });
 
-        this.logger.log(`Netsis stok kartı kaynak karttan üretildi: ${kaynakStokKodu} -> ${hedefStokKodu}`);
+        this.logger.log(`Netsis stok kartı kaynak karttan üretildi: ${kaynakStokKodu} -> ${hedefStokKodu} (KOD_1=${data.kod1 || 'kaynak'}, GRUP=${data.grupKodu || 'kaynak'})`);
         return { stokKodu: hedefStokKodu, stokAdi: hedefStokAdi };
     }
 
@@ -649,6 +668,162 @@ export class NetsisStocksService {
         if (!match) return `${effectivePrefix}001`;
         const next = (parseInt(match[1], 10) + 1).toString().padStart(match[1].length, '0');
         return `${lastCode.slice(0, -match[1].length)}${next}`;
+    }
+
+    /**
+     * STOK DÖNÜŞÜM (Sayım Geçiş) İşlemi
+     * Eski düzensiz stoklardan yeni (saksı boyutlu) stok yapısına geçiş yapar.
+     * 
+     * Adımlar:
+     * 1. Eski stoktan Netsis sarf fişi ile toplam çıkış yapar
+     * 2. Fire (ölü bitki) varsa ayrı fire fişi keser
+     * 3. Her yeni saksı boyutu için:
+     *    a. Netsis stok kartı yoksa oluşturur (GRUP_KODU, KOD_1, KOD_2 ile)
+     *    b. Netsis giriş fişi yazar
+     *    c. FDX_BitkiPartileri tablosuna devir partisi açar
+     */
+    async stockMigration(data: {
+        tenantId: string;
+        eskiStokKodu: string;
+        fireMiktar?: number;
+        fireAciklama?: string;
+        kalemler: Array<{
+            yeniStokKodu?: string;
+            yeniStokAdi?: string;
+            saksiBoyutu: string;
+            miktar: number;
+            birimMaliyet?: number;
+            partiNo?: string;
+            lokasyonAdi?: string;
+            grupKodu?: string;
+            kod1?: string;
+            kod2?: string;
+        }>;
+    }) {
+        const eskiStok = await this.ensureStockCard(data.eskiStokKodu);
+        const eskiStokAdi = eskiStok.STOK_ADI || eskiStok.StokAdi || data.eskiStokKodu;
+
+        const toplamYeniMiktar = data.kalemler.reduce((s, k) => s + (k.miktar || 0), 0);
+        const fireMiktar = Number(data.fireMiktar) || 0;
+        const toplamCikis = toplamYeniMiktar + fireMiktar;
+        const tarih = new Date().toISOString().split('T')[0];
+
+        // 1. DVR fiş numarası oluştur
+        const fisNo = await this.generateMigrationFisNo();
+
+        const sonuclar: Array<{
+            stokKodu: string;
+            stokAdi: string;
+            saksiBoyutu: string;
+            miktar: number;
+            partiNo: string;
+            netsisFisNo: string;
+            stokKartiOlusturuldu: boolean;
+        }> = [];
+
+        // 2. Eski stoktan toplam çıkış (Netsis sarf)
+        await this.createLotMovement({
+            stokKodu: data.eskiStokKodu,
+            gckod: 'C',
+            miktar: toplamCikis,
+            partiNo: `DVR-${fisNo}`,
+            fisNo,
+            tarih,
+            aciklama: `FidanX Stok Dönüşüm: ${eskiStokAdi} → yeni saksı yapısı (${data.kalemler.length} kalem)`,
+            htur: 10,
+            ftirsip: '0',
+        });
+
+        // 3. Fire varsa ayrıca logla
+        if (fireMiktar > 0) {
+            this.logger.log(`Stok Dönüşüm fire: ${data.eskiStokKodu} → ${fireMiktar} adet kayıp (${data.fireAciklama || 'Sayımda tespit'})`);
+        }
+
+        // 4. Her yeni kalem için stok kartı ve giriş oluştur
+        for (const kalem of data.kalemler) {
+            if (!kalem.miktar || kalem.miktar <= 0) continue;
+
+            const eskiBase = String(data.eskiStokKodu || '').trim();
+            let hedefStokKodu = kalem.yeniStokKodu || '';
+            let stokKartiOlusturuldu = false;
+
+            // Stok kartı yoksa yeni oluştur
+            if (!hedefStokKodu) {
+                // Stok kodu otomatik üret: eskiStokKodu + saksı suffix
+                const saksiBoyutuKod = kalem.saksiBoyutu.replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
+                hedefStokKodu = `${eskiBase}-${saksiBoyutuKod}`;
+            }
+
+            const mevcut = await this.findStockCard(hedefStokKodu);
+            if (!mevcut) {
+                const hedefStokAdi = kalem.yeniStokAdi || `${eskiStokAdi} ${kalem.saksiBoyutu}`;
+                await this.createStockCardFromSource({
+                    kaynakStokKodu: data.eskiStokKodu,
+                    hedefStokKodu,
+                    hedefStokAdi,
+                    saksiBoyutu: kalem.saksiBoyutu,
+                    grupKodu: kalem.grupKodu,
+                    kod1: kalem.kod1 || kalem.saksiBoyutu,
+                    kod2: kalem.kod2,
+                });
+                stokKartiOlusturuldu = true;
+            }
+
+            // Parti no: DVR-YYMM-SIRA formatında
+            const partiNo = kalem.partiNo || `DVR-${new Date().getFullYear().toString().slice(-2)}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(sonuclar.length + 1).padStart(3, '0')}`;
+
+            // Netsis giriş fişi
+            await this.createLotMovement({
+                stokKodu: hedefStokKodu,
+                gckod: 'G',
+                miktar: kalem.miktar,
+                partiNo,
+                fisNo,
+                tarih,
+                birimFiyat: kalem.birimMaliyet || 0,
+                aciklama: `FidanX Stok Dönüşüm (Devir Giriş): ${kalem.saksiBoyutu}`,
+                htur: 10,
+                ftirsip: '0',
+            });
+
+            sonuclar.push({
+                stokKodu: hedefStokKodu,
+                stokAdi: mevcut?.STOK_ADI || mevcut?.StokAdi || `${eskiStokAdi} ${kalem.saksiBoyutu}`,
+                saksiBoyutu: kalem.saksiBoyutu,
+                miktar: kalem.miktar,
+                partiNo,
+                netsisFisNo: fisNo,
+                stokKartiOlusturuldu,
+            });
+        }
+
+        this.logger.log(`Stok Dönüşüm tamamlandı: ${fisNo} | ${data.eskiStokKodu} → ${sonuclar.length} yeni stok kartı (${toplamYeniMiktar} adet, ${fireMiktar} fire)`);
+        return {
+            success: true,
+            fisNo,
+            eskiStokKodu: data.eskiStokKodu,
+            eskiStokAdi,
+            toplamCikis,
+            fireMiktar,
+            kalemler: sonuclar,
+        };
+    }
+
+    private async generateMigrationFisNo(): Promise<string> {
+        const yil = new Date().getFullYear();
+        const prefix = `DVR${yil}`;
+        const sonuc = await this.db.query(`
+            SELECT TOP 1 FISNO FROM TBLSTHAR WITH (NOLOCK)
+            WHERE FISNO LIKE @pattern
+            ORDER BY FISNO DESC
+        `, { pattern: `${prefix}%` });
+
+        if (sonuc.length === 0) return `${prefix}00000001`;
+        const lastNo = sonuc[0].FISNO as string;
+        const numMatch = lastNo.match(/\d+$/);
+        if (!numMatch) return `${prefix}00000001`;
+        const nextNum = (parseInt(numMatch[0]) + 1).toString().padStart(8, '0');
+        return `${prefix}${nextNum}`;
     }
 
     async getStocks(tenantId: string, filters?: { grupKodu?: string; tedarikci?: string; arama?: string }) {

@@ -1,12 +1,14 @@
 import { Controller, Get, Post, Body, Param, Query, Patch, Delete } from '@nestjs/common';
 import { ProductionService } from './production.service';
 import { TemperatureService } from './temperature.service';
+import { LocationsService } from './locations.service';
 
 @Controller('production')
 export class ProductionController {
     constructor(
         private readonly productionService: ProductionService,
-        private readonly temperatureService: TemperatureService
+        private readonly temperatureService: TemperatureService,
+        private readonly locationsService: LocationsService
     ) { }
 
     // 1. Üretim Partisi Oluşturma
@@ -120,16 +122,19 @@ export class ProductionController {
     }
 
     // Toplu Sarf Fişi ve Maliyet Dağıtımı Entegrasyonu
-    @Post('bulk-consumption')
-    createBulkConsumption(
-        @Query('tenantId') tenantId: string,
-        @Body() body: {
-            locations: string[];
-            items: Array<{ stokKodu: string; miktar: number; birimFiyat: number; partiNo?: string }>;
-            aciklama: string;
-            tarih?: string;
-        }
-    ) {
-        return this.productionService.createBulkConsumption(tenantId || 'demo-tenant', body);
+    // ── LOKASYON YÖNETİMİ ──
+    @Get('locations')
+    getLocations(@Query('tenantId') tenantId: string) {
+        return this.locationsService.findAll(tenantId || 'demo-tenant');
+    }
+
+    @Post('locations')
+    createLocation(@Query('tenantId') tenantId: string, @Body() body: any) {
+        return this.locationsService.create(tenantId || 'demo-tenant', body);
+    }
+
+    @Get('locations/:id/inventory')
+    getLocationInventory(@Query('tenantId') tenantId: string, @Param('id') id: string) {
+        return this.locationsService.getInventoryAtLocation(tenantId || 'demo-tenant', parseInt(id));
     }
 }

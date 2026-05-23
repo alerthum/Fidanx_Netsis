@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ExportButton from '@/components/ExportButton';
+import StokDonusumModal from '@/components/stoklar/StokDonusumModal';
 
 interface Plant {
     id: string;
@@ -38,8 +39,10 @@ export default function StoklarPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isMovementsModalOpen, setIsMovementsModalOpen] = useState(false);
+    const [isDonusumModalOpen, setIsDonusumModalOpen] = useState(false);
     const [movements, setMovements] = useState<any[]>([]);
     const [selectedPlantName, setSelectedPlantName] = useState('');
+    const [selectedStock, setSelectedStock] = useState<{ id: string; name: string; sku: string; currentStock?: number } | null>(null);
 
     const [stockSupplierData, setStockSupplierData] = useState<any[]>([]);
     const [grouping, setGrouping] = useState<'NONE' | 'CATEGORY' | 'SUPPLIER' | 'STOCK_SUPPLIER'>('NONE');
@@ -474,6 +477,16 @@ export default function StoklarPage() {
                                                                         BARKOD
                                                                     </button>
                                                                     <button
+                                                                        onClick={() => {
+                                                                            setSelectedStock({ id: plant.id, name: plant.name, sku: plant.sku || plant.id, currentStock: plant.currentStock });
+                                                                            setIsDonusumModalOpen(true);
+                                                                        }}
+                                                                        className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all border border-orange-200"
+                                                                        title="Eski stoğu saksı boyutlarına göre yeni stoklara böl (Sayım Geçiş)"
+                                                                    >
+                                                                        DÖNÜŞÜM
+                                                                    </button>
+                                                                    <button
                                                                         onClick={() => fetchMovements((plant as any).plantId || plant.sku || plant.id, plant.name)}
                                                                         className="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all"
                                                                     >
@@ -653,6 +666,17 @@ export default function StoklarPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Stok Dönüşüm Modalı */}
+                <StokDonusumModal
+                    isOpen={isDonusumModalOpen}
+                    onClose={() => setIsDonusumModalOpen(false)}
+                    selectedStock={selectedStock}
+                    onComplete={() => {
+                        setIsDonusumModalOpen(false);
+                        fetchPlants();
+                    }}
+                />
             </main>
         </div>
     );

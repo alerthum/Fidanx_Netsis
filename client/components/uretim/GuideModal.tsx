@@ -137,8 +137,10 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                         {/* Tamamlanan ve Bekleyen İşler Özeti */}
                         <section className="mb-10">
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 mb-4">
-                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (22 Mayıs 2026)</h5>
+                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (23 Mayıs 2026)</h5>
                                 <ul className="text-xs text-emerald-950 space-y-2 list-disc pl-4">
+                                    <li><strong>Saksı Bazlı Stok Dönüşüm (Migration):</strong> Stoklar sayfasına "Dönüşüm" butonu eklendi. Netsis'teki mevcut stoklar seçilip, fire girilip saksı boyutlarına göre yeni stok kartlarına (150-xx-xx) dağıtılıyor. Otomatik Devir Giriş/Çıkış fişleri Netsis'e yazılıyor.</li>
+                                    <li><strong>Lokasyon Yönetimi:</strong> Üretim modülüne "Lokasyonlar" sekmesi eklendi. Seralar, açık alanlar, kapasiteler ve sabit barkodlar (QR) oluşturuldu. Lokasyonların içindeki bitki envanteri tek tıkla görüntülenebiliyor.</li>
                                     <li><strong>Satış sayfasında zorunlu parti seçimi:</strong> Bitki ürünleri (150 prefix) için artık parti seçmeden satış yapılamıyor. Miktar kontrolü ve yeşil rozet ile parti görselleştirmesi tamamlandı.</li>
                                     <li><strong>Çift yönlü FidanX ↔ Netsis satış senkronizasyonu:</strong> Fatura kesildiğinde hem Netsis TBLSERITRA lot takibi, hem FidanX MevcutMiktar düşümü + SatilanMiktar artışı + maliyet güncellenmesi atomik transaction ile yapılıyor.</li>
                                     <li><strong>Toplu Sarf Fişi Entegrasyonu:</strong> Operasyon sayfasına yeni 📦 Toplu Sarf sekmesi eklendi. Netsis malzeme arama, sepete ekleme, konumlara göre maliyet dağıtımı ve Netsis sarf fişi (PROJE_KODU ile) kesimi tek akışta yapılıyor.</li>
@@ -237,27 +239,27 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <h5 className="font-black text-slate-800 mb-2">📦 Parti (LOT) Nedir?</h5>
+                                    <h5 className="font-black text-slate-800 mb-2">📦 Parti (LOT) ve Şecere (Soy Ağacı) Nedir?</h5>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        FidanX sisteminde ana takip elemanıdır. Aynı anda, aynı işlemden geçen bitkiler grubudur. Şaşırtma yapıldıkça her bitki kendine özel yeni bir LOT numarası <span className="font-mono text-xs bg-slate-200 px-1 rounded">(LOT-2026-15-S)</span> alır.
+                                        Parti, aynı üretim işleminden geçen bitki grubudur. Tohumdan veya çelikten başlayan bir üretim, saksı değiştikçe <b>Şaşırtma</b> işlemiyle yeni bir parti numarası alır (Örn: <code>DVR-2405-001</code>). Şecere (Soy Ağacı) yapısı sayesinde, son saksıdaki bitkinin ilk üretimden itibaren tüm maliyet ve işlem geçmişi zincirleme takip edilebilir.
                                     </p>
                                 </div>
                                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <h5 className="font-black text-slate-800 mb-2">🔄 Şaşırtma Neden Önemlidir?</h5>
+                                    <h5 className="font-black text-slate-800 mb-2">🌱 Yeni Stok Kodu Mantığı (Saksı Boyutuna Göre)</h5>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        Eski sistemdeki gibi "2 Litre Saksılı Fidan" diye ayrı stok kartları açmak yerine, FidanX ile <b className="text-amber-600">Tek Stok Kartı + Çoklu Aşama</b> yönetimi yaparsınız. Şaşırtma, bu aşamalar arası geçiştir (Alt Parti üretir).
+                                        Netsis'te anlamlı maliyet ve miktar takibi için bitkiler <b>Saksı Boyutuna göre ayrı Stok Kartı</b> olarak açılır. "Limon Fidanı" tek stok değil; "Limon Fidanı 1L" ve "Limon Fidanı 10L" olarak iki ayrı stoktur. Böylece 50₺ maliyetli fidanla 2000₺ maliyetli fidan aynı kartta karışmaz, netsis maliyet raporları doğru çalışır. Raporlama için <code>KOD_1</code> alanına saksı boyutu yazılır.
                                     </p>
                                 </div>
-                                <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
-                                    <h5 className="font-black text-red-800 mb-2">💀 Fire (Ölüm) Maliyeti Nasıl Etkiler?</h5>
-                                    <p className="text-sm text-red-700 leading-relaxed">
-                                        1000 adet fidanın olduğu partiye 1000₺ masraf ettiniz. Birim maliyet <b className="font-bold underline">1₺</b>'dir. Eğer 500 adet bitki hastalıktan ölürse, partinin toplam masrafı (1000₺) değişmeyeceği için, kalan 500 fidanın her birinin yeni birim maliyeti <b className="font-bold underline">2₺</b>'ye otomatik fırlar.
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                    <h5 className="font-black text-slate-800 mb-2">📍 Lokasyon & Saha Barkodları</h5>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        Her sera ve açık alanın (Örn: C-Serası, 2. Hol) benzersiz bir QR barkodu vardır. Mobil uygulamayla sahadaki lokasyon barkodu okutulur, ardından bitki saksısındaki barkod okutularak <b>FidanX Lokasyon Eşleştirme</b> yapılır. Stok kodlarının başına konum yazılmaz, konum FidanX veritabanında dijital olarak takip edilir.
                                     </p>
                                 </div>
                                 <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
-                                    <h5 className="font-black text-emerald-800 mb-2">💰 Toplu İşlem & Kümülatif Dağılım</h5>
+                                    <h5 className="font-black text-emerald-800 mb-2">🔄 Stok Dönüşüm (Geçiş) Modülü</h5>
                                     <p className="text-sm text-emerald-700 leading-relaxed">
-                                        "Açık Alan" konumundaki tüm fidanları bugün suladınız. Maliyeti 5.000₺. Toplu işlemler sekmesine girip 5.000₺'yi girdiğinizde, sistem o konumdaki <b>Canlı Fidan Adedi Toplamını</b> hesaplar ve her fidanın partisine hakkaniyetli pay oranında kuruşu kuruşuna maliyeti bindirir.
+                                        Netsis'teki eski (saksı boyutu olmayan karma) stok kartları sayılarak saksı gruplarına ayrılır. Dönüşüm ekranında fire girilir ve miktar dağıtılır. Sistem otomatik olarak Netsis'e sarf/devir çıkış ve giriş fişleri keser, eski stoku pasifize eder ve yeni saksı bazlı stokları yaratıp bakiyeleri yerleştirir.
                                     </p>
                                 </div>
                             </div>
@@ -506,6 +508,9 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {[
+                                            { date: '23.05.2026', desc: 'Saha/Sera Barkodları: Lokasyon modülü oluşturuldu, QR kod destekli sabit konumlar ve eşleştirilmiş envanter tablosu.', type: 'feature' },
+                                            { date: '23.05.2026', desc: 'Stok Dönüşüm: Stok listesindeki DÖNÜŞÜM butonu ile eski stokların yeni saksı standartına (Netsis fiş entegreli) geçişi için Wizard Modalı tamamlandı.', type: 'feature' },
+                                            { date: '23.05.2026', desc: 'Netsis Entegrasyonu: createStockCardFromSource ve stockMigration backend servisleri (GRUP_KODU, KOD_1) desteğiyle ayağa kaldırıldı.', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz G: Ana Dashboard (page.tsx) ekranına Finansal Durum & Nakit Akış özeti eklendi. Netsis (Kasa/Banka/Çek) canlı entegrasyon.', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz G: Satınalma modülü FidanX kurumsal konseptine (rounded-3xl, emerald/orange palet, dark footer) modernize edildi', type: 'feature' },
                                             { date: '22.05.2026', desc: 'Faz G: Kılavuz güncellendi, yeni Finans ve Satınalma fazı eklendi', type: 'plan' },

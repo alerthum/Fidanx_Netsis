@@ -7,6 +7,7 @@ import TopluIslemlerTab from '@/components/uretim/TopluIslemlerTab';
 import SeraTab from '@/components/uretim/SeraTab';
 import { ModalWrapper, Input, Label, Select, TransplantModal, SatisModal, FireModal, CostHistoryModal } from '@/components/uretim/Modals';
 import MaliyetTab from '@/components/uretim/MaliyetTab';
+import LokasyonlarTab from '@/components/uretim/LokasyonlarTab';
 import BarkodEtiket from '@/components/uretim/BarkodEtiket';
 
 export default function UretimPage() {
@@ -233,6 +234,7 @@ export default function UretimPage() {
                     )}
                     {activeTab === 'toplu' && <TopluIslemlerTab batches={batches} locations={locations} API_URL={API_URL} tenantId={tenantId} onRefresh={fetchData} />}
                     {activeTab === 'sera' && <SeraTab locations={locations} API_URL={API_URL} tenantId={tenantId} />}
+                    {activeTab === 'lokasyonlar' && <LokasyonlarTab API_URL={API_URL} tenantId={tenantId} />}
                     {activeTab === 'maliyet' && <MaliyetTab batches={batches} />}
                 </div>
 
