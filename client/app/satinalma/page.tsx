@@ -10,9 +10,13 @@ export default function SatinalmaPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [orders, setOrders] = useState<any[]>([]);
+    const [expenses, setExpenses] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stocks, setStocks] = useState<any[]>([]);
     const [locations, setLocations] = useState<string[]>(['MERKEZ DEPO', 'SERA-1', 'SERA-2', 'YOLDA']);
+    
+    // View state
+    const [viewMode, setViewMode] = useState<'FATURALAR' | 'GIDERLER'>('FATURALAR');
     const [selectedInvoiceTab, setSelectedInvoiceTab] = useState('TÜMÜ');
     const [selectedCategory, setSelectedCategory] = useState('TÜMÜ');
     const [productSearchQuery, setProductSearchQuery] = useState('');
@@ -20,6 +24,7 @@ export default function SatinalmaPage() {
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
 
     const [newOrder, setNewOrder] = useState({
@@ -33,6 +38,15 @@ export default function SatinalmaPage() {
         items: [] as any[]
     });
 
+    const [newExpense, setNewExpense] = useState({
+        category: 'Enerji',
+        amount: 0,
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        periodType: 'Aylık',
+        periodMonth: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+    });
+
     const [tempItem, setTempItem] = useState({
         materialId: '',
         amount: 1,
@@ -42,6 +56,8 @@ export default function SatinalmaPage() {
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
     const API_URL = '/api';
+
+    const expenseCategories = ['Enerji', 'İşçilik', 'Bakım/Onarım', 'Lojistik', 'Kira', 'Vergi', 'Diğer'];
 
     const [invoiceTabLabels, setInvoiceTabLabels] = useState<any[]>([
         { id: 'TÜMÜ', label: 'TÜMÜ' },
@@ -73,11 +89,12 @@ export default function SatinalmaPage() {
         setIsLoading(true);
         setFetchError(null);
         try {
-            const [ordersRes, customersRes, stocksRes, tabsRes] = await Promise.allSettled([
+            const [ordersRes, customersRes, stocksRes, tabsRes, expRes] = await Promise.allSettled([
                 safeFetch(`${API_URL}/netsis/invoices?faturaTuru=2&pageSize=500`),
                 safeFetch(`${API_URL}/netsis/customers`),
                 safeFetch(`${API_URL}/netsis/stocks/list`),
-                safeFetch(`${API_URL}/netsis/invoices/tab-categories`)
+                safeFetch(`${API_URL}/netsis/invoices/tab-categories`),
+                safeFetch(`${API_URL}/finans/expenses?tenantId=demo-tenant`)
             ]);
 
             const errors: string[] = [];
@@ -98,6 +115,11 @@ export default function SatinalmaPage() {
                 setOrders(mappedOrders);
             } else {
                 errors.push('Faturalar yüklenemedi');
+            }
+
+            if (expRes.status === 'fulfilled' && expRes.value.ok) {
+                const data = await expRes.value.json().catch(() => []);
+                setExpenses(Array.isArray(data) ? data : []);
             }
 
             if (customersRes.status === 'fulfilled' && customersRes.value.ok) {
@@ -196,6 +218,34 @@ export default function SatinalmaPage() {
         }
     };
 
+    const handleCreateExpense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`${API_URL}/finans/expenses?tenantId=demo-tenant`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newExpense)
+            });
+            if (res.ok) {
+                setIsExpenseModalOpen(false);
+                setNewExpense({ category: 'Enerji', amount: 0, description: '', date: new Date().toISOString().split('T')[0], periodType: 'Aylık', periodMonth: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}` });
+                fetchData();
+            } else {
+                alert("Hata: Gider kaydedilemedi");
+            }
+        } catch (err) {
+            alert('Sistem hatası');
+        }
+    };
+
+    const handleDeleteExpense = async (id: string) => {
+        if (!confirm('Gideri silmek istediğinize emin misiniz?')) return;
+        try {
+            await fetch(`${API_URL}/finans/expenses/${id}?tenantId=demo-tenant`, { method: 'DELETE' });
+            fetchData();
+        } catch (err) {}
+    };
+
     const addItemToOrder = () => {
         const item = stocks.find(s => s.id === tempItem.materialId);
         if (!item) return;
@@ -232,35 +282,61 @@ export default function SatinalmaPage() {
                         <p className="text-xs lg:text-sm text-slate-500 font-medium mt-1">Alış faturaları ve tedarikçi yönetimi.</p>
                     </div>
                     <div className="flex gap-3 w-full sm:w-auto">
-                        <ExportButton title="Alis_Faturalari" tableId="purchase-table" />
-                        <button
-                            onClick={() => {
-                                setNewOrder({
-                                    id: '', supplier: '', supplierId: '', description: '',
-                                    status: 'Bekliyor', category: '150-01', targetLocation: 'MERKEZ DEPO', items: []
-                                });
-                                setIsOrderModalOpen(true);
-                            }}
-                            className="bg-[#ff7a18] text-white px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-orange-600 shadow-[0_8px_16px_-6px_rgba(255,122,24,0.4)] transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <span className="text-lg leading-none">+</span> Yeni Fatura
-                        </button>
+                        <ExportButton title={viewMode === 'FATURALAR' ? 'Alis_Faturalari' : 'Gider_Fisleri'} tableId={viewMode === 'FATURALAR' ? 'purchase-table' : 'expense-table'} />
+                        {viewMode === 'FATURALAR' ? (
+                            <button
+                                onClick={() => {
+                                    setNewOrder({
+                                        id: '', supplier: '', supplierId: '', description: '',
+                                        status: 'Bekliyor', category: '150-01', targetLocation: 'MERKEZ DEPO', items: []
+                                    });
+                                    setIsOrderModalOpen(true);
+                                }}
+                                className="bg-[#ff7a18] text-white px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-orange-600 shadow-[0_8px_16px_-6px_rgba(255,122,24,0.4)] transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <span className="text-lg leading-none">+</span> Yeni Fatura
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setIsExpenseModalOpen(true)}
+                                className="bg-rose-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-rose-700 shadow-[0_8px_16px_-6px_rgba(225,29,72,0.4)] transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <span className="text-lg leading-none">+</span> Gider Ekle
+                            </button>
+                        )}
                     </div>
                 </header>
 
-                <div className="px-4 lg:px-8 mt-6 overflow-x-auto">
-                    <div className="flex bg-white p-1.5 rounded-2xl w-fit gap-1 shadow-sm border border-slate-200">
-                        {invoiceTabLabels.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setSelectedInvoiceTab(tab.id)}
-                                className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${selectedInvoiceTab === tab.id ? 'bg-slate-900 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                <div className="bg-white border-b border-slate-200 px-8 flex gap-8 whitespace-nowrap overflow-x-auto">
+                    <button
+                        onClick={() => setViewMode('FATURALAR')}
+                        className={`py-4 text-xs font-black uppercase tracking-widest border-b-[3px] transition ${viewMode === 'FATURALAR' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                    >
+                        ALIŞ FATURALARI (STOKLU)
+                    </button>
+                    <button
+                        onClick={() => setViewMode('GIDERLER')}
+                        className={`py-4 text-xs font-black uppercase tracking-widest border-b-[3px] transition ${viewMode === 'GIDERLER' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                    >
+                        GİDER FİŞLERİ (STOKSUZ)
+                    </button>
                 </div>
+
+                {viewMode === 'FATURALAR' && (
+                    <div className="px-4 lg:px-8 mt-6 overflow-x-auto">
+                        <div className="flex bg-white p-1.5 rounded-2xl w-fit gap-1 shadow-sm border border-slate-200">
+                            {invoiceTabLabels.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setSelectedInvoiceTab(tab.id)}
+                                    className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${selectedInvoiceTab === tab.id ? 'bg-slate-900 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex-1 p-4 lg:p-8">
                     {fetchError && (
@@ -274,63 +350,155 @@ export default function SatinalmaPage() {
                         </div>
                     )}
                     
-                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <table className="w-full text-left border-collapse" id="purchase-table">
-                            <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black border-b border-slate-200 tracking-widest">
-                                <tr>
-                                    <th className="px-6 py-5">Tedarikçi Ünvanı</th>
-                                    <th className="px-6 py-5">Belge No</th>
-                                    <th className="px-6 py-5">Tarih</th>
-                                    <th className="px-6 py-5">Kategori</th>
-                                    <th className="px-6 py-5">İçerik</th>
-                                    <th className="px-6 py-5 text-right">Toplam Tutar</th>
-                                    <th className="px-6 py-5 text-right">İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm">
-                                {orders.filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab).length === 0 && !isLoading && (
+                    {viewMode === 'FATURALAR' ? (
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <table className="w-full text-left border-collapse" id="purchase-table">
+                                <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black border-b border-slate-200 tracking-widest">
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-20 text-center">
-                                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-slate-100">📋</div>
-                                            <p className="font-black text-slate-800 text-lg">Kayıt Bulunamadı</p>
-                                            <p className="text-sm text-slate-500 mt-1 font-medium">
-                                                {orders.length === 0 ? 'Netsis veritabanından henüz fatura verisi alınamadı.' : `Seçili kategoride (${selectedInvoiceTab}) fatura yok.`}
-                                            </p>
-                                        </td>
+                                        <th className="px-6 py-5">Tedarikçi Ünvanı</th>
+                                        <th className="px-6 py-5">Belge No</th>
+                                        <th className="px-6 py-5">Tarih</th>
+                                        <th className="px-6 py-5">Kategori</th>
+                                        <th className="px-6 py-5">İçerik</th>
+                                        <th className="px-6 py-5 text-right">Toplam Tutar</th>
+                                        <th className="px-6 py-5 text-right">İşlemler</th>
                                     </tr>
-                                )}
-                                {orders
-                                    .filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab)
-                                    .map((order, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
-                                            <td className="px-6 py-5 font-black text-slate-800 group-hover:text-[#ff7a18] transition-colors">{order.supplier}</td>
-                                            <td className="px-6 py-5">
-                                                <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">{order.id}</span>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {orders.filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab).length === 0 && !isLoading && (
+                                        <tr>
+                                            <td colSpan={7} className="px-6 py-20 text-center">
+                                                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-slate-100">📋</div>
+                                                <p className="font-black text-slate-800 text-lg">Kayıt Bulunamadı</p>
+                                                <p className="text-sm text-slate-500 mt-1 font-medium">
+                                                    {orders.length === 0 ? 'Netsis veritabanından henüz fatura verisi alınamadı.' : `Seçili kategoride (${selectedInvoiceTab}) fatura yok.`}
+                                                </p>
                                             </td>
-                                            <td className="px-6 py-5 font-medium text-slate-600">{order.orderDate ? new Date(order.orderDate).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
-                                            <td className="px-6 py-5">
-                                                <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-indigo-50 text-indigo-600 border border-indigo-100 tracking-widest">
-                                                    {order.category}
+                                        </tr>
+                                    )}
+                                    {orders
+                                        .filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab)
+                                        .map((order, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
+                                                <td className="px-6 py-5 font-black text-slate-800 group-hover:text-[#ff7a18] transition-colors">{order.supplier}</td>
+                                                <td className="px-6 py-5">
+                                                    <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">{order.id}</span>
+                                                </td>
+                                                <td className="px-6 py-5 font-medium text-slate-600">{order.orderDate ? new Date(order.orderDate).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+                                                <td className="px-6 py-5">
+                                                    <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-indigo-50 text-indigo-600 border border-indigo-100 tracking-widest">
+                                                        {order.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5 text-slate-500 text-xs font-bold uppercase tracking-widest">
+                                                    {order.KalemSayisi > 0 ? `${order.KalemSayisi} Kalem` : 'Kalem yok'}
+                                                </td>
+                                                <td className="px-6 py-5 text-right font-mono font-black text-slate-900 text-base">
+                                                    ₺{order.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'}
+                                                </td>
+                                                <td className="px-6 py-5 text-right flex justify-end gap-2">
+                                                    <button onClick={() => { setNewOrder({ ...order, items: [] }); fetchInvoiceDetails(order.id, order.supplierId); setIsOrderModalOpen(true); }} className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition-colors border border-emerald-100">Düzenle</button>
+                                                    <button onClick={async () => { const items = await fetchInvoiceDetails(order.id, order.supplierId); setPreviewInvoice({ ...order, items }); setIsPreviewModalOpen(true); }} className="text-slate-600 font-black text-[10px] uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors border border-slate-200">Önizle</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <table className="w-full text-left border-collapse" id="expense-table">
+                                <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black border-b border-slate-200 tracking-widest">
+                                    <tr>
+                                        <th className="px-6 py-5">Gider Tipi</th>
+                                        <th className="px-6 py-5">Açıklama</th>
+                                        <th className="px-6 py-5">Tarih</th>
+                                        <th className="px-6 py-5 text-right">Tutar</th>
+                                        <th className="px-6 py-5 text-right">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {expenses.length === 0 && !isLoading && (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-20 text-center">
+                                                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-slate-100">💸</div>
+                                                <p className="font-black text-slate-800 text-lg">Gider Kaydı Yok</p>
+                                                <p className="text-sm text-slate-500 mt-1 font-medium">
+                                                    Henüz eklenmiş bir stoksuz gider bulunmuyor.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {expenses.map((expense, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
+                                            <td className="px-6 py-5 font-black text-slate-800">
+                                                <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-rose-50 text-rose-600 border border-rose-100 tracking-widest">
+                                                    {expense.category}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                                                {order.KalemSayisi > 0 ? `${order.KalemSayisi} Kalem` : 'Kalem yok'}
+                                            <td className="px-6 py-5 font-medium text-slate-600">{expense.description}</td>
+                                            <td className="px-6 py-5">
+                                                <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                                    {new Date(expense.date).toLocaleDateString('tr-TR')}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-5 text-right font-mono font-black text-slate-900 text-base">
-                                                ₺{order.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'}
+                                            <td className="px-6 py-5 text-right font-mono font-black text-rose-600 text-base">
+                                                ₺{Number(expense.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="px-6 py-5 text-right flex justify-end gap-2">
-                                                <button onClick={() => { setNewOrder({ ...order, items: [] }); fetchInvoiceDetails(order.id, order.supplierId); setIsOrderModalOpen(true); }} className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition-colors border border-emerald-100">Düzenle</button>
-                                                <button onClick={async () => { const items = await fetchInvoiceDetails(order.id, order.supplierId); setPreviewInvoice({ ...order, items }); setIsPreviewModalOpen(true); }} className="text-slate-600 font-black text-[10px] uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors border border-slate-200">Önizle</button>
+                                            <td className="px-6 py-5 text-right">
+                                                <button onClick={() => handleDeleteExpense(expense.id)} className="text-rose-600 font-black text-[10px] uppercase tracking-widest bg-rose-50 hover:bg-rose-100 px-4 py-2 rounded-xl transition-colors border border-rose-100">Sil</button>
                                             </td>
                                         </tr>
                                     ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* MODALS */}
+                {isExpenseModalOpen && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 lg:p-8 relative border border-slate-200">
+                            <button onClick={() => setIsExpenseModalOpen(false)} className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition-colors font-black">×</button>
+                            <h2 className="text-xl font-black text-slate-800 mb-6 tracking-tight">Yeni Gider Fişi</h2>
+                            <form onSubmit={handleCreateExpense} className="space-y-5">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Gider Kategorisi</label>
+                                    <select required value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-rose-500 outline-none rounded-xl font-bold text-sm">
+                                        {expenseCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Tutar (₺)</label>
+                                    <input required type="number" step="0.01" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: parseFloat(e.target.value)})} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-rose-500 outline-none rounded-xl font-mono font-bold text-lg text-rose-600" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Açıklama</label>
+                                    <input required type="text" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-rose-500 outline-none rounded-xl font-medium text-sm" placeholder="Giderin detayı..." />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Tarih</label>
+                                        <input required type="date" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-rose-500 outline-none rounded-xl font-mono text-sm font-bold" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Periyot Tipi</label>
+                                        <select required value={newExpense.periodType} onChange={e => setNewExpense({...newExpense, periodType: e.target.value as any})} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-rose-500 outline-none rounded-xl font-bold text-sm">
+                                            <option value="Günlük">Günlük</option>
+                                            <option value="Aylık">Aylık</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-slate-100 flex gap-3">
+                                    <button type="button" onClick={() => setIsExpenseModalOpen(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-colors">İptal</button>
+                                    <button type="submit" className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-colors">Gideri Kaydet</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
                 {isOrderModalOpen && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                         <div className="bg-slate-50 rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">

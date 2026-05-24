@@ -1,4 +1,4 @@
-import { Controller, Delete, Query, Post, Get, Logger } from '@nestjs/common';
+import { Controller, Delete, Query, Post, Get, Logger, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Controller('seed')
@@ -6,6 +6,19 @@ export class SeedController {
     private readonly logger = new Logger(SeedController.name);
 
     constructor(private db: DatabaseService) { }
+
+    /**
+     * Production ortamında seed/clear işlemlerini engeller.
+     * Canlı Netsis DB'sine yanlışlıkla test verisi yazılmasını önler.
+     */
+    private guardProduction() {
+        if (process.env.NODE_ENV === 'production') {
+            throw new ForbiddenException(
+                'Seed/Clear işlemleri production ortamında devre dışıdır. ' +
+                'Test ortamı için NODE_ENV=development kullanın.'
+            );
+        }
+    }
 
     @Get('setup-trk')
     async setupTrk() {
@@ -40,6 +53,9 @@ export class SeedController {
 
     @Post()
     async seed(@Query('tenantId') tenantId: string) {
+        this.guardProduction();
+        this.logger.warn(`⚠️ SEED çalıştırılıyor: tenantId=${tenantId} — Bu işlem sadece test/geliştirme ortamında yapılmalıdır.`);
+
         // 1. Tenant Kaydı ve Ayarlar
         const existingTenant = await this.db.query(`SELECT Id FROM Tenants WHERE TenantId = @tenantId`, { tenantId });
         if (existingTenant.length === 0) {
@@ -56,7 +72,9 @@ export class SeedController {
         // 2. Önce eski/yeni tüm verileri temizle
         await this.clear(tenantId);
 
-        // 3. Netsis Test Stok Kartları (Yoksa eklenir)
+        // 3. Netsis Test Stok Kartları (Sadece test ortamında — canlı Netsis'e yazılmaz)
+        // ⚠️ DİKKAT: Bu blok Netsis TBLSTSABIT tablosuna doğrudan INSERT yapar.
+        // Production'da guardProduction() zaten engeller, ama ekstra güvenlik için kontrol var.
         const sampleStocks = [
             { code: '150-01-001', name: 'Leylandi Tepsi', grup: 'SUS_BITKISI' },
             { code: '150-01-002', name: 'Leylandi 2 Lt', grup: 'SUS_BITKISI' },
@@ -85,11 +103,11 @@ export class SeedController {
             }
         }
 
-        // 4. Demo Amaçlı Legacy Plants Tablosu Verisi (Net Belirtilmiş Demo Veri)
-        const plantData = [
-            { name: 'Leylandi (Legacy Demo)', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 2200, wholesalePrice: 104.5, retailPrice: 225, viyolCount: 643, cuttingCount: 45010 },
-            { name: 'Alev Çalısı (Legacy Demo)', category: 'Süs Bitkisi', type: 'CUTTING', currentStock: 300, wholesalePrice: 83.5, retailPrice: 150, viyolCount: 44, cuttingCount: 3080 }
-        ];
+        // 4. Legacy Plants tablosu - Artık kullanılmıyor.
+        // Stok kaynağı tamamen Netsis'tir. Plants tablosu eski mimari kalıntısıdır.
+        // Demo verisi oluşturulmaz, canlı ortamda karışıklık yaratmaması için atlanır.
+        this.logger.log('Legacy Plants demo verisi atlandı — stok kaynağı Netsis\'tir.');
+        const plantData: any[] = []; // Boş — eski demo verileri artık eklenmez
 
         for (const p of plantData) {
             await this.db.query(`
@@ -195,6 +213,8 @@ export class SeedController {
 
     @Delete('clear')
     async clear(@Query('tenantId') tenantId: string) {
+        this.guardProduction();
+        this.logger.warn(`⚠️ CLEAR çalıştırılıyor: tenantId=${tenantId} — Tüm FidanX verileri silinecek!`);
         const tables = [
             'FDX_Barkodlar',
             'FDX_PartiMaliyetleri',

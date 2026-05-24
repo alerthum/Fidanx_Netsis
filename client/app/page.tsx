@@ -22,6 +22,9 @@ export default function DashboardPage() {
   const API_URL = '/api';
 
   const [tempStats, setTempStats] = useState<any[]>([]);
+  const [tempKonum, setTempKonum] = useState('TÜMÜ');
+  const [tempKonumlar, setTempKonumlar] = useState<string[]>([]);
+  const [tempLastReading, setTempLastReading] = useState<any>(null);
 
   const fetchFinanceStats = async () => {
     try {
@@ -138,24 +141,53 @@ export default function DashboardPage() {
       }
       setRegionalSales(salesByRegion);
 
-      // Sıcaklık: production/sicaklik API (veritabanı)
+      // Sıcaklık: production/sicaklik API (veritabanı) — Günlük ortalama + konum filtreli
       try {
         const tempRes = await fetch(`${API_URL}/production/sicaklik?tenantId=demo-tenant`);
         if (tempRes.ok) {
           const tempLogs = await tempRes.json();
-          // Group by date to show daily or average? 
-          // The current UI shows bars for different months/periods.
-          // Let's just show the last 12 individual logs with their period.
-          const mapped = (Array.isArray(tempLogs) ? tempLogs.slice(0, 12) : []).map((l: any) => ({
-            sabah: l.periyot === 'SABAH' ? l.icSicaklik : 0,
-            ogle: l.periyot === 'OGLE' ? l.icSicaklik : 0,
-            aksam: l.periyot === 'AKSAM' ? l.icSicaklik : 0,
-            month: l.date ? new Date(l.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-',
-            fullDate: l.date ? new Date(l.date).toLocaleDateString() : '',
-            periyot: l.periyot,
-            temp: l.icSicaklik
-          }));
-          setTempStats(mapped);
+          const allLogs = Array.isArray(tempLogs) ? tempLogs : [];
+
+          // Benzersiz konumları çıkar
+          const konumSet = new Set<string>();
+          allLogs.forEach((l: any) => { if (l.konum) konumSet.add(l.konum); });
+          setTempKonumlar(Array.from(konumSet));
+
+          // Son ölçümü kaydet
+          if (allLogs.length > 0) {
+            const last = allLogs[0];
+            setTempLastReading({
+              temp: last.icSicaklik,
+              konum: last.konum || '-',
+              periyot: last.periyot || '-',
+              date: last.date ? new Date(last.date).toLocaleDateString('tr-TR') : '-',
+              nem: last.nem,
+            });
+          }
+
+          // Günlük ortalamaya grupla (son 14 gün)
+          const dayMap = new Map<string, { temps: number[]; date: string }>();
+          allLogs.forEach((l: any) => {
+            if (!l.date || l.icSicaklik == null) return;
+            const dayKey = new Date(l.date).toISOString().split('T')[0];
+            if (!dayMap.has(dayKey)) dayMap.set(dayKey, { temps: [], date: l.date });
+            dayMap.get(dayKey)!.temps.push(Number(l.icSicaklik));
+          });
+
+          const dailyAvg = Array.from(dayMap.entries())
+            .sort(([a], [b]) => b.localeCompare(a))
+            .slice(0, 14)
+            .map(([, val]) => {
+              const avg = val.temps.reduce((s, t) => s + t, 0) / val.temps.length;
+              return {
+                temp: Math.round(avg * 10) / 10,
+                month: new Date(val.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+                fullDate: new Date(val.date).toLocaleDateString('tr-TR'),
+                kayitSayisi: val.temps.length,
+              };
+            });
+
+          setTempStats(dailyAvg);
         } else {
           setTempStats([]);
         }
@@ -165,6 +197,7 @@ export default function DashboardPage() {
 
     } catch (err) { console.error('Stats fetch error:', err); }
   };
+
 
   useEffect(() => {
     fetchStats();
@@ -302,10 +335,45 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center border-b fx-border pb-5">
                 <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">SERA İKLİM ANALİZİ</h2>
-                  <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest leading-relaxed">Ortalama İç Sıcaklık Takibi (°C)</p>
+                  <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest leading-relaxed">Günlük Ortalama İç Sıcaklık (°C)</p>
                 </div>
                 <Link href="/sera" className="bg-slate-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors">Detaylı Rapor</Link>
               </div>
+
+              {/* Son Ölçüm Kartı */}
+              {tempLastReading && (
+                <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-2xl shadow-sm">🌡️</div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Son Ölçüm</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-indigo-700">{tempLastReading.temp}°C</span>
+                      {tempLastReading.nem != null && <span className="text-sm font-bold text-indigo-400">💧 %{tempLastReading.nem}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">{tempLastReading.konum}</span>
+                    <span className="text-[10px] font-bold text-indigo-300 block mt-0.5">{tempLastReading.periyot} • {tempLastReading.date}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Konum Filtresi */}
+              {tempKonumlar.length > 1 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => setTempKonum('TÜMÜ')}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tempKonum === 'TÜMÜ' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                  >Tümü</button>
+                  {tempKonumlar.map(k => (
+                    <button
+                      key={k}
+                      onClick={() => setTempKonum(k)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tempKonum === k ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >{k}</button>
+                  ))}
+                </div>
+              )}
 
               {tempStats.length > 0 ? (
                 <div className="flex items-end justify-between gap-1 lg:gap-3 h-64 w-full pt-4">
@@ -316,17 +384,14 @@ export default function DashboardPage() {
                         <span className="font-black opacity-50 uppercase tracking-widest block mb-1">{stat.fullDate}</span>
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                          <span className="font-bold">{stat.periyot}: {stat.temp}°C</span>
+                          <span className="font-bold">Ort: {stat.temp}°C ({stat.kayitSayisi} ölçüm)</span>
                         </div>
                       </div>
 
                       {/* Bar Container */}
                       <div className="relative w-full h-[85%] flex items-end justify-center bg-slate-50 rounded-2xl overflow-hidden p-1 group-hover:bg-indigo-50/30 transition-all">
                         <div
-                          className={`w-full rounded-xl transition-all duration-700 hover:brightness-110 shadow-sm ${stat.periyot === 'SABAH' ? 'bg-indigo-300' :
-                            stat.periyot === 'OGLE' ? 'bg-indigo-600' :
-                              'bg-indigo-400'
-                            }`}
+                          className="w-full rounded-xl transition-all duration-700 hover:brightness-110 shadow-sm bg-gradient-to-t from-indigo-600 to-indigo-400"
                           style={{ height: `${Math.min(100, ((Number(stat.temp) || 0) / 45) * 100)}%` }}
                         ></div>
                       </div>
@@ -340,10 +405,14 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-slate-300">
                   <span className="text-4xl mb-4 grayscale opacity-20">🌡️</span>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Veri bulunamadı</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Sıcaklık verisi bulunamadı</p>
+                  <Link href="/uretim" className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors border border-indigo-100">
+                    Sera Verisi Girin →
+                  </Link>
                 </div>
               )}
             </div>
+
 
             {/* Son Aktiviteler (Yeni Konum - Sağ) */}
             <div className="fx-card overflow-hidden flex flex-col h-full !p-0">

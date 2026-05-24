@@ -137,12 +137,12 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                         {/* Tamamlanan ve Bekleyen İşler Özeti */}
                         <section className="mb-10">
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 mb-4">
-                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (23 Mayıs 2026)</h5>
+                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (24 Mayıs 2026)</h5>
                                 <ul className="text-xs text-emerald-950 space-y-2 list-disc pl-4">
-                                    <li><strong>Saksı Bazlı Stok Dönüşüm (Migration):</strong> Stoklar sayfasına "Dönüşüm" butonu eklendi. Netsis'teki mevcut stoklar seçilip, fire girilip saksı boyutlarına göre yeni stok kartlarına (150-xx-xx) dağıtılıyor. Otomatik Devir Giriş/Çıkış fişleri Netsis'e yazılıyor.</li>
-                                    <li><strong>Lokasyon Yönetimi:</strong> Üretim modülüne "Lokasyonlar" sekmesi eklendi. Seralar, açık alanlar, kapasiteler ve sabit barkodlar (QR) oluşturuldu. Lokasyonların içindeki bitki envanteri tek tıkla görüntülenebiliyor.</li>
-                                    <li><strong>Satış sayfasında zorunlu parti seçimi:</strong> Bitki ürünleri (150 prefix) için artık parti seçmeden satış yapılamıyor. Miktar kontrolü ve yeşil rozet ile parti görselleştirmesi tamamlandı.</li>
-                                    <li><strong>Çift yönlü FidanX ↔ Netsis satış senkronizasyonu:</strong> Fatura kesildiğinde hem Netsis TBLSERITRA lot takibi, hem FidanX MevcutMiktar düşümü + SatilanMiktar artışı + maliyet güncellenmesi atomik transaction ile yapılıyor.</li>
+                                    <li><strong>Ana sayfa dashboard:</strong> Sıcaklık widget'ı ve özet göstergeler için API bağlantısı tamamlandı.</li>
+                                    <li><strong>Firebase sera geçmişi:</strong> Firebase'deki sıcaklık logları SQL (TemperatureLogs) veritabanına başarıyla taşındı.</li>
+                                    <li><strong>Satınalma & Finans Entegrasyonu:</strong> Satınalma sayfasına gider fişleri entegre edildi. Alış faturaları ve stoksuz gider fişleri tek ekrandan takip edilebiliyor.</li>
+                                    <li><strong>Lokasyon Yönetimi:</strong> Üretim modülüne "Lokasyonlar" sekmesi eklendi. Seralar, açık alanlar, kapasiteler ve sabit barkodlar (QR) oluşturuldu.</li>
                                     <li><strong>Toplu Sarf Fişi Entegrasyonu:</strong> Operasyon sayfasına yeni 📦 Toplu Sarf sekmesi eklendi. Netsis malzeme arama, sepete ekleme, konumlara göre maliyet dağıtımı ve Netsis sarf fişi (PROJE_KODU ile) kesimi tek akışta yapılıyor.</li>
                                 </ul>
                             </div>
@@ -152,8 +152,6 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                 <ul className="text-xs text-amber-950 space-y-2 list-disc pl-4">
                                     <li><strong>Canlı Netsis doğrulama:</strong> Satış faturası, sarf fişi ve stok transferi senaryolarını gerçek Netsis test DB'si üzerinde canlı doğrulama.</li>
                                     <li><strong>Netsis serbest üretim sonu kaydı:</strong> Şaşırtma sırasında Netsis tarafında üretim sonu kaydı – mimari karar + geliştirme.</li>
-                                    <li><strong>Ana sayfa dashboard:</strong> Sıcaklık widget'ı ve özet göstergeler için API bağlantısı.</li>
-                                    <li><strong>Firebase sera geçmişi:</strong> Varsa SQL'e taşıma ve API hedef DB netliği.</li>
                                     <li><strong>Eski seed/demo kalıntıları:</strong> Gözden geçirilsin; canlı stok kartı akışı Netsis dışına çıkmasın.</li>
                                 </ul>
                             </div>
@@ -265,8 +263,69 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                             </div>
                         </section>
 
+                        {/* Geçiş Süreci: Partisizden Partiliye */}
+                        <section className="bg-amber-50/50 p-8 rounded-3xl border border-amber-200 relative overflow-hidden mb-10">
+                            <div className="absolute top-0 right-0 p-32 bg-amber-500/10 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
+
+                            <h4 className="text-[20px] font-black text-amber-900 uppercase tracking-widest mb-2 flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-2xl">🛤️</span>
+                                Geçiş Süreci (Partisizden Partiliye Dönüşüm)
+                            </h4>
+                            <p className="text-amber-800 text-sm font-medium mb-8 pl-14">
+                                Sistemde mevcut olan eski stok yapısından (saksı boyutu olmayan, partisiz), yeni detaylı sisteme (saksı bazlı ve partili) geçiş planı iki aşamalıdır.
+                            </p>
+
+                            <div className="space-y-4">
+                                {/* Aşama 1 */}
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-6 relative group hover:border-amber-300 transition-colors">
+                                    <div className="md:w-32 flex flex-col items-center justify-center border-r border-slate-100 pr-6">
+                                        <div className="text-3xl font-black text-slate-200 group-hover:text-amber-200 transition-colors">1.</div>
+                                        <div className="text-xs font-bold text-slate-400 mt-1 uppercase text-center">İlk Aşama</div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h5 className="text-base font-black text-slate-800 mb-2 flex items-center gap-2">🛒 Partisiz Stoklarla Devam (Kısa Vadeli)</h5>
+                                        <p className="text-sm text-slate-600 mb-3">
+                                            Şu an elinizde bulunan eski mantıktaki stok kartları (Örn: <span className="font-mono text-xs bg-slate-100 px-1 rounded">Mavi Servi</span>) için normal alış ve satış faturalarınızı girmeye devam edebilirsiniz.
+                                            Sistem ayarlarından <b>"Parti Zorunlu"</b> seçeneğini kapalı tutarak bu işlemleri pürüzsüzce yürütebilirsiniz.
+                                        </p>
+                                        <div className="bg-amber-50 border border-amber-100 text-xs p-3 rounded-xl flex items-center gap-2 text-amber-800 font-medium">
+                                            <span className="text-lg">💡</span> Amaç: Günlük ticari operasyonun (alış-satış) kesintiye uğramadan devam etmesini sağlamaktır.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Aşama 2 */}
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-6 relative group hover:border-emerald-300 transition-colors">
+                                    <div className="md:w-32 flex flex-col items-center justify-center border-r border-slate-100 pr-6">
+                                        <div className="text-3xl font-black text-slate-200 group-hover:text-emerald-200 transition-colors">2.</div>
+                                        <div className="text-xs font-bold text-slate-400 mt-1 uppercase text-center">İkinci Aşama</div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h5 className="text-base font-black text-slate-800 mb-2 flex items-center gap-2 text-emerald-600">🔄 Stokları Dağıtma ve Partili Döneme Geçiş</h5>
+                                        <p className="text-sm text-slate-600 mb-3">
+                                            Mevcut stoklarınızı yeni sisteme uygun hale getirmek için <b>Stoklar &gt; Dönüşüm</b> menüsünü kullanacaksınız. 
+                                            Bu işlem Netsis'te otomatik fişler üreterek geçişi sağlar.
+                                        </p>
+                                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm font-medium text-slate-700">
+                                            <span className="block font-black text-slate-800 mb-2">Örnek Senaryo:</span>
+                                            Elinizde eski mantıkta <b>300 adet Leylandi</b> var. Dönüşüm ekranında bunu şöyle dağıtacaksınız:
+                                            <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-600">
+                                                <li><b>50 tanesi:</b> "Leylandi 2 Litrelik Saksı" (Yeni Stok Kartı)</li>
+                                                <li><b>100 tanesi:</b> "Leylandi 15 Litrelik Saksı" (Yeni Stok Kartı)</li>
+                                                <li>Kalanlar ise ya başka saksılara ya da fireye ayrılacak.</li>
+                                            </ul>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-3 flex items-center gap-2">
+                                            <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-black">SONUÇ</span>
+                                            Sistem eski stoktan 300 düşer (Sarf), yeni stoklara sıfırdan "Partili" olarak 50 ve 100 giriş (Devir) yapar. Artık sadece yeni barkodlarla çalışırsınız.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
                         {/* Simülasyon Senaryosu (Vaka Analizi) */}
-                        <section className="bg-indigo-50/50 p-8 rounded-3xl border border-indigo-100 relative overflow-hidden">
+                        <section className="bg-indigo-50/50 p-8 rounded-3xl border border-indigo-100 relative overflow-hidden mb-10">
                             <div className="absolute top-0 right-0 p-32 bg-indigo-500/5 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
 
                             <h4 className="text-[20px] font-black text-indigo-900 uppercase tracking-widest mb-2 flex items-center gap-3">
@@ -455,12 +514,12 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                         ]
                                     },
                                     {
-                                        faz: 'Faz G', title: 'Finans & Satınalma Optimizasyonu', status: 'active', color: 'teal',
+                                        faz: 'Faz G', title: 'Finans & Satınalma Optimizasyonu', status: 'done', color: 'emerald',
                                         items: [
                                             'Kasa, Banka ve Çek/Senet güncel bakiye/risk raporları ✅',
                                             'Nakit Akış Projeksiyonu (Vade bazlı tahsilat/ödeme) ✅',
                                             'Satınalma modülü modern kurumsal UI/UX dönüşümü ✅',
-                                            'Gider fişleri ve satın alma siparişlerinin entegre görüntülenmesi',
+                                            'Gider fişleri ve satın alma siparişlerinin entegre görüntülenmesi ✅',
                                         ]
                                     },
                                 ].map((faz) => (
