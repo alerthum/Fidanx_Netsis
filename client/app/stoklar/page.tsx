@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ExportButton from '@/components/ExportButton';
 import StokDonusumModal from '@/components/stoklar/StokDonusumModal';
+import PremiumModal from '@/components/PremiumModal';
 
 interface Plant {
     id: string;
@@ -46,7 +47,7 @@ export default function StoklarPage() {
 
     const [stockSupplierData, setStockSupplierData] = useState<any[]>([]);
     const [grouping, setGrouping] = useState<'NONE' | 'CATEGORY' | 'SUPPLIER' | 'STOCK_SUPPLIER'>('NONE');
-    const [stockFilters, setStockFilters] = useState({ arama: '', tedarikci: '', grupKodu: '' });
+    const [stockFilters, setStockFilters] = useState({ arama: '' });
     /** Hareket modalı için; liste yüklemesi ile karışmasın */
     const [movementsLoading, setMovementsLoading] = useState(false);
 
@@ -61,8 +62,6 @@ export default function StoklarPage() {
             // Netsis'ten gerçek stok verilerini çekiyoruz
             const params = new URLSearchParams();
             if (stockFilters.arama) params.set('arama', stockFilters.arama);
-            if (stockFilters.tedarikci) params.set('tedarikci', stockFilters.tedarikci);
-            if (stockFilters.grupKodu) params.set('grupKodu', stockFilters.grupKodu);
             const qs = params.toString();
             const res = await fetch(`${API_URL}/netsis/stocks/list${qs ? '?' + qs : ''}`, { signal: controller.signal });
             if (!res.ok) {
@@ -130,7 +129,7 @@ export default function StoklarPage() {
 
     useEffect(() => {
         fetchPlants();
-    }, [stockFilters.arama, stockFilters.tedarikci, stockFilters.grupKodu]);
+    }, [stockFilters.arama]);
 
     const fetchMovements = async (stokKodu: string, name: string) => {
         if (!stokKodu?.trim()) return;
@@ -258,27 +257,18 @@ export default function StoklarPage() {
                     </div>
                     <div className="flex flex-wrap gap-3 w-full sm:w-auto items-center">
                         <div className="flex flex-wrap gap-2 items-center">
-                            <input
-                                type="text"
-                                placeholder="Stok/Cari ara..."
-                                value={stockFilters.arama}
-                                onChange={(e) => setStockFilters(f => ({ ...f, arama: e.target.value }))}
-                                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg w-40"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Tedarikçi ara..."
-                                value={stockFilters.tedarikci}
-                                onChange={(e) => setStockFilters(f => ({ ...f, tedarikci: e.target.value }))}
-                                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg w-40"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Grup kodu..."
-                                value={stockFilters.grupKodu}
-                                onChange={(e) => setStockFilters(f => ({ ...f, grupKodu: e.target.value }))}
-                                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg w-32"
-                            />
+                            <div className="relative group">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Stok, Cari, Grup ara..."
+                                    value={stockFilters.arama}
+                                    onChange={(e) => setStockFilters({ arama: e.target.value })}
+                                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl w-64 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all shadow-sm"
+                                />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
                             <span className="text-[10px] font-bold text-slate-500 uppercase px-2">Grupla:</span>
@@ -291,9 +281,10 @@ export default function StoklarPage() {
                         <button
                             type="button"
                             onClick={() => alert('Stok kartı ana kaynağı Netsis veritabanıdır. Yeni bitki, saksı veya hammadde kartını Netsis tarafında açın; FidanX stok listesini anlık Netsis verisinden okur.')}
-                            className="flex-1 sm:flex-none bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 shadow-md transition active:scale-95"
+                            className="flex-1 sm:flex-none bg-slate-800 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-900 shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
                         >
-                            Netsis'te Stok Aç
+                            <span>+</span>
+                            Yeni Stok
                         </button>
                     </div>
                 </header>
@@ -589,77 +580,66 @@ export default function StoklarPage() {
 
 
                 {/* Movements Modal */}
-                {isMovementsModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
-                        <div className="bg-white rounded-none shadow-2xl w-full max-w-4xl p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-800">Stok Hareketleri</h3>
-                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{selectedPlantName}</p>
-                                </div>
-                                <button onClick={() => setIsMovementsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl transition">×</button>
-                            </div>
-
-                            <div className="flex-1 overflow-auto p-0">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 bg-white">Tarih</th>
-                                            <th className="px-6 py-4 bg-white">Belge No</th>
-                                            <th className="px-6 py-4 bg-white">Açıklama</th>
-                                            <th className="px-6 py-4 text-center bg-white">İşlem</th>
-                                            <th className="px-6 py-4 text-right bg-white">Miktar</th>
-                                            <th className="px-6 py-4 text-right bg-white">Fiyat</th>
-                                            <th className="px-6 py-4 text-right bg-slate-50">Bakiye</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 text-[11px]">
-                                        {movementsLoading ? (
-                                            <tr>
-                                                <td colSpan={7} className="px-6 py-12 text-center font-sans not-italic text-slate-500">
-                                                    <span className="inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin align-middle mr-2" />
-                                                    Hareketler yükleniyor…
-                                                </td>
-                                            </tr>
-                                        ) : movements.map((m, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-6 py-4 whitespace-nowrap font-mono text-[12px] text-slate-500 group-hover:text-orange-500 transition-colors">
-                                                    {(m.Tarih || m.tarih) ? new Date(m.Tarih || m.tarih).toLocaleDateString() : '-'}
-                                                </td>
-                                                <td className="px-6 py-4 font-mono font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{m.BelgeNo ?? m.belgeNo ?? '-'}</td>
-                                                <td className="px-6 py-4 text-slate-600 font-bold group-hover:text-orange-500 transition-colors">{(m.Aciklama ?? m.aciklama) || '-'}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="flex flex-col items-center gap-0.5">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${(m.GCKodu || m.gcKodu) === 'G' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                                                            {(m.GCKodu || m.gcKodu) === 'G' ? 'GİRİŞ' : 'ÇIKIŞ'}
-                                                        </span>
-                                                        {(m.HareketTuru ?? m.hareketTuru) === 'E' && (
-                                                            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200" title="Stok miktarını etkilemez; maliyet dağıtımında kullanılır (nakliye/işçilik)">
-                                                                Nakliye
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.Miktar ?? m.miktar)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.BirimFiyat ?? m.birimFiyat ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
-                                                <td className="px-6 py-4 text-right font-black bg-slate-50/50 text-slate-900 group-hover:bg-orange-50/50 group-hover:text-orange-600 transition-colors text-[14px]">{(m.Bakiye ?? m.bakiye)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                                            </tr>
-                                        ))}
-                                        {movements.length === 0 && (
-                                            <tr>
-                                                <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">Hareket kaydı bulunamadı.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                                <button onClick={() => setIsMovementsModalOpen(false)} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-900 transition shadow-lg active:scale-95">Kapat</button>
-                            </div>
-                        </div>
+                <PremiumModal
+                    isOpen={isMovementsModalOpen}
+                    onClose={() => setIsMovementsModalOpen(false)}
+                    title="Stok Hareketleri"
+                    subtitle={selectedPlantName}
+                >
+                    <div className="w-full">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 bg-white">Tarih</th>
+                                    <th className="px-6 py-4 bg-white">Belge No</th>
+                                    <th className="px-6 py-4 bg-white">Açıklama</th>
+                                    <th className="px-6 py-4 text-center bg-white">İşlem</th>
+                                    <th className="px-6 py-4 text-right bg-white">Miktar</th>
+                                    <th className="px-6 py-4 text-right bg-white">Fiyat</th>
+                                    <th className="px-6 py-4 text-right bg-slate-50">Bakiye</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-[11px]">
+                                {movementsLoading ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center font-sans not-italic text-slate-500">
+                                            <span className="inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin align-middle mr-2" />
+                                            Hareketler yükleniyor…
+                                        </td>
+                                    </tr>
+                                ) : movements.map((m, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-4 whitespace-nowrap font-mono text-[12px] text-slate-500 group-hover:text-orange-500 transition-colors">
+                                            {(m.Tarih || m.tarih) ? new Date(m.Tarih || m.tarih).toLocaleDateString() : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 font-mono font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{m.BelgeNo ?? m.belgeNo ?? '-'}</td>
+                                        <td className="px-6 py-4 text-slate-600 font-bold group-hover:text-orange-500 transition-colors">{(m.Aciklama ?? m.aciklama) || '-'}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-black ${(m.GCKodu || m.gcKodu) === 'G' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                    {(m.GCKodu || m.gcKodu) === 'G' ? 'GİRİŞ' : 'ÇIKIŞ'}
+                                                </span>
+                                                {(m.HareketTuru ?? m.hareketTuru) === 'E' && (
+                                                    <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200" title="Stok miktarını etkilemez; maliyet dağıtımında kullanılır (nakliye/işçilik)">
+                                                        Nakliye
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.Miktar ?? m.miktar)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                                        <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.BirimFiyat ?? m.birimFiyat ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
+                                        <td className="px-6 py-4 text-right font-black bg-slate-50/50 text-slate-900 group-hover:bg-orange-50/50 group-hover:text-orange-600 transition-colors text-[14px]">{(m.Bakiye ?? m.bakiye)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ))}
+                                {movements.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">Hareket kaydı bulunamadı.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+                </PremiumModal>
 
                 {/* Stok Dönüşüm Modalı */}
                 <StokDonusumModal
