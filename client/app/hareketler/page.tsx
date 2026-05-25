@@ -83,7 +83,7 @@ export default function HareketlerPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Operasyon & Hareket</h1>
                         <p className="text-xs lg:text-sm text-slate-500">Üretim partilerinin konum transferleri ve hareket kayıtları.</p>

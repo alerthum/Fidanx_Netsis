@@ -74,7 +74,7 @@ export default function Sidebar() {
 
     return (
         <aside className="hidden lg:flex sticky top-0 left-0 h-screen z-40 w-[270px] fx-sidebar shrink-0 flex-col">
-            <div className="p-6 border-b border-[var(--fx-sidebar-border)] flex items-center justify-between">
+            <div className="h-[88px] px-6 border-b border-[var(--fx-sidebar-border)] flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center">
                         <span className="font-black text-3xl leading-none text-[var(--fx-accent)]">f</span>

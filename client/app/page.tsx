@@ -212,7 +212,7 @@ export default function DashboardPage() {
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky top-0 lg:top-0 z-30 shadow-xs gap-4">
+        <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-0 lg:h-[88px] flex flex-col lg:flex-row lg:items-center justify-between sticky top-0 lg:top-0 z-30 shadow-xs gap-4 shrink-0">
           <div>
             <h1 className="text-xl lg:text-2xl font-bold text-slate-800">Fidanx Kontrol Paneli</h1>
             <p className="text-xs lg:text-sm text-slate-500">İşletmenizin genel durumu ve üretim verileri.</p>

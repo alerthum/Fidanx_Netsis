@@ -61,7 +61,7 @@ export default function DestekPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky lg:sticky lg:top-0 z-30 shadow-sm gap-4">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center sticky lg:sticky lg:top-0 z-30 shadow-sm gap-4 lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Destek & Feedback</h1>
                         <p className="text-xs lg:text-sm text-slate-500 font-medium">Müşteri geri bildirimleri ve teknik destek.</p>

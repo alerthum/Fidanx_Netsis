@@ -105,7 +105,7 @@ export default function BatchDetailPage({ params }: { params: { id: string } }) 
     return (
         <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
             {/* Header */}
-            <header className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <header className="flex flex-col lg:flex-row justify-between items-start gap-4 lg:py-0 lg:h-[88px] shrink-0">
                 <div>
                     <nav className="text-sm text-slate-500 mb-2">
                         <Link href="/uretim" className="hover:text-emerald-600 transition">Üretim</Link>

@@ -20,6 +20,8 @@ export default function SatinalmaPage() {
     const [selectedInvoiceTab, setSelectedInvoiceTab] = useState('TÜMÜ');
     const [selectedCategory, setSelectedCategory] = useState('TÜMÜ');
     const [productSearchQuery, setProductSearchQuery] = useState('');
+    const [tableSearchQuery, setTableSearchQuery] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: 'orderDate', direction: 'desc' });
 
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -70,6 +72,36 @@ export default function SatinalmaPage() {
     const categories = useMemo(() => {
         return ['TÜMÜ', ...Array.from(new Set(stocks.map(s => s.category).filter(Boolean)))];
     }, [stocks]);
+
+    const filteredOrders = useMemo(() => {
+        let result = orders;
+        if (selectedInvoiceTab !== 'TÜMÜ') {
+            result = result.filter(order => order.category === selectedInvoiceTab);
+        }
+        if (tableSearchQuery) {
+            const lowerQuery = tableSearchQuery.toLocaleLowerCase('tr-TR');
+            result = result.filter(order => 
+                (order.supplier || '').toLocaleLowerCase('tr-TR').includes(lowerQuery) ||
+                (order.id || '').toLocaleLowerCase('tr-TR').includes(lowerQuery) ||
+                (order.category || '').toLocaleLowerCase('tr-TR').includes(lowerQuery)
+            );
+        }
+        result = [...result].sort((a, b) => {
+            const aVal = a[sortConfig.key];
+            const bVal = b[sortConfig.key];
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return result;
+    }, [orders, selectedInvoiceTab, tableSearchQuery, sortConfig]);
+
+    const handleSort = (key: string) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
 
     useEffect(() => {
         fetchData();
@@ -273,13 +305,14 @@ export default function SatinalmaPage() {
     if (isLoading) return <LoadingScreen message="Satınalma Yükleniyor..." />;
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen fx-page font-sans">
+        <div className="flex flex-col lg:flex-row min-h-screen fx-page">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white px-4 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky top-0 z-30 gap-4 border-b border-slate-200 shadow-sm">
+                <header className="bg-white px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center sticky top-0 z-30 gap-4 shadow-sm lg:py-0 lg:h-[88px] shrink-0 relative">
+                    <div className="absolute bottom-0 left-4 right-0 h-[1px] bg-slate-200 hidden lg:block" />
                     <div>
-                        <h1 className="text-xl lg:text-2xl font-black text-slate-800 tracking-tight">Satınalma & Giderler</h1>
-                        <p className="text-xs lg:text-sm text-slate-500 font-medium mt-1">Alış faturaları ve tedarikçi yönetimi.</p>
+                        <h1 className="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">Satınalma & Giderler</h1>
+                        <p className="text-xs lg:text-sm text-slate-500 font-medium">Alış faturaları ve tedarikçi yönetimi.</p>
                     </div>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <ExportButton title={viewMode === 'FATURALAR' ? 'Alis_Faturalari' : 'Gider_Fisleri'} tableId={viewMode === 'FATURALAR' ? 'purchase-table' : 'expense-table'} />
@@ -310,30 +343,88 @@ export default function SatinalmaPage() {
                 <div className="bg-white border-b border-slate-200 px-8 flex gap-8 whitespace-nowrap overflow-x-auto">
                     <button
                         onClick={() => setViewMode('FATURALAR')}
-                        className={`py-4 text-xs font-black uppercase tracking-widest border-b-[3px] transition ${viewMode === 'FATURALAR' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`py-4 text-xs font-semibold uppercase tracking-wider border-b-[3px] transition ${viewMode === 'FATURALAR' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                     >
                         ALIŞ FATURALARI (STOKLU)
                     </button>
                     <button
                         onClick={() => setViewMode('GIDERLER')}
-                        className={`py-4 text-xs font-black uppercase tracking-widest border-b-[3px] transition ${viewMode === 'GIDERLER' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                        className={`py-4 text-xs font-semibold uppercase tracking-wider border-b-[3px] transition ${viewMode === 'GIDERLER' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                     >
                         GİDER FİŞLERİ (STOKSUZ)
                     </button>
                 </div>
 
                 {viewMode === 'FATURALAR' && (
-                    <div className="px-4 lg:px-8 mt-6 overflow-x-auto">
-                        <div className="flex bg-white p-1.5 rounded-2xl w-fit gap-1 shadow-sm border border-slate-200">
-                            {invoiceTabLabels.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setSelectedInvoiceTab(tab.id)}
-                                    className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${selectedInvoiceTab === tab.id ? 'bg-slate-900 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
+                    <div className="px-4 lg:px-8 mt-6">
+                        {/* KPI CARDS */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TOPLAM FATURA</span>
+                                    <span className="text-xl sm:text-2xl font-black text-slate-800">{filteredOrders.length}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen faturalar</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(251,191,36,0.3)] text-white">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TOPLAM KALEM</span>
+                                    <span className="text-xl sm:text-2xl font-black text-slate-800">{filteredOrders.reduce((sum, o) => sum + (o.KalemSayisi || 0), 0)} <span className="text-sm font-semibold text-slate-500">adet</span></span>
+                                    <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen ürün sayısı</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(249,115,22,0.3)] text-white">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TOPLAM TUTAR</span>
+                                    <span className="text-xl sm:text-2xl font-black text-slate-800">
+                                        {filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} <span className="text-sm text-slate-500">₺</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen tutar</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(16,185,129,0.3)] text-white">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M16.5 24V12l-4.5 2.59L7.5 12v12"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">AKTİF TEDARİKÇİ</span>
+                                    <span className="text-xl sm:text-2xl font-black text-slate-800">{new Set(filteredOrders.map(o => o.supplier)).size} <span className="text-sm font-semibold text-slate-500">firma</span></span>
+                                    <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen firmalar</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.3)] text-white">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="flex bg-white p-1.5 rounded-2xl w-fit gap-1 shadow-sm border border-slate-200 overflow-x-auto">
+                                {invoiceTabLabels.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setSelectedInvoiceTab(tab.id)}
+                                        className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${selectedInvoiceTab === tab.id ? 'bg-slate-900 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="relative w-full sm:w-64">
+                                <svg className="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <input 
+                                    type="text" 
+                                    placeholder="Tedarikçi, belge no, vb..." 
+                                    value={tableSearchQuery}
+                                    onChange={e => setTableSearchQuery(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 font-medium shadow-sm"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -353,19 +444,25 @@ export default function SatinalmaPage() {
                     {viewMode === 'FATURALAR' ? (
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                             <table className="w-full text-left border-collapse" id="purchase-table">
-                                <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black border-b border-slate-200 tracking-widest">
+                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                     <tr>
-                                        <th className="px-6 py-5">Tedarikçi Ünvanı</th>
-                                        <th className="px-6 py-5">Belge No</th>
-                                        <th className="px-6 py-5">Tarih</th>
-                                        <th className="px-6 py-5">Kategori</th>
-                                        <th className="px-6 py-5">İçerik</th>
-                                        <th className="px-6 py-5 text-right">Toplam Tutar</th>
-                                        <th className="px-6 py-5 text-right">İşlemler</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-slate-600 transition-colors" onClick={() => handleSort('supplier')}>
+                                            <div className="flex items-center gap-2">Tedarikçi / Belge No {sortConfig.key === 'supplier' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
+                                        </th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-slate-600 transition-colors" onClick={() => handleSort('orderDate')}>
+                                            <div className="flex items-center gap-2">Tarih / Kategori {sortConfig.key === 'orderDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
+                                        </th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-slate-600 transition-colors" onClick={() => handleSort('KalemSayisi')}>
+                                            <div className="flex items-center gap-2">İçerik {sortConfig.key === 'KalemSayisi' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
+                                        </th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-slate-600 transition-colors text-right" onClick={() => handleSort('totalAmount')}>
+                                            <div className="flex items-center justify-end gap-2">Toplam Tutar {sortConfig.key === 'totalAmount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
+                                        </th>
+                                        <th className="px-6 py-4 text-right">İşlemler</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 text-sm">
-                                    {orders.filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab).length === 0 && !isLoading && (
+                                <tbody className="divide-y divide-slate-200 text-[11px]">
+                                    {filteredOrders.length === 0 && !isLoading && (
                                         <tr>
                                             <td colSpan={7} className="px-6 py-20 text-center">
                                                 <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-slate-100">📋</div>
@@ -376,29 +473,50 @@ export default function SatinalmaPage() {
                                             </td>
                                         </tr>
                                     )}
-                                    {orders
-                                        .filter(order => selectedInvoiceTab === 'TÜMÜ' || order.category === selectedInvoiceTab)
-                                        .map((order, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
-                                                <td className="px-6 py-5 font-black text-slate-800 group-hover:text-[#ff7a18] transition-colors">{order.supplier}</td>
-                                                <td className="px-6 py-5">
-                                                    <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">{order.id}</span>
+                                    {filteredOrders.map((order, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] shrink-0 font-black">
+                                                            {order.supplier?.charAt(0) || 'T'}
+                                                        </div>
+                                                        {order.supplier}
+                                                    </div>
+                                                    <div className="text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-1.5">
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                                        {order.id}
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-5 font-medium text-slate-600">{order.orderDate ? new Date(order.orderDate).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
-                                                <td className="px-6 py-5">
-                                                    <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-indigo-50 text-indigo-600 border border-indigo-100 tracking-widest">
-                                                        {order.category}
-                                                    </span>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-700 group-hover:text-orange-500 transition-colors text-[12px] flex items-center gap-1.5">
+                                                        <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                                    </div>
+                                                    <div className="mt-1">
+                                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                                            {order.category}
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-5 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                                                    {order.KalemSayisi > 0 ? `${order.KalemSayisi} Kalem` : 'Kalem yok'}
+                                                <td className="px-6 py-4 text-slate-500 font-medium text-[12px]">
+                                                    {order.KalemSayisi > 0 ? (
+                                                        <span className="text-slate-900 font-semibold group-hover:text-orange-500 transition-colors">{order.KalemSayisi} Kalem</span>
+                                                    ) : (
+                                                        <span className="text-slate-400">Kalem yok</span>
+                                                    )}
                                                 </td>
-                                                <td className="px-6 py-5 text-right font-mono font-black text-slate-900 text-base">
-                                                    ₺{order.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'}
+                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[15px]">
+                                                    {order.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'} <span className="text-[11px] text-slate-400 group-hover:text-orange-400/80 font-medium ml-0.5">₺</span>
                                                 </td>
-                                                <td className="px-6 py-5 text-right flex justify-end gap-2">
-                                                    <button onClick={() => { setNewOrder({ ...order, items: [] }); fetchInvoiceDetails(order.id, order.supplierId); setIsOrderModalOpen(true); }} className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition-colors border border-emerald-100">Düzenle</button>
-                                                    <button onClick={async () => { const items = await fetchInvoiceDetails(order.id, order.supplierId); setPreviewInvoice({ ...order, items }); setIsPreviewModalOpen(true); }} className="text-slate-600 font-black text-[10px] uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors border border-slate-200">Önizle</button>
+                                                <td className="px-6 py-4 text-right flex justify-end gap-2 items-center h-full">
+                                                    <button onClick={() => { setNewOrder({ ...order, items: [] }); fetchInvoiceDetails(order.id, order.supplierId); setIsOrderModalOpen(true); }} className="text-slate-700 font-bold text-[10px] bg-white hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-slate-200 hover:border-orange-500 flex items-center gap-1.5 shadow-sm">
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                        Düzenle
+                                                    </button>
+                                                    <button onClick={async () => { const items = await fetchInvoiceDetails(order.id, order.supplierId); setPreviewInvoice({ ...order, items }); setIsPreviewModalOpen(true); }} className="text-white font-bold text-[10px] bg-slate-900 hover:bg-orange-500 px-3 py-1.5 rounded-xl transition-all border border-transparent flex items-center gap-1.5 shadow-sm">
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                        Önizle
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -408,16 +526,15 @@ export default function SatinalmaPage() {
                     ) : (
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                             <table className="w-full text-left border-collapse" id="expense-table">
-                                <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black border-b border-slate-200 tracking-widest">
+                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                     <tr>
-                                        <th className="px-6 py-5">Gider Tipi</th>
-                                        <th className="px-6 py-5">Açıklama</th>
-                                        <th className="px-6 py-5">Tarih</th>
-                                        <th className="px-6 py-5 text-right">Tutar</th>
-                                        <th className="px-6 py-5 text-right">İşlemler</th>
+                                        <th className="px-6 py-4">Kategori / Açıklama</th>
+                                        <th className="px-6 py-4">Tarih</th>
+                                        <th className="px-6 py-4 text-right">Tutar</th>
+                                        <th className="px-6 py-4 text-right">İşlemler</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 text-sm">
+                                <tbody className="divide-y divide-slate-100 text-[11px]">
                                     {expenses.length === 0 && !isLoading && (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-20 text-center">
@@ -430,23 +547,25 @@ export default function SatinalmaPage() {
                                         </tr>
                                     )}
                                     {expenses.map((expense, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
-                                            <td className="px-6 py-5 font-black text-slate-800">
-                                                <span className="px-3 py-1 rounded-lg text-[10px] uppercase font-black bg-rose-50 text-rose-600 border border-rose-100 tracking-widest">
-                                                    {expense.category}
+                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-3.5">
+                                                <div className="font-bold text-slate-800 text-[11px]">{expense.description}</div>
+                                                <div className="mt-1">
+                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-rose-50 text-rose-600 border border-rose-100/50">
+                                                        {expense.category}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className="text-[11px] font-medium text-slate-600">
+                                                    {new Date(expense.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 font-medium text-slate-600">{expense.description}</td>
-                                            <td className="px-6 py-5">
-                                                <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                                                    {new Date(expense.date).toLocaleDateString('tr-TR')}
-                                                </span>
+                                            <td className="px-6 py-3.5 text-right font-bold text-rose-600 text-[13px]">
+                                                {Number(expense.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-rose-400 font-medium ml-0.5">₺</span>
                                             </td>
-                                            <td className="px-6 py-5 text-right font-mono font-black text-rose-600 text-base">
-                                                ₺{Number(expense.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <button onClick={() => handleDeleteExpense(expense.id)} className="text-rose-600 font-black text-[10px] uppercase tracking-widest bg-rose-50 hover:bg-rose-100 px-4 py-2 rounded-xl transition-colors border border-rose-100">Sil</button>
+                                            <td className="px-6 py-3.5 text-right flex justify-end items-center h-full">
+                                                <button onClick={() => handleDeleteExpense(expense.id)} className="text-rose-600 font-semibold text-[10px] bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-full transition-colors border border-rose-100/50">Sil</button>
                                             </td>
                                         </tr>
                                     ))}
@@ -646,70 +765,80 @@ export default function SatinalmaPage() {
 
                 {/* PREVIEW MODAL */}
                 {isPreviewModalOpen && previewInvoice && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-slate-50 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
-                            <div className="p-6 md:p-8 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <div className="fx-modal-backdrop">
+                        <div className="fx-modal-large">
+                            <div className="fx-modal-header">
                                 <div>
-                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Alış Faturası Önizleme</h3>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Sistem Kaydı: {previewInvoice.id}</p>
+                                    <h3 className="text-2xl sm:text-3xl font-bold fx-text-primary tracking-tight">Alış Faturası Önizleme</h3>
+                                    <p className="text-sm fx-text-secondary mt-1 font-medium">Fatura detayları ve kalem listesi.</p>
                                 </div>
-                                <button onClick={() => setIsPreviewModalOpen(false)} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xl transition-colors">×</button>
+                                <button onClick={() => setIsPreviewModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--fx-bg)] text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                                    ✕
+                                </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                                <div className="bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-slate-200 flex flex-col h-full max-w-3xl mx-auto relative overflow-hidden">
+                            <div className="fx-modal-body p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
+                                <div className="fx-card w-full max-w-none relative overflow-hidden flex flex-col p-6 md:p-8 border-t-4 border-t-orange-500 shadow-[0_8px_30px_rgb(249,115,22,0.06)] bg-white rounded-none">
                                     {/* Watermark */}
-                                    <div className="absolute right-[-10%] top-[20%] text-[200px] opacity-[0.02] rotate-[-15deg] pointer-events-none font-black tracking-tighter">FİDANX</div>
+                                    <div className="absolute right-[-5%] top-[15%] text-[120px] md:text-[150px] opacity-[0.02] rotate-[-15deg] pointer-events-none font-black tracking-tighter fx-text-primary">FİDANX</div>
                                     
-                                    <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6 relative z-10">
-                                        <div>
-                                            <p className="text-[#ff7a18] font-black text-[10px] uppercase tracking-[0.2em] mb-2">TEDARİKÇİ ÜNVANI</p>
-                                            <h2 className="text-3xl font-black text-slate-900 leading-tight mb-3 tracking-tight">{previewInvoice.supplier}</h2>
-                                            <div className="flex items-center gap-3">
-                                                <span className="px-3 py-1.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-slate-200">CARİ: {previewInvoice.supplierId}</span>
-                                                <span className="px-3 py-1.5 bg-orange-50 text-orange-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-orange-100">BELGE: {previewInvoice.id}</span>
+                                    <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-6 relative z-10 border-b border-dashed fx-border pb-6">
+                                        <div className="w-full md:w-2/3 min-w-0">
+                                            <p className="text-orange-500 font-semibold text-[10px] uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> TEDARİKÇİ ÜNVANI
+                                            </p>
+                                            <h2 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 text-transparent bg-clip-text leading-tight mb-3 tracking-tight truncate w-full" title={previewInvoice.supplier}>{previewInvoice.supplier}</h2>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="px-2.5 py-1 bg-[var(--fx-bg)] fx-text-secondary text-[9px] font-black rounded-lg uppercase tracking-widest border fx-border">CARİ: {previewInvoice.supplierId}</span>
+                                                <span className="px-2.5 py-1 text-orange-600 bg-orange-50 dark:bg-orange-500/10 dark:text-orange-400 text-[9px] font-black rounded-lg uppercase tracking-widest border border-orange-200 dark:border-orange-500/20">BELGE: {previewInvoice.id}</span>
                                             </div>
                                         </div>
                                         <div className="text-left md:text-right">
-                                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] mb-2">TARİH</p>
-                                            <p className="text-xl font-black text-slate-800 tracking-tight">{previewInvoice.orderDate ? new Date(previewInvoice.orderDate).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
+                                            <p className="fx-text-secondary font-black text-[10px] uppercase tracking-[0.2em] mb-1.5">TARİH</p>
+                                            <p className="text-lg lg:text-xl font-black fx-text-primary tracking-tight">{previewInvoice.orderDate ? new Date(previewInvoice.orderDate).toLocaleDateString('tr-TR') : '-'}</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 overflow-x-auto relative z-10 border border-slate-200 rounded-2xl">
-                                        <table className="w-full text-left">
-                                            <thead className="bg-slate-50 border-b border-slate-200">
+                                    <div className="flex-1 overflow-x-auto relative z-10 border fx-border rounded-xl">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead className="bg-[var(--fx-bg)] border-b fx-border">
                                                 <tr>
-                                                    <th className="p-4 font-black text-[10px] text-slate-500 uppercase tracking-[0.15em]">Stok Kalemi / Açıklama</th>
-                                                    <th className="p-4 text-center font-black text-[10px] text-slate-500 uppercase tracking-[0.15em]">Miktar</th>
-                                                    <th className="p-4 text-right font-black text-[10px] text-slate-500 uppercase tracking-[0.15em]">Birim Fiyat</th>
-                                                    <th className="p-4 text-right font-black text-[10px] text-slate-500 uppercase tracking-[0.15em]">Toplam</th>
+                                                    <th className="px-4 py-3 font-black text-[10px] fx-text-secondary uppercase tracking-[0.1em]">Stok Kalemi / Açıklama</th>
+                                                    <th className="px-4 py-3 text-center font-black text-[10px] fx-text-secondary uppercase tracking-[0.1em]">Miktar</th>
+                                                    <th className="px-4 py-3 text-right font-black text-[10px] fx-text-secondary uppercase tracking-[0.1em]">Birim Fiyat</th>
+                                                    <th className="px-4 py-3 text-right font-black text-[10px] fx-text-secondary uppercase tracking-[0.1em]">Toplam</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100">
+                                            <tbody className="divide-y divide-dashed divide-slate-200/70 dark:divide-slate-700/50">
                                                 {previewInvoice.items.map((item: any, idx: number) => (
-                                                    <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                                                        <td className="p-4 font-black text-slate-800 text-sm">{item.name || item.StokAdi}</td>
-                                                        <td className="p-4 text-center">
-                                                            <span className="bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg font-bold text-slate-600 text-xs inline-block">
+                                                    <tr key={idx} className="group hover:bg-orange-500 transition-colors">
+                                                        <td className="px-4 py-3 font-bold fx-text-primary group-hover:!text-white text-[12px] transition-colors flex items-center gap-2">
+                                                            <svg className="w-4 h-4 text-slate-400 group-hover:text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                                                            {item.name || item.StokAdi}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center transition-colors">
+                                                            <span className="bg-slate-100 group-hover:!bg-orange-600 border border-slate-200 group-hover:!border-orange-400 px-2.5 py-1 rounded-md font-bold text-slate-600 group-hover:!text-white text-[11px] inline-block transition-colors shadow-sm">
                                                                 {item.amount || item.Miktar} {item.unit || item.Birim}
                                                             </span>
                                                         </td>
-                                                        <td className="p-4 text-right font-mono font-bold text-slate-600 text-sm">₺{(item.unitPrice || item.BirimFiyat || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                                                        <td className="p-4 text-right font-mono font-black text-slate-900 text-base">₺{((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                                                        <td className="px-4 py-3 text-right font-bold text-slate-900 group-hover:!text-white text-[13px] transition-colors">{Number(item.unitPrice || item.BirimFiyat || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[10px] opacity-70">₺</span></td>
+                                                        <td className="px-4 py-3 text-right font-black text-slate-900 group-hover:!text-white text-[14px] transition-colors">{Number((item.amount || item.Miktar || 0) * (item.unitPrice || item.BirimFiyat || 0)).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[10px] opacity-70">₺</span></td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </table>
                                     </div>
 
-                                    <div className="mt-8 pt-8 border-t-2 border-dashed border-slate-200 relative z-10 flex justify-between items-end">
-                                        <div className="w-24 h-24 border-4 border-[#ff7a18]/20 rounded-full flex items-center justify-center opacity-50 rotate-[-15deg]">
-                                            <span className="text-[#ff7a18] font-black text-xs uppercase tracking-widest">İŞLENDİ</span>
+                                    <div className="mt-6 pt-6 relative z-10 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 border-t border-dashed fx-border">
+                                        <div className="w-16 h-16 border-2 border-orange-500 rounded-full flex items-center justify-center opacity-30 rotate-[-15deg] shrink-0">
+                                            <span className="text-orange-500 font-black text-[9px] uppercase tracking-widest">İŞLENDİ</span>
                                         </div>
-                                        <div className="text-right bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] mb-2">ÖDENECEK TOPLAM</p>
-                                            <p className="text-4xl font-black text-slate-900 tracking-tighter">₺{previewInvoice.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'}</p>
+                                        <div className="text-right bg-gradient-to-br from-[var(--fx-bg)] to-orange-50/30 dark:to-orange-900/10 p-4 lg:p-5 rounded-xl border border-orange-100 dark:border-orange-500/20 w-full sm:w-auto shadow-sm">
+                                            <p className="text-orange-600 dark:text-orange-400 font-black text-[10px] uppercase tracking-[0.2em] mb-1">ÖDENECEK TOPLAM</p>
+                                            <div className="flex items-baseline justify-end gap-1">
+                                                <span className="text-lg font-black fx-text-secondary">₺</span>
+                                                <p className="text-2xl lg:text-3xl font-black fx-text-primary">{previewInvoice.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

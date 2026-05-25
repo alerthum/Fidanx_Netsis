@@ -209,7 +209,7 @@ export default function OperationsPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 sticky top-0 z-30 shadow-sm">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 sticky top-0 z-30 shadow-sm lg:py-0 lg:h-[88px] shrink-0">
                     <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Günlük Bahçe İşleri & Operasyon</h1>
                     <p className="text-xs lg:text-sm text-slate-500 font-medium">Sera ve bahçelerde yapılan işlemleri kayıt altına alın.</p>
                 </header>
@@ -540,7 +540,7 @@ export default function OperationsPage() {
                                     <>
                                         {/* Desktop Table - hidden on mobile */}
                                         <table className="hidden lg:table w-full text-left border-collapse">
-                                            <thead className="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest sticky top-0">
+                                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100 sticky top-0">
                                                 <tr>
                                                     <th className="px-6 py-4">Tarih</th>
                                                     <th className="px-6 py-4">İşlem</th>
@@ -549,10 +549,10 @@ export default function OperationsPage() {
                                                     <th className="px-6 py-4 text-right">Maliyet</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100 text-sm">
+                                            <tbody className="divide-y divide-slate-100 text-[11px]">
                                                 {logs.map(log => (
-                                                    <tr key={log.id} className="hover:bg-slate-50 transition">
-                                                        <td className="px-6 py-4 font-medium text-slate-500 whitespace-nowrap">
+                                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <td className="px-6 py-4 font-black text-slate-800 text-[12px] whitespace-nowrap group-hover:text-orange-600 transition-colors">
                                                             {new Date(log.date || log.timestamp).toLocaleString('tr-TR')}
                                                         </td>
                                                         <td className="px-6 py-4">
@@ -560,7 +560,7 @@ export default function OperationsPage() {
                                                                 <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${log.color || 'bg-slate-100'}`}>
                                                                     {log.icon || '📝'}
                                                                 </span>
-                                                                <span className="font-bold text-slate-700">{log.title}</span>
+                                                                <span className="font-bold text-[13px] text-slate-800 group-hover:text-orange-500 transition-colors">{log.title}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
@@ -568,12 +568,16 @@ export default function OperationsPage() {
                                                                 <span key={l} className="inline-block bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded mr-1 font-bold">{l}</span>
                                                             ))}
                                                         </td>
-                                                        <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
+                                                        <td className="px-6 py-4 text-slate-600 max-w-xs truncate text-[12px]">
                                                             {log.recipeName && <span className="inline-block bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded font-bold mr-2">{log.recipeName}</span>}
                                                             {log.details || '-'}
                                                         </td>
-                                                        <td className="px-6 py-4 text-right font-bold text-slate-700">
-                                                            {log.cost ? `${log.cost} ₺` : '-'}
+                                                        <td className="px-6 py-4 text-right font-black text-[13px] text-slate-900 group-hover:text-orange-500 transition-colors">
+                                                            {log.cost ? (
+                                                                <>
+                                                                    {parseFloat(log.cost).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
+                                                                </>
+                                                            ) : '-'}
                                                         </td>
                                                     </tr>
                                                 ))}

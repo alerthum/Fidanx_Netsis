@@ -182,7 +182,7 @@ export default function FirmalarPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 font-sans">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky top-0 z-30 gap-4">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center sticky top-0 z-30 gap-4 lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800">Firma Yönetimi</h1>
                         <p className="text-xs lg:text-sm text-slate-500">Müşteri ve tedarikçi profillerini yönetin.</p>
@@ -245,7 +245,7 @@ export default function FirmalarPage() {
                 <div className="flex-1 p-4 md:p-8">
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-full">
                         <table className="hidden lg:table w-full text-left border-collapse" id="companies-table">
-                            <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200">
+                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4">Firma Ünvanı / VKN / E-posta</th>
                                     <th className="px-6 py-4 text-center">Tür</th>
@@ -254,12 +254,12 @@ export default function FirmalarPage() {
                                     <th className="px-6 py-4 text-right">İşlemler</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm">
+                            <tbody className="divide-y divide-slate-100 text-[11px]">
                                 {filteredCompanies.map((company: any) => (
-                                    <tr key={company.id} className="hover:bg-slate-50 transition">
+                                    <tr key={company.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-4">
-                                            <p className="font-bold text-slate-700">{company.name}</p>
-                                            <p className="text-[10px] text-slate-400 font-mono">VKN: {company.taxNumber || '-'}{company.email ? ` · ${String(company.email).toLowerCase()}` : ''}</p>
+                                            <p className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{company.name}</p>
+                                            <p className="text-[10px] text-slate-400 font-mono mt-1">VKN: {company.taxNumber || '-'}{company.email ? ` · ${String(company.email).toLowerCase()}` : ''}</p>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${company.id?.startsWith('120') ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -267,27 +267,28 @@ export default function FirmalarPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
                                                 {company.city || '-'} / {company.country || '-'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className={`font-bold ${Number(company.balance) > 0 ? 'text-rose-600' : Number(company.balance) < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                                {company.balance != null ? `₺${Number(company.balance).toLocaleString('tr-TR')}` : '-'}
+                                            <span className={`font-black text-[13px] group-hover:text-orange-500 transition-colors ${Number(company.balance) > 0 ? 'text-rose-600' : Number(company.balance) < 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                                {company.balance != null ? `${Number(company.balance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}
                                                 {Number(company.balance) > 0 ? ' (B)' : Number(company.balance) < 0 ? ' (A)' : ''}
+                                                <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-2 items-center h-full">
                                                 <button
                                                     onClick={() => fetchMovements(company.id, company.name)}
-                                                    className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-slate-200 transition"
+                                                    className="text-slate-700 font-bold text-[10px] bg-slate-100 hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-transparent hover:border-orange-500"
                                                 >
                                                     HAREKET
                                                 </button>
                                                 <button
                                                     onClick={() => openEditModal(company)}
-                                                    className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-100 transition"
+                                                    className="text-white font-bold text-[10px] bg-slate-900 hover:bg-orange-500 px-3 py-1.5 rounded-xl transition-all border border-transparent shadow-sm"
                                                 >
                                                     DÜZENLE
                                                 </button>
@@ -340,7 +341,7 @@ export default function FirmalarPage() {
                 {/* Modal */}
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
                             <h3 className="text-xl font-bold text-slate-800 mb-6 tracking-tight">
                                 {editMode ? 'Firma Bilgilerini Düzenle' : 'Yeni Firma Kaydı'}
                             </h3>
@@ -430,8 +431,8 @@ export default function FirmalarPage() {
                                     </div>
                                 </div>
                                 <div className="col-span-2 flex gap-4 mt-6">
-                                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition">İptal</button>
-                                    <button type="submit" className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-lg hover:bg-emerald-700 transition active:scale-95">
+                                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">İptal</button>
+                                    <button type="submit" className="flex-1 bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg hover:bg-orange-500 transition active:scale-95">
                                         {editMode ? 'Değişiklikleri Kaydet' : 'Firmayı Kaydet'}
                                     </button>
                                 </div>
@@ -443,55 +444,55 @@ export default function FirmalarPage() {
                 {/* Movements Modal */}
                 {isMovementsModalOpen && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-5xl p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 font-sans">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-5xl p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 font-sans">
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-800">Cari Hareket Dökümü (Ekstre)</h3>
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{selectedCariName}</p>
                                 </div>
-                                <button onClick={() => setIsMovementsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl transition">×</button>
+                                <button onClick={() => setIsMovementsModalOpen(false)} className="text-slate-400 hover:text-orange-500 text-2xl transition">×</button>
                             </div>
 
                             <div className="flex-1 overflow-auto p-0 scrollbar-thin scrollbar-thumb-slate-200">
                                 <table className="w-full text-left border-collapse">
-                                    <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4">Tarih</th>
-                                            <th className="px-6 py-4">Vade</th>
-                                            <th className="px-6 py-4">Belge No</th>
-                                            <th className="px-6 py-4">Açıklama</th>
-                                            <th className="px-6 py-4 text-right">Borç</th>
-                                            <th className="px-6 py-4 text-right">Alacak</th>
-                                            <th className="px-6 py-4 text-right bg-slate-100/50">Bakiye</th>
+                                            <th className="px-6 py-4 bg-white">Tarih</th>
+                                            <th className="px-6 py-4 bg-white">Vade</th>
+                                            <th className="px-6 py-4 bg-white">Belge No</th>
+                                            <th className="px-6 py-4 bg-white">Açıklama</th>
+                                            <th className="px-6 py-4 text-right bg-white">Borç</th>
+                                            <th className="px-6 py-4 text-right bg-white">Alacak</th>
+                                            <th className="px-6 py-4 text-right bg-slate-50">Bakiye</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {movements.map((m, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 transition">
-                                                <td className="px-6 py-3 whitespace-nowrap font-medium text-slate-600">
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-3 whitespace-nowrap font-mono text-[12px] text-slate-500 group-hover:text-orange-500 transition-colors">
                                                     {m.Tarih ? new Date(m.Tarih).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 whitespace-nowrap font-medium text-slate-500">
+                                                <td className="px-6 py-3 whitespace-nowrap font-mono text-[12px] text-slate-500 group-hover:text-orange-500 transition-colors">
                                                     {m.VadeTarihi ? new Date(m.VadeTarihi).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-6 py-3">
+                                                <td className="px-6 py-3 font-mono font-bold text-[13px]">
                                                     <button
                                                         type="button"
                                                         onClick={() => fetchInvoiceDetails(m.BelgeNo || '')}
-                                                        className="font-semibold text-blue-600 hover:text-blue-800 hover:underline text-left"
+                                                        className="font-bold text-slate-800 hover:text-orange-600 transition-colors text-left"
                                                     >
                                                         {m.BelgeNo || m.HareketTuru}
                                                     </button>
                                                 </td>
-                                                <td className="px-6 py-3 text-slate-600 max-w-[200px] truncate" title={m.Aciklama}>{m.Aciklama}</td>
-                                                <td className="px-6 py-3 text-right font-bold text-rose-600">
-                                                    {m.Borc > 0 ? `₺${m.Borc.toLocaleString()}` : '-'}
+                                                <td className="px-6 py-3 text-slate-600 font-bold max-w-[200px] truncate group-hover:text-orange-500 transition-colors" title={m.Aciklama}>{m.Aciklama}</td>
+                                                <td className="px-6 py-3 text-right font-black text-rose-600 group-hover:text-rose-700 transition-colors text-[13px]">
+                                                    {m.Borc > 0 ? `${m.Borc.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-semibold text-emerald-600">
-                                                    {m.Alacak > 0 ? `₺${m.Alacak.toLocaleString()}` : '-'}
+                                                <td className="px-6 py-3 text-right font-black text-emerald-600 group-hover:text-emerald-700 transition-colors text-[13px]">
+                                                    {m.Alacak > 0 ? `${m.Alacak.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}
                                                 </td>
-                                                <td className={`px-6 py-3 text-right font-bold bg-slate-50/50 ${m.Bakiye > 0 ? 'text-rose-700' : m.Bakiye < 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
-                                                    ₺{Math.abs(m.Bakiye).toLocaleString()} {m.Bakiye > 0 ? '(B)' : m.Bakiye < 0 ? '(A)' : ''}
+                                                <td className={`px-6 py-3 text-right font-black text-[13px] bg-slate-50/50 group-hover:bg-orange-50/50 transition-colors ${m.Bakiye > 0 ? 'text-rose-700' : m.Bakiye < 0 ? 'text-emerald-700' : 'text-slate-900 group-hover:text-orange-600'}`}>
+                                                    {Math.abs(m.Bakiye).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} {m.Bakiye > 0 ? '(B)' : m.Bakiye < 0 ? '(A)' : ''} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -513,8 +514,8 @@ export default function FirmalarPage() {
                                     {invoiceDetails.length === 0 ? (
                                         <p className="text-slate-400 text-sm italic">Bu belgeye ait fatura kalemi bulunamadı.</p>
                                     ) : (
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead className="bg-slate-50 text-slate-500 uppercase font-bold">
+                                        <table className="w-full text-left text-[11px] border-collapse">
+                                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                 <tr>
                                                     <th className="px-3 py-2">Stok Adı</th>
                                                     <th className="px-3 py-2 text-right">Miktar</th>
@@ -525,12 +526,12 @@ export default function FirmalarPage() {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {invoiceDetails.map((row: any, i: number) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        <td className="px-3 py-2 text-slate-700">{row.StokAdi ?? row.StokKodu ?? '-'}</td>
-                                                        <td className="px-3 py-2 text-right">{row.Miktar?.toLocaleString()}</td>
-                                                        <td className="px-3 py-2">{row.Birim || '-'}</td>
-                                                        <td className="px-3 py-2 text-right">₺{Number(row.BirimFiyat || 0).toLocaleString('tr-TR')}</td>
-                                                        <td className="px-3 py-2 text-right font-bold">₺{Number(row.Tutar || 0).toLocaleString('tr-TR')}</td>
+                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <td className="px-3 py-2 text-slate-800 font-bold group-hover:text-orange-600 transition-colors">{row.StokAdi ?? row.StokKodu ?? '-'}</td>
+                                                        <td className="px-3 py-2 text-right font-black text-[12px]">{row.Miktar?.toLocaleString()}</td>
+                                                        <td className="px-3 py-2 text-slate-500 font-bold">{row.Birim || '-'}</td>
+                                                        <td className="px-3 py-2 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors">{Number(row.BirimFiyat || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                                                        <td className="px-3 py-2 text-right font-black text-[13px] text-slate-900 group-hover:text-orange-500 transition-colors">{Number(row.Tutar || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium">₺</span></td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -542,11 +543,11 @@ export default function FirmalarPage() {
                             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center px-8">
                                 <div className="text-sm">
                                     <span className="text-slate-500 font-bold uppercase mr-3">Net Durum:</span>
-                                    <span className={`font-bold ${movements.length > 0 && movements[movements.length - 1].Bakiye > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                        {movements.length > 0 ? `₺${Math.abs(movements[movements.length - 1].Bakiye).toLocaleString()} ${movements[movements.length - 1].Bakiye > 0 ? 'BORÇ' : 'ALACAK'}` : '0 TL'}
+                                    <span className={`font-black text-[14px] ${movements.length > 0 && movements[movements.length - 1].Bakiye > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        {movements.length > 0 ? `${Math.abs(movements[movements.length - 1].Bakiye).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${movements[movements.length - 1].Bakiye > 0 ? 'BORÇ' : 'ALACAK'}` : '0 TL'}
                                     </span>
                                 </div>
-                                <button onClick={() => setIsMovementsModalOpen(false)} className="px-8 py-2.5 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-900 transition shadow-lg active:scale-95">Kapat</button>
+                                <button onClick={() => setIsMovementsModalOpen(false)} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-900 transition shadow-lg active:scale-95">Kapat</button>
                             </div>
                         </div>
                     </div>

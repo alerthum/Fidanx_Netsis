@@ -18,6 +18,7 @@ export default function SatislarPage() {
     });
     const [customers, setCustomers] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
+    const [orderSearchQuery, setOrderSearchQuery] = useState('');
     const [stocks, setStocks] = useState<any[]>([]);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -468,50 +469,57 @@ export default function SatislarPage() {
         } catch (err) { alert('İşlem başarısız.'); }
     };
 
+    const filteredOrders = orders.filter(o => {
+        const query = orderSearchQuery.toLocaleLowerCase('tr-TR');
+        return (
+            (o.customerName && o.customerName.toLocaleLowerCase('tr-TR').includes(query)) ||
+            (o.id && o.id.toLocaleLowerCase('tr-TR').includes(query)) ||
+            (o.status && o.status.toLocaleLowerCase('tr-TR').includes(query))
+        );
+    });
+
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50">
             <Sidebar />
             <main className="flex-1 min-w-0">
-                <header className="bg-white border-b border-slate-200 p-4 lg:p-6 lg:sticky lg:top-0 z-30">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <div>
-                            <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Satış & CRM</h1>
-                            <p className="text-xs lg:text-sm text-slate-500">Müşteri satışları ve ilişkileri yönetimi.</p>
-                        </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <button
-                                onClick={() => { resetCustomerForm(); setIsCustomerModalOpen(true); }}
-                                className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition"
-                            >
-                                + Yeni Müşteri
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('NEW_ORDER')}
-                                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-emerald-700 transition"
-                            >
-                                + Yeni Satış
-                            </button>
-                            {activeTab === 'ORDERS' && <ExportButton title="Satışlar" tableId="orders-table" />}
-                            {activeTab === 'CUSTOMERS' && <ExportButton title="Müşteriler" tableId="customers-table" />}
-                        </div>
+                <header className="bg-white px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center sticky top-0 z-30 gap-4 shadow-sm lg:py-0 lg:h-[88px] shrink-0 relative">
+                    <div className="absolute bottom-0 left-4 right-0 h-[1px] bg-slate-200 hidden lg:block" />
+                    <div>
+                        <h1 className="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">Satış & CRM</h1>
+                        <p className="text-xs lg:text-sm text-slate-500 font-medium">Müşteri satışları ve ilişkileri yönetimi.</p>
                     </div>
-
-                    <div className="flex gap-8 border-b border-slate-100">
-                        {['Satışlar', 'Müşteriler', 'Yeni Satış'].map((tab, idx) => {
-                            const val = ['ORDERS', 'CUSTOMERS', 'NEW_ORDER'][idx] as any;
-                            return (
-                                <button
-                                    key={val}
-                                    onClick={() => setActiveTab(val)}
-                                    className={`pb-4 text-sm font-bold transition-all relative ${activeTab === val ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                >
-                                    {tab}
-                                    {activeTab === val && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />}
-                                </button>
-                            );
-                        })}
+                    <div className="flex gap-2 w-full sm:w-auto mt-4 lg:mt-0">
+                        <button
+                            onClick={() => { resetCustomerForm(); setIsCustomerModalOpen(true); }}
+                            className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition"
+                        >
+                            + Yeni Müşteri
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('NEW_ORDER')}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-emerald-700 transition"
+                        >
+                            + Yeni Satış
+                        </button>
+                        {activeTab === 'ORDERS' && <ExportButton title="Satışlar" tableId="orders-table" />}
+                        {activeTab === 'CUSTOMERS' && <ExportButton title="Müşteriler" tableId="customers-table" />}
                     </div>
                 </header>
+
+                <div className="bg-white border-b border-slate-200 px-8 flex gap-8 whitespace-nowrap overflow-x-auto">
+                    {['Satışlar', 'Müşteriler', 'Yeni Satış'].map((tab, idx) => {
+                        const val = ['ORDERS', 'CUSTOMERS', 'NEW_ORDER'][idx] as any;
+                        return (
+                            <button
+                                key={val}
+                                onClick={() => setActiveTab(val)}
+                                className={`py-4 text-xs font-semibold uppercase tracking-wider border-b-[3px] transition ${activeTab === val ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                            >
+                                {tab}
+                            </button>
+                        );
+                    })}
+                </div>
 
                 <div className="p-4 lg:p-8">
                     {activeTab === 'NEW_ORDER' && (
@@ -721,22 +729,83 @@ export default function SatislarPage() {
                     )}
 
                     {activeTab === 'ORDERS' && (
-                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TOPLAM SATIŞ</span>
+                                        <span className="text-xl sm:text-2xl font-black text-slate-800">{filteredOrders.length}</span>
+                                        <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen satışlar</span>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.3)] text-white">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TAMAMLANAN</span>
+                                        <span className="text-xl sm:text-2xl font-black text-slate-800">{filteredOrders.filter(o => o.status === 'Tamamlandı').length} <span className="text-sm font-semibold text-slate-500">adet</span></span>
+                                        <span className="text-[10px] text-slate-400 font-medium mt-1">Onaylanan satışlar</span>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(16,185,129,0.3)] text-white">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">BEKLEYEN</span>
+                                        <span className="text-xl sm:text-2xl font-black text-slate-800">{filteredOrders.filter(o => o.status === 'Bekliyor').length} <span className="text-sm font-semibold text-slate-500">adet</span></span>
+                                        <span className="text-[10px] text-slate-400 font-medium mt-1">Onay bekleyenler</span>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(245,158,11,0.3)] text-white">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-200/60 shadow-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TOPLAM HACİM</span>
+                                        <span className="text-xl sm:text-2xl font-black text-slate-800">
+                                            {filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} <span className="text-sm text-slate-500">₺</span>
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-medium mt-1">Görüntülenen tutar</span>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(147,51,234,0.3)] text-white">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                                <div className="relative w-full sm:w-96">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-slate-400">🔍</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Müşteri, Fatura No veya Durum ara..."
+                                        value={orderSearchQuery}
+                                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-shadow bg-white"
+                                    />
+                                </div>
+                            </div>
                             {/* Desktop Table */}
-                            <table className="hidden lg:table w-full text-left font-bold text-sm" id="orders-table">
-                                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-wider">
+                            <table className="hidden lg:table w-full text-left border-collapse" id="orders-table">
+                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                     <tr>
                                         <th className="px-6 py-4">Müşteri</th>
                                         <th className="px-6 py-4">Tarih</th>
                                         <th className="px-6 py-4">Durum</th>
-                                        <th className="px-6 py-4">Tutar</th>
+                                        <th className="px-6 py-4 text-right">Tutar</th>
+                                        <th className="px-6 py-4 text-right">İşlemler</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {orders.map(o => (
-                                        <tr key={o.id} className="hover:bg-slate-50">
-                                            <td className="px-6 py-4 text-slate-700">{o.customerName || 'Belirtilmemiş'}</td>
-                                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '-'}</td>
+                                <tbody className="divide-y divide-slate-100 text-[11px]">
+                                    {filteredOrders.map(o => (
+                                        <tr key={o.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-4 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{o.customerName || 'Belirtilmemiş'}</td>
+                                            <td className="px-6 py-4 text-slate-500 font-mono text-[12px] group-hover:text-orange-500 transition-colors">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '-'}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black border ${o.status === 'Tamamlandı' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                                     o.status === 'İptal' ? 'bg-rose-50 text-rose-600 border-rose-100' :
@@ -745,9 +814,9 @@ export default function SatislarPage() {
                                                     {o.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-900 font-mono">₺{(o.totalAmount || 0).toLocaleString()}</td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="px-6 py-4 font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[14px]">₺{(o.totalAmount || 0).toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right h-full">
+                                                <div className="flex justify-end gap-2 items-center h-full">
                                                     <button
                                                         onClick={async () => {
                                                             const items = await fetchInvoiceDetails(o.id, o.customerId);
@@ -762,7 +831,7 @@ export default function SatislarPage() {
                                                             });
                                                             setIsEditOrderModalOpen(true);
                                                         }}
-                                                        className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition"
+                                                        className="text-slate-700 font-bold text-[10px] bg-white hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-slate-200 hover:border-orange-500 shadow-sm"
                                                     >
                                                         Değiştir
                                                     </button>
@@ -772,7 +841,7 @@ export default function SatislarPage() {
                                                             setPreviewInvoice({ ...o, items, supplier: o.customerName, supplierId: o.customerId });
                                                             setIsPreviewModalOpen(true);
                                                         }}
-                                                        className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase hover:bg-slate-200 transition"
+                                                        className="text-white font-bold text-[10px] bg-slate-900 hover:bg-orange-500 px-3 py-1.5 rounded-xl transition-all border border-transparent shadow-sm"
                                                     >
                                                         Önizleme
                                                     </button>
@@ -804,7 +873,7 @@ export default function SatislarPage() {
 
                             {/* Mobile Card View */}
                             <div className="lg:hidden divide-y divide-slate-100">
-                                {orders.map(o => (
+                                {filteredOrders.map(o => (
                                     <div key={o.id} className="p-4">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="font-bold text-slate-700 text-sm">{o.customerName || 'Belirtilmemiş'}</span>
@@ -843,19 +912,20 @@ export default function SatislarPage() {
                                         </div>
                                     </div>
                                 ))}
-                                {orders.length === 0 && (
-                                    <div className="px-6 py-12 text-center text-slate-400 italic">Kayıtlı satış bulunmuyor.</div>
+                                {filteredOrders.length === 0 && (
+                                    <div className="px-6 py-12 text-center text-slate-400 italic">Aramaya uygun satış bulunmuyor.</div>
                                 )}
                             </div>
                         </div>
+                        </>
                     )}
 
 
                     {activeTab === 'CUSTOMERS' && (
                         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                             {/* Desktop Table */}
-                            <table className="hidden lg:table w-full text-left" id="customers-table">
-                                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                            <table className="hidden lg:table w-full text-left border-collapse" id="customers-table">
+                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                     <tr>
                                         <th className="px-6 py-4">Müşteri / Firma</th>
                                         <th className="px-6 py-4">Tür & VKN/TC</th>
@@ -864,12 +934,12 @@ export default function SatislarPage() {
                                         <th className="px-6 py-4 text-right">İşlem</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 text-[11px]">
                                     {customers.map(c => (
-                                        <tr key={c.id} className="hover:bg-slate-50 text-sm">
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-slate-700">{c.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{c.type || 'Bireysel'}</p>
+                                        <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-4 group-hover:text-orange-500 transition-colors">
+                                                <p className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600">{c.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{c.type || 'Bireysel'}</p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-xs">
@@ -892,14 +962,16 @@ export default function SatislarPage() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-xs text-slate-400 max-w-xs truncate">{c.address || '-'}</td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => openEditCustomer(c)}
-                                                    className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition"
-                                                >
-                                                    ✏️ Düzenle
-                                                </button>
+                                            <td className="px-6 py-4 text-[12px] text-slate-400 max-w-xs truncate">{c.address || '-'}</td>
+                                            <td className="px-6 py-4 text-right h-full">
+                                                <div className="flex justify-end gap-2 items-center h-full">
+                                                    <button
+                                                        onClick={() => openEditCustomer(c)}
+                                                        className="text-slate-700 font-bold text-[10px] bg-white hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-slate-200 hover:border-orange-500 shadow-sm"
+                                                    >
+                                                        Düzenle
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -942,8 +1014,8 @@ export default function SatislarPage() {
 
                 {/* Detailed ERP Customer Modal */}
                 {isCustomerModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[95vh]">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[95vh]">
                             <CustomerModalContent
                                 newCustomer={newCustomer}
                                 setNewCustomer={setNewCustomer}
@@ -955,8 +1027,8 @@ export default function SatislarPage() {
                 )}
                 {/* Product Modal */}
                 {isProductModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[95vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-lg p-6 max-h-[95vh] overflow-y-auto">
                             <h4 className="font-bold text-slate-800 mb-4">Ürün / Stok Seçimi</h4>
 
                             <div className="space-y-4">
@@ -1078,8 +1150,8 @@ export default function SatislarPage() {
 
                 {/* Select Customer Modal */}
                 {isSelectCustomerModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[70]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[70]">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-2xl p-6 sm:p-8 max-h-[90vh] overflow-hidden flex flex-col">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold">Müşteri Seçimi</h3>
                                 <button onClick={() => setIsSelectCustomerModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl font-black">×</button>
@@ -1128,7 +1200,7 @@ export default function SatislarPage() {
                 {/* Edit Order Modal */}
                 {isEditOrderModalOpen && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
                             <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-800">
                                     Satış Faturası Düzenle: {editOrder.id}
@@ -1260,8 +1332,8 @@ export default function SatislarPage() {
 
                 {/* Sub Modal: Edit Item from Edit Order */}
                 {isEditItemModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[95vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-lg p-6 max-h-[95vh] overflow-y-auto">
                             <h4 className="font-bold text-slate-800 mb-4">{editingItemIndex !== null ? 'Kalem Düzenle' : 'Ürün / Stok Ekle'}</h4>
 
                             <div className="space-y-4">
@@ -1384,7 +1456,7 @@ export default function SatislarPage() {
                 {/* E-Fatura Preview Modal */}
                 {isPreviewModalOpen && previewInvoice && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-                        <div className="bg-white shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col font-sans relative">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col font-sans relative">
                             {/* Toolbar */}
                             <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center print:hidden">
                                 <div className="flex gap-2">
@@ -1418,22 +1490,22 @@ export default function SatislarPage() {
                                 </div>
 
                                 {/* Items Table */}
-                                <table className="w-full text-left font-mono text-sm mb-8 border-collapse">
-                                    <thead>
-                                        <tr className="border-y-2 border-slate-800 bg-slate-50">
-                                            <th className="py-3 px-2 text-slate-800 font-bold uppercase w-1/2">Hizmet / Ürün</th>
-                                            <th className="py-3 px-2 text-slate-800 font-bold uppercase text-right">Miktar</th>
-                                            <th className="py-3 px-2 text-slate-800 font-bold uppercase text-right">Birim Fiyat</th>
-                                            <th className="py-3 px-2 text-slate-800 font-bold uppercase text-right">Tutar</th>
+                                <table className="w-full text-left font-sans text-[11px] mb-8 border-collapse">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-800 tracking-wider">
+                                        <tr>
+                                            <th className="py-3 px-2 w-1/2">Hizmet / Ürün</th>
+                                            <th className="py-3 px-2 text-right">Miktar</th>
+                                            <th className="py-3 px-2 text-right">Birim Fiyat</th>
+                                            <th className="py-3 px-2 text-right">Tutar</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200">
                                         {previewInvoice.items?.map((item: any, idx: number) => (
-                                            <tr key={idx}>
-                                                <td className="py-3 px-2 font-bold text-slate-700">{item.name}</td>
-                                                <td className="py-3 px-2 text-right">{item.amount} {item.unit}</td>
-                                                <td className="py-3 px-2 text-right">₺{Number(item.unitPrice).toLocaleString()}</td>
-                                                <td className="py-3 px-2 text-right font-bold">₺{(item.amount * item.unitPrice).toLocaleString()}</td>
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="py-3 px-2 font-bold text-slate-800 text-[12px] group-hover:text-orange-600 transition-colors">{item.name}</td>
+                                                <td className="py-3 px-2 text-right font-medium text-slate-600 group-hover:text-orange-500 transition-colors">{item.amount} {item.unit}</td>
+                                                <td className="py-3 px-2 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors">₺{Number(item.unitPrice).toLocaleString()}</td>
+                                                <td className="py-3 px-2 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[14px]">₺{(item.amount * item.unitPrice).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>

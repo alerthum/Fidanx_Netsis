@@ -161,7 +161,7 @@ export default function RecipesPage() {
         <div className="flex flex-col lg:flex-row min-h-screen fx-bg">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white dark:bg-slate-900 border-b fx-border px-4 lg:px-8 py-4 lg:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sticky top-0 z-30 shadow-sm">
+                <header className="bg-white dark:bg-slate-900 border-b fx-border px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-0 z-30 shadow-sm lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-3xl font-black fx-text tracking-tighter uppercase">Reçete & Karışım Merkezi</h1>
                         <p className="text-[10px] lg:text-xs fx-text-secondary font-bold uppercase tracking-widest mt-1">Standart üretim süreçleri için formülasyon yönetimi</p>

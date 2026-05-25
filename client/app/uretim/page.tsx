@@ -201,7 +201,7 @@ export default function UretimPage() {
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0 relative">
                 {/* Header */}
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sticky top-0 z-30 shadow-sm">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-0 z-30 shadow-sm lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight">Üretim Merkezi</h1>

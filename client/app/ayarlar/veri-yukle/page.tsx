@@ -123,7 +123,7 @@ export default function VeriYuklePage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
             <main className="flex-1 p-8">
-                <header className="mb-8">
+                <header className="mb-8 lg:py-0 lg:h-[88px] shrink-0">
                     <h1 className="text-2xl font-bold text-slate-800">Excel / Veri Aktarımı</h1>
                     <p className="text-sm text-slate-500">Müşteri ve Stok kartlarını toplu olarak içeri aktarın veya güncelleyin.</p>
                 </header>

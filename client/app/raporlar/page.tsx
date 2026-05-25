@@ -184,7 +184,7 @@ export default function RaporlarPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc] font-sans">
             <Sidebar />
             <main className="flex-1 min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-row justify-between items-center sticky top-0 z-30 shadow-sm gap-4">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-row justify-between items-center sticky top-0 z-30 shadow-sm gap-4 lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Geli?mi? Raporlar</h1>
                         <p className="hidden lg:block text-xs lg:text-sm text-slate-500">İşletmenizin tüm verilerini tek ekrandan inceleyin.</p>
@@ -301,7 +301,7 @@ export default function RaporlarPage() {
                                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Tedarikçi Sipariş Özeti</h3>
                                         <div className="hidden lg:block overflow-x-auto">
                                             <table className="w-full text-left text-sm" id="report-table">
-                                                <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                     <tr>
                                                         <th className="px-4 py-3">Tedarikçi</th>
                                                         <th className="px-4 py-3 text-center">Sipariş Sayısı</th>
@@ -309,7 +309,7 @@ export default function RaporlarPage() {
                                                         <th className="px-4 py-3 text-right">Toplam Tutar</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-slate-100 text-[11px]">
                                                     {(() => {
                                                         const suppliers: Record<string, { count: number, completed: number, total: number }> = {};
                                                         purchases.forEach(p => {
@@ -323,11 +323,11 @@ export default function RaporlarPage() {
                                                         return (
                                                             <>
                                                                 {supplierEntries.map(([name, data]) => (
-                                                                    <tr key={name} className="hover:bg-slate-50">
-                                                                        <td className="px-4 py-3 font-bold text-slate-700">{name}</td>
-                                                                        <td className="px-4 py-3 text-center font-mono">{data.count}</td>
-                                                                        <td className="px-4 py-3 text-center font-mono text-emerald-600">{data.completed}</td>
-                                                                        <td className="px-4 py-3 text-right font-bold text-slate-800">₺{data.total.toLocaleString('tr-TR')}</td>
+                                                                    <tr key={name} className="hover:bg-slate-50/50 transition-colors group">
+                                                                        <td className="px-4 py-3 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{name}</td>
+                                                                        <td className="px-4 py-3 text-center font-mono font-black text-[12px]">{data.count}</td>
+                                                                        <td className="px-4 py-3 text-center font-mono font-black text-emerald-600 text-[12px]">{data.completed}</td>
+                                                                        <td className="px-4 py-3 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{data.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
                                                                     </tr>
                                                                 ))}
                                                             </>
@@ -429,7 +429,7 @@ export default function RaporlarPage() {
                                         </div>
                                         <div className="hidden lg:block overflow-x-auto">
                                             <table className="w-full text-left text-sm">
-                                                <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                     <tr>
                                                         <th className="px-6 py-4">Parti / Ürün</th>
                                                         <th className="px-6 py-4 text-center">Miktar</th>
@@ -439,22 +439,22 @@ export default function RaporlarPage() {
                                                         <th className="px-6 py-4 text-right">Birim Maliyet</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-50">
+                                                <tbody className="divide-y divide-slate-100 text-[11px]">
                                                     {plantCosts.map((pc, i) => (
-                                                        <tr key={i} className="hover:bg-slate-50 transition">
+                                                        <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                                             <td className="px-6 py-4">
-                                                                <p className="font-bold text-slate-700">{pc.name}</p>
-                                                                <p className="text-[10px] text-emerald-600 font-mono">{pc.lotId}</p>
+                                                                <p className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{pc.name}</p>
+                                                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{pc.lotId}</p>
                                                             </td>
-                                                            <td className="px-6 py-4 text-center font-mono font-bold">{pc.quantity.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 text-center font-mono font-black text-[12px]">{pc.quantity.toLocaleString('tr-TR')}</td>
                                                             <td className="px-6 py-4 text-center">
                                                                 <span className="px-2 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{pc.location}</span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase">{pc.stage}</td>
-                                                            <td className="px-6 py-4 text-right font-bold text-slate-800">₺{pc.totalCost.toFixed(2)}</td>
+                                                            <td className="px-6 py-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">{pc.stage}</td>
+                                                            <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{pc.totalCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <span className={`font-bold ${pc.unitCost > 5 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                                    ₺{pc.unitCost.toFixed(2)}
+                                                                <span className={`font-black text-[13px] group-hover:text-orange-500 transition-colors ${pc.unitCost > 5 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                    {pc.unitCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -563,7 +563,7 @@ export default function RaporlarPage() {
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bitki Bazlı Kârlılık Tablosu</h3>
                                         </div>
                                         <table className="w-full text-left text-sm" id="report-table">
-                                            <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                 <tr>
                                                     <th className="px-6 py-4">Bitki</th>
                                                     <th className="px-6 py-4 text-right">Adet</th>
@@ -573,15 +573,15 @@ export default function RaporlarPage() {
                                                     <th className="px-6 py-4 text-right">Fire</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50">
+                                            <tbody className="divide-y divide-slate-100 text-[11px]">
                                                 {(profitability.bitkiBazli || []).map((b: any, i: number) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        <td className="px-6 py-4 font-bold text-slate-800">{b.bitkiAdi}</td>
-                                                        <td className="px-6 py-4 text-right font-bold">{(b.adet || 0).toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-emerald-600 font-bold">₺{(b.maliyet || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-xs">₺{b.adet > 0 ? (b.maliyet / b.adet).toFixed(2) : '0'}</td>
-                                                        <td className="px-6 py-4 text-right text-blue-600 font-bold">{(b.satilan || 0).toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right text-red-500 font-bold">{(b.fire || 0).toLocaleString()}</td>
+                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <td className="px-6 py-4 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{b.bitkiAdi}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px]">{(b.adet || 0).toLocaleString('tr-TR')}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[13px] text-slate-900 group-hover:text-orange-500 transition-colors">{(b.maliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
+                                                        <td className="px-6 py-4 text-right font-black text-[13px] text-slate-900 group-hover:text-orange-500 transition-colors">{b.adet > 0 ? (b.maliyet / b.adet).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0,00'} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px] text-blue-600">{(b.satilan || 0).toLocaleString('tr-TR')}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px] text-rose-600">{(b.fire || 0).toLocaleString('tr-TR')}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -598,7 +598,7 @@ export default function RaporlarPage() {
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Konum Bazlı Sera Verimlilik Raporu</h3>
                                         </div>
                                         <table className="w-full text-left text-sm" id="report-table">
-                                            <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                            <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                 <tr>
                                                     <th className="px-6 py-4">Konum</th>
                                                     <th className="px-6 py-4 text-right">Parti</th>
@@ -609,15 +609,15 @@ export default function RaporlarPage() {
                                                     <th className="px-6 py-4 text-right">Verimlilik</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50">
+                                            <tbody className="divide-y divide-slate-100 text-[11px]">
                                                 {seraEfficiency.map((s: any, i: number) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        <td className="px-6 py-4 font-bold text-slate-800">{s.konum}</td>
-                                                        <td className="px-6 py-4 text-right">{s.partiSayisi}</td>
-                                                        <td className="px-6 py-4 text-right font-bold">{(s.toplamBitki || 0).toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-emerald-600">₺{(s.toplamMaliyet || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</td>
-                                                        <td className="px-6 py-4 text-right text-red-500">{(s.toplamFire || 0).toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right text-blue-600">{(s.toplamSatilan || 0).toLocaleString()}</td>
+                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <td className="px-6 py-4 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{s.konum}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px]">{s.partiSayisi}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px]">{(s.toplamBitki || 0).toLocaleString('tr-TR')}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[13px] text-slate-900 group-hover:text-orange-500 transition-colors">{(s.toplamMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px] text-rose-600">{(s.toplamFire || 0).toLocaleString('tr-TR')}</td>
+                                                        <td className="px-6 py-4 text-right font-black text-[12px] text-blue-600">{(s.toplamSatilan || 0).toLocaleString('tr-TR')}</td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -711,7 +711,7 @@ export default function RaporlarPage() {
                                             </div>
                                             <div className="hidden lg:block overflow-x-auto">
                                                 <table className="w-full text-left text-sm">
-                                                    <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                         <tr>
                                                             <th className="px-4 py-3">Tarih</th>
                                                             <th className="px-4 py-3 text-center" colSpan={3}>Sera İçi (S/Ö/A)</th>
@@ -719,21 +719,21 @@ export default function RaporlarPage() {
                                                             <th className="px-4 py-3 text-center">Mazot</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-50">
+                                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                                         {temperatureLogs.slice(0, 20).map((log: any, i: number) => {
                                                             const si = log.seraIci || {};
                                                             const sd = log.seraDisi || {};
                                                             const dateStr = log.date ? new Date(log.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
                                                             return (
-                                                                <tr key={i} className="hover:bg-slate-50">
-                                                                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">{dateStr}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-orange-500">{si.sabah != null ? `${si.sabah}°` : '-'}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-orange-600">{si.ogle != null ? `${si.ogle}°` : '-'}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-orange-400">{si.aksam != null ? `${si.aksam}°` : '-'}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-blue-500">{sd.sabah != null ? `${sd.sabah}°` : '-'}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-blue-600">{sd.ogle != null ? `${sd.ogle}°` : '-'}</td>
-                                                                    <td className="px-2 py-3 text-center text-xs font-bold text-blue-400">{sd.aksam != null ? `${sd.aksam}°` : '-'}</td>
-                                                                    <td className="px-4 py-3 text-center text-xs font-bold text-slate-600">{log.mazot != null ? `${log.mazot} Lt` : '-'}</td>
+                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                                    <td className="px-4 py-3 text-slate-800 font-bold text-[12px] group-hover:text-orange-600 transition-colors">{dateStr}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-orange-500">{si.sabah != null ? `${si.sabah}°` : '-'}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-orange-600">{si.ogle != null ? `${si.ogle}°` : '-'}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-orange-400">{si.aksam != null ? `${si.aksam}°` : '-'}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-blue-500">{sd.sabah != null ? `${sd.sabah}°` : '-'}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-blue-600">{sd.ogle != null ? `${sd.ogle}°` : '-'}</td>
+                                                                    <td className="px-2 py-3 text-center text-[12px] font-black text-blue-400">{sd.aksam != null ? `${sd.aksam}°` : '-'}</td>
+                                                                    <td className="px-4 py-3 text-center text-[12px] font-black text-slate-800">{log.mazot != null ? `${log.mazot} Lt` : '-'}</td>
                                                                 </tr>
                                                             );
                                                         })}
@@ -791,13 +791,13 @@ export default function RaporlarPage() {
                                             </div>
                                             <div className="hidden lg:block overflow-x-auto">
                                                 <table className="w-full text-left text-sm">
-                                                    <thead className="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                                         <tr>
                                                             <th className="px-4 py-3">Tarih</th>
                                                             <th className="px-4 py-3">Uygulama</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-50">
+                                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                                         {fertilizerLogs.slice(0, 15).map((log: any, i: number) => {
                                                             const dateStr = log.date ? new Date(log.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) : '-';
                                                             const apps: string[] = [];
@@ -806,8 +806,8 @@ export default function RaporlarPage() {
                                                             if (log.start) apps.push('🚀 Start');
                                                             if (log.note) apps.push(log.note);
                                                             return (
-                                                                <tr key={i} className="hover:bg-slate-50">
-                                                                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">{dateStr}</td>
+                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                                    <td className="px-4 py-3 text-slate-800 font-bold text-[12px] group-hover:text-orange-600 transition-colors">{dateStr}</td>
                                                                     <td className="px-4 py-2">
                                                                         <div className="flex flex-wrap gap-1">
                                                                             {apps.map((a, j) => (

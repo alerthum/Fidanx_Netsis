@@ -319,7 +319,7 @@ export default function AyarlarPage() {
         <div className="flex min-h-screen fx-page">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="fx-card !rounded-none !border-0 !border-b fx-border px-8 py-5 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+                <header className="fx-card !rounded-none !border-0 !border-b fx-border px-8 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-2xl font-bold fx-text-primary tracking-tight">Sistem Ayarları</h1>
                         <p className="text-sm fx-text-secondary font-medium">Kullanıcı yönetimi, roller ve parametreler.</p>
@@ -382,19 +382,19 @@ export default function AyarlarPage() {
                         </div>
                         <div className="flex-1">
                             <table className="w-full text-left text-sm border-collapse">
-                                <thead className="bg-slate-50 dark:bg-slate-800/50 fx-text-secondary text-[9px] font-black uppercase tracking-widest border-b fx-border">
+                                <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-3">Kullanıcı Bilgisi</th>
-                                        <th className="px-6 py-3">Yetki Seviyesi</th>
-                                        <th className="px-6 py-3 text-right">Eylem</th>
+                                        <th className="px-6 py-4">Kullanıcı Bilgisi</th>
+                                        <th className="px-6 py-4">Yetki Seviyesi</th>
+                                        <th className="px-6 py-4 text-right">Eylem</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[var(--fx-border)]">
+                                <tbody className="divide-y divide-[var(--fx-border)] text-[11px]">
                                     {users.map((user, i) => (
-                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
+                                        <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="px-6 py-4">
-                                                <p className="font-bold fx-text-primary leading-tight">{user.name}</p>
-                                                <p className="text-[10px] fx-text-secondary font-medium">{user.email}</p>
+                                                <p className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors leading-tight">{user.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium mt-0.5">{user.email}</p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${user.role === 'Süper Yetkili' || user.role === 'Admin' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -405,7 +405,7 @@ export default function AyarlarPage() {
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => handleRemoveUser(user.email)}
-                                                    className="text-slate-300 hover:text-rose-500 transition-colors font-black text-[10px] uppercase tracking-widest"
+                                                    className="text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-widest bg-white hover:bg-rose-50 border border-transparent hover:border-rose-200 px-3 py-1.5 rounded-xl shadow-sm"
                                                 >
                                                     Kaldır
                                                 </button>
@@ -640,9 +640,9 @@ export default function AyarlarPage() {
                 {/* User Creation Modal */}
                 {
                     isUserModalOpen && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                            <div className="fx-card shadow-2xl w-full max-w-md p-8">
-                                <h3 className="text-xl font-bold fx-text-primary mb-6 tracking-tight">Yeni Kullanıcı Hesabı</h3>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-none shadow-2xl w-full max-w-md p-8 border border-slate-200">
+                                <h3 className="text-xl font-bold text-slate-800 mb-6 tracking-tight">Yeni Kullanıcı Hesabı</h3>
                                 <form onSubmit={handleAddUser} className="space-y-5">
                                     <div>
                                         <label className="block text-[10px] font-black fx-text-secondary uppercase tracking-widest mb-1.5">Tam Adı</label>
@@ -678,9 +678,9 @@ export default function AyarlarPage() {
                                             <option value="Gözlemci">Sadece Görüntüleme</option>
                                         </select>
                                     </div>
-                                    <div className="flex gap-4 pt-4">
-                                        <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition uppercase text-xs tracking-widest">Vazgeç</button>
-                                        <button type="submit" className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition active:scale-95 uppercase text-xs tracking-widest">Kullanıcıyı Kaydet</button>
+                                    <div className="flex gap-4 pt-4 mt-6">
+                                        <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">İptal</button>
+                                        <button type="submit" className="flex-1 bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg hover:bg-orange-500 transition active:scale-95">Kullanıcıyı Kaydet</button>
                                     </div>
                                 </form>
                             </div>

@@ -251,7 +251,7 @@ export default function StoklarPage() {
         <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc]">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center sticky top-0 lg:top-0 z-30 shadow-sm gap-4">
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center sticky top-0 lg:top-0 z-30 shadow-sm gap-4 lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Stok Listesi</h1>
                         <p className="text-xs lg:text-sm text-slate-500">Stok kartları ve miktarlar Netsis veritabanından anlık okunur.</p>
@@ -326,7 +326,7 @@ export default function StoklarPage() {
                             )}
                             <div className="hidden lg:block overflow-x-auto">
                                 <table className="w-full text-left border-collapse min-w-[1000px]" id="stok-table">
-                                    <thead className="bg-white text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b-2 border-slate-100">
                                         <tr>
                                             <th className="px-6 py-4">Fidan Adı & Tip</th>
                                             <th className="px-6 py-4">Kategori / SKU</th>
@@ -350,7 +350,7 @@ export default function StoklarPage() {
                                             <th className="px-6 py-4 text-right">İşlemler</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {groupPlants.map((plant: any) => { // Type 'any' because of mixed structure in STOCK_SUPPLIER
                                             const supplierName = (grouping === 'STOCK_SUPPLIER' || grouping === 'SUPPLIER')
                                                 ? plant.supplierName
@@ -361,16 +361,16 @@ export default function StoklarPage() {
                                             const showSupplierStockColumns = grouping === 'STOCK_SUPPLIER' || grouping === 'SUPPLIER';
 
                                             return (
-                                                <tr key={plant.id} className="hover:bg-slate-50 transition group text-sm">
+                                                <tr key={plant.id} className="hover:bg-slate-50/50 transition-colors group">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <span className="text-2xl">
                                                                 {plant.type === 'MOTHER_TREE' ? '🌳' : plant.type === 'PACKAGING' ? '📦' : plant.type === 'RAW_MATERIAL' ? '🧱' : '🌱'}
                                                             </span>
                                                             <div>
-                                                                <p className="font-bold text-slate-700">
+                                                                <p className="font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">
                                                                     {plant.name}
-                                                                    {plant.turkishName && <span className="text-slate-600 font-medium ml-1 text-xs">({plant.turkishName})</span>}
+                                                                    {plant.turkishName && <span className="text-slate-500 font-medium ml-1 text-[11px] group-hover:text-orange-500 transition-colors">({plant.turkishName})</span>}
                                                                 </p>
                                                                 <p className="text-[10px] text-emerald-600 font-black uppercase tracking-tighter">
                                                                     {plant.type === 'MOTHER_TREE' ? '• ANA AĞAÇ' : plant.type === 'PACKAGING' ? '• AMBALAJ / SAKSI' : plant.type === 'RAW_MATERIAL' ? '• HAMMADDE / GÜBRE' : '• ÜRETİM MATERYALİ'}
@@ -384,8 +384,8 @@ export default function StoklarPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <p className="font-semibold text-slate-600">{(plant.grupIsim || plant.category) || '-'}</p>
-                                                        <p className="text-[10px] text-slate-400 font-mono tracking-tighter uppercase">{plant.sku || 'SKU-YOK'}</p>
+                                                        <p className="font-bold text-slate-700 text-[12px] group-hover:text-orange-500 transition-colors">{(plant.grupIsim || plant.category) || '-'}</p>
+                                                        <p className="text-[10px] text-slate-400 font-mono tracking-tighter uppercase mt-1">{plant.sku || 'SKU-YOK'}</p>
                                                     </td>
                                                     {grouping !== 'NONE' && (
                                                         <td className="px-6 py-4">
@@ -403,16 +403,16 @@ export default function StoklarPage() {
                                                     {showSupplierStockColumns ? (
                                                         <>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                                                                <span className="font-bold text-[12px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
                                                                     {plant.totalPurchased?.toLocaleString()} {plant.unit || 'Adet'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className="font-mono font-bold text-slate-700">
-                                                                    ₺{plant.lastPrice?.toLocaleString()}
+                                                                <span className="font-mono font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">
+                                                                    ₺{plant.lastPrice?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-center text-xs text-slate-500 font-mono">
+                                                            <td className="px-6 py-4 text-center text-[12px] text-slate-500 font-mono group-hover:text-orange-500 transition-colors">
                                                                 {plant.lastDate ? new Date(plant.lastDate).toLocaleDateString() : '-'}
                                                             </td>
                                                         </>
@@ -420,7 +420,7 @@ export default function StoklarPage() {
                                                         <>
                                                             <td className="px-6 py-4 text-center">
                                                                 <div className="flex flex-col items-center">
-                                                                    <span className={`font-bold ${(plant.criticalStock ?? 0) > 0 && (plant.currentStock || 0) <= (plant.criticalStock ?? 0) ? 'text-rose-600' : 'text-slate-700'}`}>
+                                                                    <span className={`font-black text-[13px] ${(plant.criticalStock ?? 0) > 0 && (plant.currentStock || 0) <= (plant.criticalStock ?? 0) ? 'text-rose-600' : 'text-slate-900 group-hover:text-orange-600 transition-colors'}`}>
                                                                         {plant.currentStock !== undefined ? plant.currentStock : '-'}
                                                                     </span>
                                                                     {(plant.currentStock || 0) <= (plant.criticalStock ?? 0) && (plant.criticalStock ?? 0) > 0 && (
@@ -431,27 +431,27 @@ export default function StoklarPage() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <div className="flex flex-col items-center">
-                                                                    <span className="font-bold text-slate-700" title="Toptan Satış Fiyatı">
-                                                                        {plant.wholesalePrice ? `S: ₺${plant.wholesalePrice.toLocaleString('tr-TR')}` : '-'}
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <span className="font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]" title="Toptan Satış Fiyatı">
+                                                                        {plant.wholesalePrice ? `S: ₺${plant.wholesalePrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}
                                                                     </span>
-                                                                    <span className="text-[10px] text-emerald-600 font-bold mt-0.5" title="Alış Fiyatı (Maliyet)">
-                                                                        {plant.purchasePrice ? `A: ₺${plant.purchasePrice.toLocaleString('tr-TR')}` : ''}
+                                                                    <span className="text-[10px] text-emerald-600 font-bold" title="Alış Fiyatı (Maliyet)">
+                                                                        {plant.purchasePrice ? `A: ₺${plant.purchasePrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : ''}
                                                                     </span>
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
                                                                 {plant.viyolCount ? (
                                                                     <div className="flex flex-col items-center">
-                                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">
+                                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-[11px] font-bold border border-green-100">
                                                                             🧫 {plant.viyolCount} viyol
                                                                         </span>
-                                                                        <span className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                                                        <span className="text-[10px] text-slate-400 mt-0.5 font-mono group-hover:text-orange-500 transition-colors">
                                                                             {plant.cuttingCount?.toLocaleString()} çelik
                                                                         </span>
                                                                     </div>
                                                                 ) : (
-                                                                    <span className="text-slate-300 text-xs">—</span>
+                                                                    <span className="text-slate-300 text-[11px]">—</span>
                                                                 )}
                                                             </td>
                                                         </>
@@ -467,12 +467,12 @@ export default function StoklarPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <div className="flex justify-end gap-2">
+                                                        <div className="flex justify-end gap-2 items-center h-full">
                                                             {!isStockSupplierMode && (
                                                                 <>
                                                                     <button
                                                                         onClick={() => alert(`Barkod Basılıyor: ${plant.sku || plant.id}`)}
-                                                                        className="bg-slate-800 text-white px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all shadow-md active:scale-95"
+                                                                        className="text-slate-700 font-bold text-[10px] bg-white hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-slate-200 hover:border-orange-500 shadow-sm"
                                                                     >
                                                                         BARKOD
                                                                     </button>
@@ -481,22 +481,16 @@ export default function StoklarPage() {
                                                                             setSelectedStock({ id: plant.id, name: plant.name, sku: plant.sku || plant.id, currentStock: plant.currentStock });
                                                                             setIsDonusumModalOpen(true);
                                                                         }}
-                                                                        className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all border border-orange-200"
+                                                                        className="text-white font-bold text-[10px] bg-slate-900 hover:bg-orange-500 px-3 py-1.5 rounded-xl transition-all border border-transparent shadow-sm"
                                                                         title="Eski stoğu saksı boyutlarına göre yeni stoklara böl (Sayım Geçiş)"
                                                                     >
                                                                         DÖNÜŞÜM
                                                                     </button>
                                                                     <button
                                                                         onClick={() => fetchMovements((plant as any).plantId || plant.sku || plant.id, plant.name)}
-                                                                        className="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all"
+                                                                        className="text-slate-700 font-bold text-[10px] bg-slate-100 hover:bg-orange-500 hover:text-white px-3 py-1.5 rounded-xl transition-all border border-transparent hover:border-orange-500"
                                                                     >
                                                                         HAREKET
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => alert('Stok düzenleme FidanX içinde yapılmaz. Ana stok kartını Netsis tarafında güncelleyin.')}
-                                                                        className="bg-slate-50 text-slate-400 hover:bg-slate-200 px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all"
-                                                                    >
-                                                                        NETSIS
                                                                     </button>
                                                                 </>
                                                             )}
@@ -597,7 +591,7 @@ export default function StoklarPage() {
                 {/* Movements Modal */}
                 {isMovementsModalOpen && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-4xl p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-4xl p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-800">Stok Hareketleri</h3>
@@ -608,18 +602,18 @@ export default function StoklarPage() {
 
                             <div className="flex-1 overflow-auto p-0">
                                 <table className="w-full text-left border-collapse">
-                                    <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4">Tarih</th>
-                                            <th className="px-6 py-4">Belge No</th>
-                                            <th className="px-6 py-4">Açıklama</th>
-                                            <th className="px-6 py-4 text-center">İşlem</th>
-                                            <th className="px-6 py-4 text-right">Miktar</th>
-                                            <th className="px-6 py-4 text-right">Fiyat</th>
-                                            <th className="px-6 py-4 text-right">Bakiye</th>
+                                            <th className="px-6 py-4 bg-white">Tarih</th>
+                                            <th className="px-6 py-4 bg-white">Belge No</th>
+                                            <th className="px-6 py-4 bg-white">Açıklama</th>
+                                            <th className="px-6 py-4 text-center bg-white">İşlem</th>
+                                            <th className="px-6 py-4 text-right bg-white">Miktar</th>
+                                            <th className="px-6 py-4 text-right bg-white">Fiyat</th>
+                                            <th className="px-6 py-4 text-right bg-slate-50">Bakiye</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 italic text-xs">
+                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {movementsLoading ? (
                                             <tr>
                                                 <td colSpan={7} className="px-6 py-12 text-center font-sans not-italic text-slate-500">
@@ -628,12 +622,12 @@ export default function StoklarPage() {
                                                 </td>
                                             </tr>
                                         ) : movements.map((m, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 transition">
-                                                <td className="px-6 py-4 whitespace-nowrap font-mono text-slate-500">
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-4 whitespace-nowrap font-mono text-[12px] text-slate-500 group-hover:text-orange-500 transition-colors">
                                                     {(m.Tarih || m.tarih) ? new Date(m.Tarih || m.tarih).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-6 py-4 font-mono font-bold text-slate-700">{m.BelgeNo ?? m.belgeNo ?? '-'}</td>
-                                                <td className="px-6 py-4 text-slate-600 italic">{(m.Aciklama ?? m.aciklama) || '-'}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{m.BelgeNo ?? m.belgeNo ?? '-'}</td>
+                                                <td className="px-6 py-4 text-slate-600 font-bold group-hover:text-orange-500 transition-colors">{(m.Aciklama ?? m.aciklama) || '-'}</td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="flex flex-col items-center gap-0.5">
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-black ${(m.GCKodu || m.gcKodu) === 'G' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -646,9 +640,9 @@ export default function StoklarPage() {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-700">{(m.Miktar ?? m.miktar)?.toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-right text-slate-500">₺{(m.BirimFiyat ?? m.birimFiyat ?? 0).toLocaleString('tr-TR')}</td>
-                                                <td className="px-6 py-4 text-right font-black text-slate-800 bg-slate-50/50">{(m.Bakiye ?? m.bakiye)?.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.Miktar ?? m.miktar)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">{(m.BirimFiyat ?? m.birimFiyat ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
+                                                <td className="px-6 py-4 text-right font-black bg-slate-50/50 text-slate-900 group-hover:bg-orange-50/50 group-hover:text-orange-600 transition-colors text-[14px]">{(m.Bakiye ?? m.bakiye)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                         {movements.length === 0 && (
@@ -661,7 +655,7 @@ export default function StoklarPage() {
                             </div>
 
                             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                                <button onClick={() => setIsMovementsModalOpen(false)} className="px-6 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-300 transition">Kapat</button>
+                                <button onClick={() => setIsMovementsModalOpen(false)} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-900 transition shadow-lg active:scale-95">Kapat</button>
                             </div>
                         </div>
                     </div>

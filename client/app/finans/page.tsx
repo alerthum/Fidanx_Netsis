@@ -226,7 +226,7 @@ export default function FinansPage() {
         <div className="flex flex-col lg:flex-row min-h-screen fx-page font-sans">
             <Sidebar />
             <main className="flex-1 min-w-0">
-                <header className="fx-card !rounded-none !border-0 !border-b border-slate-200 px-4 lg:px-8 py-4 lg:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sticky top-0 z-30 shadow-sm border-b-[var(--fx-border)]">
+                <header className="fx-card !rounded-none !border-0 !border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-0 z-30 shadow-sm border-b-[var(--fx-border)] lg:py-0 lg:h-[88px] shrink-0">
                     <div>
                         <h1 className="text-xl lg:text-2xl font-bold fx-text-primary tracking-tight">Finans & Gider Yönetimi</h1>
                         <p className="text-xs lg:text-sm fx-text-secondary">Gelir, gider ve nakit akışı takibi.</p>
@@ -272,9 +272,9 @@ export default function FinansPage() {
                                 <div className="relative z-10">
                                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                                         <div>
-                                            <h2 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-3">Endüstri 5.0 Akıllı Finans Merkezi</h2>
-                                            <p className="text-3xl lg:text-4xl font-black fx-text-primary tracking-tighter pt-2">
-                                                {(totalBankBalance + totalCashBalance + totalMusteriCekleri - totalBorcCekleri).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                            <h2 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">Finansal Özet</h2>
+                                            <p className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tighter pt-2">
+                                                {(totalBankBalance + totalCashBalance + totalMusteriCekleri - totalBorcCekleri).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-xl text-slate-400 font-medium ml-1">₺</span>
                                             </p>
                                             <p className="text-[11px] font-black text-slate-400 mt-3 uppercase tracking-widest flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -282,22 +282,22 @@ export default function FinansPage() {
                                             </p>
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">
-                                            <div className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
-                                                <span className="block text-[9px] font-black text-slate-400 uppercase mb-2">Hazır Değer</span>
-                                                <span className="text-xl font-black text-slate-700">₺{(totalBankBalance + totalCashBalance).toLocaleString()}</span>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
+                                                <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Hazır Değer</span>
+                                                <span className="text-lg font-black text-slate-800">{(totalBankBalance + totalCashBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></span>
                                             </div>
-                                            <div className="bg-emerald-50/50 p-5 rounded-[1.5rem] border border-emerald-100 shadow-sm">
-                                                <span className="block text-[9px] font-black text-emerald-600 uppercase mb-2">Müşteri Çekleri</span>
-                                                <span className="text-xl font-black text-emerald-700">₺{totalMusteriCekleri.toLocaleString()}</span>
+                                            <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm hover:border-emerald-300 transition-colors">
+                                                <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Müşteri Çekleri</span>
+                                                <span className="text-lg font-black text-emerald-700">{totalMusteriCekleri.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-emerald-600/50 font-medium ml-0.5">₺</span></span>
                                             </div>
-                                            <div className="bg-amber-50/50 p-5 rounded-[1.5rem] border border-amber-100 shadow-sm">
-                                                <span className="block text-[9px] font-black text-amber-600 uppercase mb-2">Borç Çekleri</span>
-                                                <span className="text-xl font-black text-amber-700">₺{totalBorcCekleri.toLocaleString()}</span>
+                                            <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm hover:border-amber-300 transition-colors">
+                                                <span className="block text-[9px] font-black text-amber-600 uppercase tracking-widest mb-2">Borç Çekleri</span>
+                                                <span className="text-lg font-black text-amber-700">{totalBorcCekleri.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-amber-600/50 font-medium ml-0.5">₺</span></span>
                                             </div>
-                                            <div className="bg-blue-50/50 p-5 rounded-[1.5rem] border border-blue-100 shadow-sm">
-                                                <span className="block text-[9px] font-black text-blue-600 uppercase mb-2">Beklenen (30G)</span>
-                                                <span className="text-xl font-black text-blue-700">
-                                                    ₺{(projection.filter(p => p.Tip === 'ALACAK' && p.Ay === (new Date().getMonth() + 1)).reduce((s, p) => s + p.Tutar, 0)).toLocaleString()}
+                                            <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm hover:border-blue-300 transition-colors">
+                                                <span className="block text-[9px] font-black text-blue-600 uppercase tracking-widest mb-2">Beklenen (30G)</span>
+                                                <span className="text-lg font-black text-blue-700">
+                                                    {(projection.filter(p => p.Tip === 'ALACAK' && p.Ay === (new Date().getMonth() + 1)).reduce((s, p) => s + p.Tutar, 0)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-blue-600/50 font-medium ml-0.5">₺</span>
                                                 </span>
                                             </div>
                                         </div>
@@ -416,33 +416,33 @@ export default function FinansPage() {
                                 </div>
 
                                 {/* Desktop Table */}
-                                <table className="hidden lg:table w-full text-left" id="finance-table">
-                                    <thead className="bg-slate-50/50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <table className="hidden lg:table w-full text-left border-collapse" id="finance-table">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                         <tr>
                                             <th className="px-8 py-5">Tarih</th>
                                             <th className="px-8 py-5">Açıklama</th>
                                             <th className="px-8 py-5">Kategori</th>
                                             <th className="px-8 py-5 text-right">Tutar</th>
-                                            <th className="px-8 py-5 text-center"></th>
+                                            <th className="px-8 py-5 text-center">İşlem</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50 text-sm">
+                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {transactions.map((t, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50 transition">
-                                                <td className="px-8 py-5 text-slate-400 font-bold text-xs">{new Date(t.date).toLocaleDateString('tr-TR')}</td>
-                                                <td className="px-8 py-5 font-black text-slate-700">{t.label}</td>
+                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-8 py-5 text-slate-500 font-mono text-[12px] group-hover:text-orange-500 transition-colors">{new Date(t.date).toLocaleDateString('tr-TR')}</td>
+                                                <td className="px-8 py-5 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{t.label}</td>
                                                 <td className="px-8 py-5">
-                                                    <span className={`px-3 py-1.5 rounded-[0.5rem] text-[9px] font-black tracking-[0.1em] uppercase ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                                                    <span className={`px-3 py-1.5 rounded-[0.5rem] text-[9px] font-black tracking-[0.1em] uppercase ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'
                                                         }`}>
                                                         {t.category}
                                                     </span>
                                                 </td>
-                                                <td className={`px-8 py-5 text-right font-black tracking-tight text-base ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {t.type === 'income' ? '+' : '-'} {Number(t.amount).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                <td className={`px-8 py-5 text-right font-black tracking-tight text-[14px] group-hover:text-orange-500 transition-colors ${t.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                                    {t.type === 'income' ? '+' : '-'} {Number(t.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
                                                 </td>
                                                 <td className="px-8 py-5 text-center">
                                                     {t.isDeletable && (
-                                                        <button onClick={() => handleDelete(t.id)} className="w-8 h-8 rounded-full hover:bg-rose-50 text-slate-200 hover:text-rose-500 transition text-sm">✕</button>
+                                                        <button onClick={() => handleDelete(t.id)} className="w-8 h-8 rounded-full hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition text-sm">✕</button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -507,20 +507,20 @@ export default function FinansPage() {
                             </div>
 
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <table className="w-full text-left font-sans">
-                                    <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b">
+                                <table className="w-full text-left font-sans border-collapse">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold border-b-2 border-slate-100 tracking-wider">
                                         <tr>
                                             <th className="px-6 py-4">Tarih</th>
                                             <th className="px-6 py-4">Tedarikçi</th>
                                             <th className="px-6 py-4 text-right">Tutar</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y text-sm">
+                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {payments.map((p, i) => (
-                                            <tr key={i} className="hover:bg-slate-50">
-                                                <td className="px-6 py-4 text-xs font-mono">{new Date(p.Tarih).toLocaleDateString('tr-TR')}</td>
-                                                <td className="px-6 py-4 font-bold">{p.CariAdi}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-rose-600">₺{p.Tutar?.toLocaleString()}</td>
+                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-4 text-[12px] font-mono text-slate-500 group-hover:text-orange-500 transition-colors">{new Date(p.Tarih).toLocaleDateString('tr-TR')}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{p.CariAdi}</td>
+                                                <td className="px-6 py-4 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[14px]">{Number(p.Tutar).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span></td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -747,8 +747,8 @@ export default function FinansPage() {
                 )}
                 {/* Box Transactions Modal */}
                 {isBoxModalOpen && (
-                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[70]">
-                        <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-4xl p-0 max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[70]">
+                        <div className="bg-white rounded-none shadow-2xl w-full max-w-4xl p-0 max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
                             <div className={`p-6 border-b border-slate-100 flex justify-between items-center ${selectedBoxType === 'Kasa' ? 'bg-amber-50' : 'bg-blue-50'}`}>
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-800">{selectedBoxType} Hareket Detayı</h3>
@@ -759,30 +759,30 @@ export default function FinansPage() {
 
                             <div className="flex-1 overflow-auto p-0">
                                 <table className="w-full text-left border-collapse">
-                                    <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b">
+                                    <thead className="bg-transparent text-slate-400 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4">Tarih</th>
-                                            <th className="px-6 py-4">Açıklama</th>
-                                            <th className="px-6 py-4 text-right">Giriş / Borç</th>
-                                            <th className="px-6 py-4 text-right">Çıkış / Alacak</th>
-                                            <th className="px-6 py-4 text-right bg-slate-100/50">Bakiye</th>
+                                            <th className="px-6 py-4 bg-white">Tarih</th>
+                                            <th className="px-6 py-4 bg-white">Açıklama</th>
+                                            <th className="px-6 py-4 text-right bg-white">Giriş / Borç</th>
+                                            <th className="px-6 py-4 text-right bg-white">Çıkış / Alacak</th>
+                                            <th className="px-6 py-4 text-right bg-slate-50">Bakiye</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-xs">
+                                    <tbody className="divide-y divide-slate-100 text-[11px]">
                                         {selectedBoxTransactions.map((t, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 transition">
-                                                <td className="px-6 py-3 font-mono text-slate-500">
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-3 font-mono text-slate-500 text-[12px] group-hover:text-orange-500 transition-colors">
                                                     {new Date(t.Tarih).toLocaleDateString('tr-TR')}
                                                 </td>
-                                                <td className="px-6 py-3 font-medium text-slate-700">{t.Aciklama}</td>
-                                                <td className="px-6 py-3 text-right font-bold text-emerald-600">
-                                                    {(t.Giriş || t.Borc) > 0 ? `₺${(t.Giriş || t.Borc).toLocaleString()}` : '-'}
+                                                <td className="px-6 py-3 font-bold text-slate-800 text-[13px] group-hover:text-orange-600 transition-colors">{t.Aciklama}</td>
+                                                <td className="px-6 py-3 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">
+                                                    {(t.Giriş || t.Borc) > 0 ? `${Number(t.Giriş || t.Borc).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺` : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-bold text-rose-600">
-                                                    {(t.Çıkış || t.Alacak) > 0 ? `₺${(t.Çıkış || t.Alacak).toLocaleString()}` : '-'}
+                                                <td className="px-6 py-3 text-right font-black text-slate-900 group-hover:text-orange-500 transition-colors text-[13px]">
+                                                    {(t.Çıkış || t.Alacak) > 0 ? `${Number(t.Çıkış || t.Alacak).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺` : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-black bg-slate-50/50 text-slate-800">
-                                                    ₺{t.Bakiye?.toLocaleString()}
+                                                <td className="px-6 py-3 text-right font-black bg-slate-50/50 text-slate-900 group-hover:bg-orange-50/50 group-hover:text-orange-600 transition-colors text-[14px]">
+                                                    {Number(t.Bakiye).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[11px] text-slate-400 font-medium ml-0.5">₺</span>
                                                 </td>
                                             </tr>
                                         ))}
