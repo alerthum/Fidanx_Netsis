@@ -1,40 +1,13 @@
 "use client";
 import React from 'react';
+import PremiumModal from '@/components/PremiumModal';
 
 export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-6xl h-[95vh] shadow-2xl flex flex-col relative overflow-hidden border border-white/20">
-
-                {/* Header */}
-                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl shadow-sm border border-indigo-100 flex-shrink-0">
-                            📖
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-black text-slate-800 tracking-tight">FidanX Üretim Sistemi</h3>
-                            <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Kullanım Kılavuzu & Akış Şeması</p>
-                            <div className="flex items-center gap-3 mt-2">
-                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">★ Tamamlandı</span>
-                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1">◐ Kısmi</span>
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">○ Bekliyor</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 font-bold hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                {/* Body (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-white">
-                    <div className="max-w-5xl mx-auto space-y-16 pb-16">
+        <PremiumModal isOpen={isOpen} onClose={onClose} title="FidanX Üretim Sistemi" subtitle="Kullanım Kılavuzu & Akış Şeması" maxWidthClass="max-w-6xl">
+            <div className="max-w-5xl mx-auto space-y-16 pb-16">
 
                         {/* Akış Şeması Görseli */}
                         <section>
@@ -137,12 +110,11 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                         {/* Tamamlanan ve Bekleyen İşler Özeti */}
                         <section className="mb-10">
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 mb-4">
-                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (24 Mayıs 2026)</h5>
+                                <h5 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">✅ Son Tamamlanan İşler (25-26 Mayıs 2026)</h5>
                                 <ul className="text-xs text-emerald-950 space-y-2 list-disc pl-4">
-                                    <li><strong>Ana sayfa dashboard:</strong> Sıcaklık widget'ı ve özet göstergeler için API bağlantısı tamamlandı.</li>
-                                    <li><strong>Firebase sera geçmişi:</strong> Firebase'deki sıcaklık logları SQL (TemperatureLogs) veritabanına başarıyla taşındı.</li>
-                                    <li><strong>Satınalma & Finans Entegrasyonu:</strong> Satınalma sayfasına gider fişleri entegre edildi. Alış faturaları ve stoksuz gider fişleri tek ekrandan takip edilebiliyor.</li>
-                                    <li><strong>Lokasyon Yönetimi:</strong> Üretim modülüne "Lokasyonlar" sekmesi eklendi. Seralar, açık alanlar, kapasiteler ve sabit barkodlar (QR) oluşturuldu.</li>
+                                    <li><strong>Premium Modal Mimarisi:</strong> Tüm sistem modalları (Stok Hareketleri, Dönüşüm, Kılavuz vb.) tek bir <code>PremiumModal</code> yapısında birleştirildi. Devasa, ferah ve tek satır odaklı profesyonel görünüme geçildi.</li>
+                                    <li><strong>Satış & Satınalma Premium Arayüz:</strong> Üst menü birleşim noktaları, boşluklar ve başlık boyutları hizalanarak kurumsal premium bir hizalama sağlandı. Gereksiz yatay çizgiler ve karmaşa kaldırıldı. KPI ikonları standardize edildi.</li>
+                                    <li><strong>Akıllı Arama Çubuğu (Stoklar):</strong> Stok listesindeki karmaşık ve çoklu arama kutuları kaldırılarak tek bir akıllı arama çubuğunda birleştirildi.</li>
                                     <li><strong>Toplu Sarf Fişi Entegrasyonu:</strong> Operasyon sayfasına yeni 📦 Toplu Sarf sekmesi eklendi. Netsis malzeme arama, sepete ekleme, konumlara göre maliyet dağıtımı ve Netsis sarf fişi (PROJE_KODU ile) kesimi tek akışta yapılıyor.</li>
                                 </ul>
                             </div>
@@ -638,11 +610,7 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </tbody>
                                 </table>
                             </div>
-                        </section>
-
-                    </div>
-                </div>
             </div>
-        </div>
+        </PremiumModal>
     );
 }
