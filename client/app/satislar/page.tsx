@@ -604,62 +604,107 @@ export default function SatislarPage() {
                                         </div>
 
                                         {draftOrder.items.length === 0 ? (
-                                            <div className="py-16 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
-                                                <span className="text-4xl mb-4 opacity-50 grayscale">📦</span>
-                                                <p className="text-xs font-medium italic">Henüz kalem eklenmedi.</p>
+                                            <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 flex flex-col items-center justify-center">
+                                                <span className="text-3xl grayscale opacity-30 block mb-3">📦</span>
+                                                <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Henüz kalem eklenmedi</p>
                                             </div>
                                         ) : (
                                             <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-                                                <table className="w-full text-left min-w-[700px]">
-                                                    <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
+                                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                                    <thead className="bg-slate-50 border-b border-slate-200">
                                                         <tr>
-                                                            <th className="p-4 border-b border-slate-200 w-1/3">Stok Kodu / Adı</th>
-                                                            <th className="p-4 border-b border-slate-200 text-center w-32">Miktar</th>
-                                                            <th className="p-4 border-b border-slate-200 text-right w-36">Birim Fiyat</th>
-                                                            <th className="p-4 border-b border-slate-200 text-right w-36">Tutar</th>
-                                                            <th className="p-4 border-b border-slate-200 text-center w-20">İşlem</th>
+                                                            <th className="px-3 py-2.5 font-black text-[9px] text-slate-500 uppercase tracking-[0.15em] w-[40%]">Stok Adı</th>
+                                                            <th className="px-3 py-2.5 font-black text-[9px] text-slate-500 uppercase tracking-[0.15em] text-center w-[15%]">Adet</th>
+                                                            <th className="px-3 py-2.5 font-black text-[9px] text-slate-500 uppercase tracking-[0.15em] text-center w-[18%]">Birim Fiyat (₺)</th>
+                                                            <th className="px-3 py-2.5 font-black text-[9px] text-slate-500 uppercase tracking-[0.15em] text-right w-[17%]">Tutar (₺)</th>
+                                                            <th className="px-3 py-2.5 font-black text-[9px] text-slate-500 uppercase tracking-[0.15em] text-center w-[10%]">İşlem</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-100 text-sm bg-white">
-                                                        {draftOrder.items.map((item: any, idx: number) => (
-                                                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                                                <td className="p-4 font-bold text-slate-700">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] text-slate-400 uppercase tracking-widest">{item.materialId}</span>
-                                                                        <span>{item.name}</span>
-                                                                        {item.partiNo && (
-                                                                            <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded w-fit mt-1 border border-emerald-200">
-                                                                                Parti: {item.partiNo}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-4 text-center">
-                                                                    <div className="inline-flex items-center border border-slate-200 rounded-xl bg-slate-50 overflow-hidden shadow-sm">
-                                                                        <button onClick={() => setDraftOrder({ ...draftOrder, items: draftOrder.items.map((it: any, i: number) => i === idx ? { ...it, amount: Math.max(1, it.amount - 1) } : it) })} className="px-3 py-1.5 hover:bg-slate-200 text-slate-600 border-r border-slate-200 font-bold transition">-</button>
-                                                                        <span className="px-4 py-1.5 font-mono text-sm font-bold min-w-[48px] text-center bg-white">{item.amount}</span>
-                                                                        <button onClick={() => setDraftOrder({ ...draftOrder, items: draftOrder.items.map((it: any, i: number) => i === idx ? { ...it, amount: it.amount + 1 } : it) })} className="px-3 py-1.5 hover:bg-slate-200 text-slate-600 border-l border-slate-200 font-bold transition">+</button>
-                                                                    </div>
-                                                                    <div className="text-[9px] text-slate-400 uppercase font-black mt-1 tracking-widest">{item.unit || 'Adet'}</div>
-                                                                </td>
-                                                                <td className="p-4 text-right">
-                                                                    <div className="inline-flex items-center gap-1 justify-end">
-                                                                        <span className="text-slate-400 font-bold text-xs mt-0.5">₺</span>
-                                                                        <input type="number"
-                                                                            value={item.unitPrice}
-                                                                            onChange={(e) => setDraftOrder({ ...draftOrder, items: draftOrder.items.map((it: any, i: number) => i === idx ? { ...it, unitPrice: Number(e.target.value) } : it) })}
-                                                                            className="w-24 p-1.5 border border-slate-200 shadow-inner rounded-lg text-right outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
+                                                    <tbody className="divide-y divide-slate-100 text-[11px] bg-white">
+                                                        {draftOrder.items.map((item: any, idx: number) => {
+                                                            const miktar = item.amount || 0;
+                                                            const fiyat = item.unitPrice || 0;
+                                                            const tutar = miktar * fiyat;
+                                                            return (
+                                                                <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
+                                                                    <td className="px-3 py-2.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-sm">📦</span>
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[9px] text-slate-400 uppercase tracking-widest">{item.materialId}</span>
+                                                                                <p className="font-bold text-slate-800 text-[11px] leading-tight">{item.name}</p>
+                                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                                    <p className="text-[9px] text-slate-400 font-medium">{item.unit || 'Adet'}</p>
+                                                                                    {item.partiNo && (
+                                                                                        <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                                                            Parti: {item.partiNo}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-2 py-2">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={miktar}
+                                                                            onChange={e => {
+                                                                                const val = Number(e.target.value);
+                                                                                setDraftOrder((prev: any) => ({
+                                                                                    ...prev,
+                                                                                    items: prev.items.map((it: any, i: number) => i === idx ? { ...it, amount: val } : it)
+                                                                                }));
+                                                                                setEditingItemIndex(idx);
+                                                                            }}
+                                                                            min="0"
+                                                                            className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-black text-slate-800 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all font-mono"
                                                                         />
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-4 text-right font-black text-slate-800 font-mono text-base">₺{(item.amount * item.unitPrice).toLocaleString()}</td>
-                                                                <td className="p-4 text-center">
-                                                                    <button onClick={() => setDraftOrder({ ...draftOrder, items: draftOrder.items.filter((_: any, i: number) => i !== idx) })} className="text-rose-400 hover:text-white hover:bg-rose-500 p-2 rounded-lg transition active:scale-90 shadow-sm border border-transparent hover:border-rose-600">
-                                                                        🗑️
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                                    </td>
+                                                                    <td className="px-2 py-2">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={fiyat}
+                                                                            onChange={e => {
+                                                                                const val = Number(e.target.value);
+                                                                                setDraftOrder((prev: any) => ({
+                                                                                    ...prev,
+                                                                                    items: prev.items.map((it: any, i: number) => i === idx ? { ...it, unitPrice: val } : it)
+                                                                                }));
+                                                                                setEditingItemIndex(idx);
+                                                                            }}
+                                                                            min="0"
+                                                                            step="0.01"
+                                                                            className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-black text-emerald-600 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all font-mono"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5 text-right">
+                                                                        <span className="font-mono font-black text-slate-900 text-xs">
+                                                                            ₺{tutar.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-2 py-2 text-center">
+                                                                        <div className="flex items-center justify-center gap-1">
+                                                                            {editingItemIndex === idx && (
+                                                                                <button
+                                                                                    onClick={() => setEditingItemIndex(null)}
+                                                                                    className="px-2 py-1 bg-emerald-500 text-white rounded-md text-[9px] font-black hover:bg-emerald-600 transition-colors shadow-sm"
+                                                                                    title="Değişiklikleri Kaydet"
+                                                                                >
+                                                                                    ✓
+                                                                                </button>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={() => setDraftOrder((prev: any) => ({ ...prev, items: prev.items.filter((_: any, i: number) => i !== idx) }))}
+                                                                                className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors text-sm border border-transparent hover:border-rose-100"
+                                                                                title="Kalemi Sil"
+                                                                            >
+                                                                                ×
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -668,23 +713,40 @@ export default function SatislarPage() {
 
                                     {/* Toplam Bilgileri */}
                                     <div className="space-y-4 pt-4 border-t border-slate-100">
-                                        <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Toplam Bilgileri</h3>
                                         <div className="flex justify-start sm:justify-end">
-                                            <div className="w-full sm:w-96 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl space-y-3 text-sm shadow-sm relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12"></div>
-                                                <div className="flex justify-between items-center text-slate-500 font-bold">
-                                                    <span>Ara Toplam:</span>
-                                                    <span className="font-mono text-slate-700">₺{draftOrder.items.reduce((s: any, it: any) => s + (it.amount * it.unitPrice), 0).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-slate-500 font-bold">
-                                                    <span>Öngörülen KDV (%20):</span>
-                                                    <span className="font-mono text-slate-700">₺{(draftOrder.items.reduce((s: any, it: any) => s + (it.amount * it.unitPrice), 0) * 0.2).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center mt-2 pt-3 border-t border-slate-200">
-                                                    <span className="font-black text-slate-800 uppercase text-xs">Genel Toplam (Dahili)</span>
-                                                    <span className="font-mono font-black text-2xl text-emerald-600 tracking-tight">
-                                                        ₺{(draftOrder.items.reduce((s: any, it: any) => s + (it.amount * it.unitPrice), 0) * 1.2).toLocaleString()}
-                                                    </span>
+                                            <div className="w-full sm:w-96 bg-slate-900 text-white p-6 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] relative overflow-hidden">
+                                                {/* Decor */}
+                                                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+                                                
+                                                <h4 className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Finansal Özet
+                                                </h4>
+                                                
+                                                <div className="space-y-4">
+                                                    {(() => {
+                                                        const itemsTotal = draftOrder.items.reduce((s: any, i: any) => s + ((i.amount || 0) * (i.unitPrice || 0)), 0);
+                                                        const araToplam = draftOrder.taxIncluded ? itemsTotal / 1.2 : itemsTotal;
+                                                        const kdvTutar = araToplam * 0.2;
+                                                        const genelToplam = araToplam + kdvTutar;
+                                                        return (
+                                                            <>
+                                                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                                                    <span className="uppercase tracking-widest">Ara Toplam</span>
+                                                                    <span className="font-mono text-white text-xs">₺{araToplam.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 border-b border-white/10 pb-4">
+                                                                    <span className="uppercase tracking-widest">KDV (%20) {draftOrder.taxIncluded ? '(Dahil)' : '(Hariç)'}</span>
+                                                                    <span className="font-mono text-white text-xs">₺{kdvTutar.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                                                                </div>
+                                                                <div className="pt-2 flex flex-col items-end">
+                                                                    <span className="text-[9px] font-black text-emerald-500 mb-1.5 uppercase tracking-[0.2em]">ÖDENECEK TUTAR</span>
+                                                                    <span className="text-2xl font-black text-white tracking-tighter">
+                                                                        ₺{genelToplam.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                         </div>

@@ -610,6 +610,7 @@ export default function GuideModal({ isOpen, onClose }: { isOpen: boolean, onClo
                                     </tbody>
                                 </table>
                             </div>
+                        </section>
             </div>
         </PremiumModal>
     );

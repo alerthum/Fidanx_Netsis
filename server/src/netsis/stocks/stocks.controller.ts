@@ -36,6 +36,25 @@ export class NetsisStocksController {
         return this.stocksService.getNextCode(tenantId || 'demo-tenant', prefix);
     }
 
+    @Get('codes')
+    async getCodes() {
+        return this.stocksService.getStockCodes();
+    }
+
+    @Post('create')
+    async createStock(@Body() body: {
+        stokKodu: string;
+        stokAdi: string;
+        grupKodu?: string;
+        kod1?: string;
+        kod2?: string;
+        kod3?: string;
+        kod4?: string;
+        kod5?: string;
+    }) {
+        return this.stocksService.createStockFromScratch(body);
+    }
+
     @Post('consumption')
     async createConsumption(@Body() body: {
         fisNo?: string;

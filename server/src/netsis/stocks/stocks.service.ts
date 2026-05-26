@@ -15,6 +15,79 @@ export class NetsisStocksService {
         return this.integration.getNextErpCode(tenantId, 'STOCK', prefix);
     }
 
+    async getStockCodes() {
+        try {
+            // Netsis stok grupları ve kod tabloları genelde TBLSTGRUP, TBLSTOKKOD1, vs.
+            // Eğer bazı tablolar yoksa hata fırlatabilir, bu yüzden HATA_YOK şekilde deneyelim veya union yapalım.
+            // Fakat sadece var olanları çekmek güvenlidir.
+            const groups = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTGRUP WITH (NOLOCK)`);
+            const kod1 = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTOKKOD1 WITH (NOLOCK)`).catch(() => []);
+            const kod2 = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTOKKOD2 WITH (NOLOCK)`).catch(() => []);
+            const kod3 = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTOKKOD3 WITH (NOLOCK)`).catch(() => []);
+            const kod4 = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTOKKOD4 WITH (NOLOCK)`).catch(() => []);
+            const kod5 = await this.db.query(`SELECT GRUP_KOD, DBO.TRK(GRUP_ISIM) AS GRUP_ISIM FROM TBLSTOKKOD5 WITH (NOLOCK)`).catch(() => []);
+
+            return {
+                grup: groups,
+                kod1: kod1,
+                kod2: kod2,
+                kod3: kod3,
+                kod4: kod4,
+                kod5: kod5
+            };
+        } catch (e) {
+            this.logger.error("Grup kodları çekilirken hata: " + e.message);
+            return { grup: [], kod1: [], kod2: [], kod3: [], kod4: [], kod5: [] };
+        }
+    }
+
+    async createStockFromScratch(data: {
+        stokKodu: string;
+        stokAdi: string;
+        grupKodu?: string;
+        kod1?: string;
+        kod2?: string;
+        kod3?: string;
+        kod4?: string;
+        kod5?: string;
+    }) {
+        const code = String(data.stokKodu || '').trim();
+        const name = String(data.stokAdi || '').trim();
+
+        if (!code || !name) {
+            throw new BadRequestException("Stok Kodu ve Stok Adı zorunludur.");
+        }
+
+        const existing = await this.findStockCard(code);
+        if (existing) {
+            throw new BadRequestException(`Bu stok kodu zaten mevcut: ${code}`);
+        }
+
+        // TBLSTSABIT'e minimum gereksinimlerle insert
+        // Fidanx için Birim=Adet, KDV=%20 gibi standartlar eklenebilir.
+        await this.db.query(`
+            INSERT INTO TBLSTSABIT (
+                STOK_KODU, STOK_ADI, GRUP_KODU, KOD_1, KOD_2, KOD_3, KOD_4, KOD_5,
+                KDV_ORANI, SATI_KDV_ORANI, OLCU_BR1, PAY_1, PAYDA_1
+            ) VALUES (
+                @stokKodu, @stokAdi, @grupKodu, @kod1, @kod2, @kod3, @kod4, @kod5,
+                20.0, 20.0, 'AD', 1, 1
+            )
+        `, {
+            stokKodu: code,
+            stokAdi: name,
+            grupKodu: data.grupKodu || '',
+            kod1: data.kod1 || '',
+            kod2: data.kod2 || '',
+            kod3: data.kod3 || '',
+            kod4: data.kod4 || '',
+            kod5: data.kod5 || ''
+        });
+
+        this.logger.log(`Yeni stok açıldı: ${code} - ${name}`);
+        return { success: true, stokKodu: code, stokAdi: name };
+    }
+
     async ensureStockCard(stokKodu: string) {
         const code = String(stokKodu || '').trim();
         if (!code) {

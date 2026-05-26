@@ -20,8 +20,8 @@ export default function PremiumModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4 z-[60]">
-            <div className={`bg-white rounded-none shadow-2xl w-full ${maxWidthClass} p-0 max-h-[100vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200`}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 z-[60]">
+            <div className={`bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full h-full max-w-none max-h-none overflow-hidden flex flex-col border border-slate-200`}>
                 <div className="p-6 lg:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                     <div>
                         <h3 className="text-xl lg:text-2xl font-black text-slate-800 tracking-tight">{title}</h3>

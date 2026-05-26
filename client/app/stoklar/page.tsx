@@ -45,6 +45,13 @@ export default function StoklarPage() {
     const [selectedPlantName, setSelectedPlantName] = useState('');
     const [selectedStock, setSelectedStock] = useState<{ id: string; name: string; sku: string; currentStock?: number } | null>(null);
 
+    const [isNewStockModalOpen, setIsNewStockModalOpen] = useState(false);
+    const [isCreatingStock, setIsCreatingStock] = useState(false);
+    const [newStockData, setNewStockData] = useState({ 
+        stokKodu: '', stokAdi: '', grupKodu: '', kod1: '', kod2: '', kod3: '', kod4: '', kod5: '' 
+    });
+    const [stockCodes, setStockCodes] = useState<any>({ groups: [], kod1: [], kod2: [], kod3: [], kod4: [], kod5: [] });
+
     const [stockSupplierData, setStockSupplierData] = useState<any[]>([]);
     const [grouping, setGrouping] = useState<'NONE' | 'CATEGORY' | 'SUPPLIER' | 'STOCK_SUPPLIER'>('NONE');
     const [stockFilters, setStockFilters] = useState({ arama: '' });
@@ -122,9 +129,46 @@ export default function StoklarPage() {
         } catch (err) { }
     };
 
+    const fetchStockCodes = async () => {
+        try {
+            const res = await fetch(`${API_URL}/netsis/stocks/codes`);
+            const data = await res.json();
+            setStockCodes(data);
+        } catch (err) { console.error('Failed to fetch stock codes', err); }
+    };
+
+    const handleCreateStock = async () => {
+        if (!newStockData.stokAdi || !newStockData.grupKodu) {
+            alert('Stok Adı ve Grup Kodu zorunludur.');
+            return;
+        }
+        setIsCreatingStock(true);
+        try {
+            const res = await fetch(`${API_URL}/netsis/stocks/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newStockData),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Stok başarıyla oluşturuldu! Stok Kodu: ${data.stokKodu}`);
+                setIsNewStockModalOpen(false);
+                setNewStockData({ stokKodu: '', stokAdi: '', grupKodu: '', kod1: '', kod2: '', kod3: '', kod4: '', kod5: '' });
+                fetchPlants();
+            } else {
+                alert(`Hata: ${data.message || 'Stok oluşturulamadı.'}`);
+            }
+        } catch (err) {
+            alert('Sunucuya bağlanıken bir hata oluştu.');
+        } finally {
+            setIsCreatingStock(false);
+        }
+    };
+
     useEffect(() => {
         fetchCompanies();
         fetchStockSupplierData();
+        fetchStockCodes();
     }, []);
 
     useEffect(() => {
@@ -280,7 +324,7 @@ export default function StoklarPage() {
                         <ExportButton title="Mevcut Stok Durumu" tableId="stok-table" />
                         <button
                             type="button"
-                            onClick={() => alert('Stok kartı ana kaynağı Netsis veritabanıdır. Yeni bitki, saksı veya hammadde kartını Netsis tarafında açın; FidanX stok listesini anlık Netsis verisinden okur.')}
+                            onClick={() => setIsNewStockModalOpen(true)}
                             className="flex-1 sm:flex-none bg-slate-800 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-900 shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
                         >
                             <span>+</span>
@@ -651,6 +695,68 @@ export default function StoklarPage() {
                         fetchPlants();
                     }}
                 />
+
+                {/* Yeni Stok Modalı */}
+                {isNewStockModalOpen && (
+                    <PremiumModal
+                        isOpen={isNewStockModalOpen}
+                        onClose={() => setIsNewStockModalOpen(false)}
+                        title="Yeni Stok Kartı"
+                        subtitle="Doğrudan Netsis'te yeni bir stok kartı (TBLSTSABIT) oluşturun."
+                        icon="🌿"
+                    >
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                                <div className="col-span-1 md:col-span-2">
+                                    <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-sm">📝</span> 
+                                        Temel Bilgiler
+                                    </h4>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Stok Adı <span className="text-rose-500">*</span></label>
+                                    <input type="text" value={newStockData.stokAdi} onChange={e => setNewStockData({ ...newStockData, stokAdi: e.target.value })} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-[#ff7a18] focus:ring-2 focus:ring-[#ff7a18]/20 transition-all rounded-xl text-sm font-bold outline-none text-slate-800" placeholder="Örn: Mavi Ladin P9" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Grup Kodu <span className="text-rose-500">*</span></label>
+                                    <select value={newStockData.grupKodu} onChange={e => setNewStockData({ ...newStockData, grupKodu: e.target.value })} className="w-full p-3.5 bg-slate-50 border border-slate-200 focus:border-[#ff7a18] focus:ring-2 focus:ring-[#ff7a18]/20 transition-all rounded-xl text-sm font-bold outline-none text-slate-800">
+                                        <option value="">Seçiniz...</option>
+                                        {stockCodes.groups?.map((g: any) => <option key={g.GRUP_KODU} value={g.GRUP_KODU}>{g.GRUP_KODU} - {g.GRUP_ISIM}</option>)}
+                                    </select>
+                                </div>
+                                <div className="col-span-1 md:col-span-2">
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Özel Stok Kodu (Opsiyonel)</label>
+                                    <input type="text" value={newStockData.stokKodu} onChange={e => setNewStockData({ ...newStockData, stokKodu: e.target.value })} className="w-full p-3 bg-slate-50 border border-slate-200 focus:border-[#ff7a18] focus:ring-2 focus:ring-[#ff7a18]/20 transition-all rounded-xl text-xs font-bold outline-none text-slate-800" placeholder="Boş bırakılırsa otomatik (Örn: T00000000000100) verilir" />
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                                <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-sm">🏷️</span> 
+                                    Kodlar
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                                    {['kod1', 'kod2', 'kod3', 'kod4', 'kod5'].map((kodField, idx) => (
+                                        <div key={kodField}>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Kod {idx + 1}</label>
+                                            <select value={newStockData[kodField as keyof typeof newStockData]} onChange={e => setNewStockData({ ...newStockData, [kodField]: e.target.value })} className="w-full p-3 bg-slate-50 border border-slate-200 focus:border-[#ff7a18] focus:ring-2 focus:ring-[#ff7a18]/20 transition-all rounded-xl text-xs font-bold outline-none text-slate-800">
+                                                <option value="">Seçiniz...</option>
+                                                {stockCodes[kodField]?.map((k: any) => <option key={k.KOD} value={k.KOD}>{k.KOD} - {k.ACIKLAMA}</option>)}
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button onClick={() => setIsNewStockModalOpen(false)} className="px-6 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors">Vazgeç</button>
+                                <button onClick={handleCreateStock} disabled={isCreatingStock} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 shadow-[0_8px_20px_rgba(5,150,105,0.2)] hover:shadow-[0_12px_25px_rgba(5,150,105,0.3)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none">
+                                    {isCreatingStock ? 'Oluşturuluyor...' : 'Stok Oluştur'}
+                                </button>
+                            </div>
+                        </div>
+                    </PremiumModal>
+                )}
             </main>
         </div>
     );
