@@ -186,7 +186,7 @@ export default function RaporlarPage() {
             <main className="flex-1 min-w-0">
                 <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex flex-row justify-between items-center sticky top-0 z-30 shadow-sm gap-4 lg:py-0 lg:h-[88px] shrink-0">
                     <div>
-                        <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Geli?mi? Raporlar</h1>
+                        <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Gelişmiş Raporlar</h1>
                         <p className="hidden lg:block text-xs lg:text-sm text-slate-500">İşletmenizin tüm verilerini tek ekrandan inceleyin.</p>
                     </div>
                     <div className="flex gap-3">

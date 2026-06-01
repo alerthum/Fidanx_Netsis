@@ -135,7 +135,7 @@ export class SeedController {
             (TenantId, PartiNo, KokPartiNo, NetsisStokKodu, StokAdi, BitkiAdi, Safha, SaksiBoyutu, Konum, BaslangicMiktar, MevcutMiktar, Miktar, FireMiktar, SatilanMiktar, BirimMaliyet, ToplamMaliyet, KaynakPartiId, Durum, BaslangicTarihi, OlusturmaTarihi, KaynakSeriNo)
             OUTPUT INSERTED.Id
             VALUES 
-            (@tenantId, 'LOT-2026-LEYLANDI-001-S', 'LOT-2026-LEYLANDI-001', '150-01-002', 'Leylandi 2 Lt', 'Leylandi', 'KÜÇÜK_SAKSI', '2 Lt', 'Sera B', 5000, 4980, 4980, 20, 0, 12.0, 59760.0, @kokPartiId, 'AKTIF', '2026-02-15', '2026-02-15', 'LOT-2026-LEYLANDI-001')
+            (@tenantId, 'LOT-2026-LEYLANDI-001', 'LOT-2026-LEYLANDI-001', '150-01-002', 'Leylandi 2 Lt', 'Leylandi', 'KÜÇÜK_SAKSI', '2 Lt', 'Sera B', 5000, 4980, 4980, 20, 0, 12.0, 59760.0, @kokPartiId, 'AKTIF', '2026-02-15', '2026-02-15', 'LOT-2026-LEYLANDI-001')
         `, { tenantId, kokPartiId });
         const cocukPartiId = cRes[0].Id;
 
@@ -151,7 +151,7 @@ export class SeedController {
             INSERT INTO FDX_PartiIslemleri 
             (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, HedefStokKodu, Miktar, HedefSafha, HedefKonum, HedefPartiId, IslemYapan, IslemTarihi)
             VALUES 
-            (@tenantId, @kokPartiId, 'LOT-2026-LEYLANDI-001', 'SASIRTMA_CIKIS', '5000 adet bitki KÜÇÜK_SAKSI safhasına (Parti: LOT-2026-LEYLANDI-001-S) şaşırtıldı.', '150-01-001', '150-01-002', 5000, 'KÜÇÜK_SAKSI', 'Sera B', @cocukPartiId, 'Sistem', '2026-02-15')
+            (@tenantId, @kokPartiId, 'LOT-2026-LEYLANDI-001', 'SASIRTMA_CIKIS', '5000 adet bitki KÜÇÜK_SAKSI safhasına (Parti: LOT-2026-LEYLANDI-001) şaşırtıldı.', '150-01-001', '150-01-002', 5000, 'KÜÇÜK_SAKSI', 'Sera B', @cocukPartiId, 'Sistem', '2026-02-15')
         `, { tenantId, kokPartiId, cocukPartiId });
 
         await this.db.query(`
@@ -166,14 +166,14 @@ export class SeedController {
             INSERT INTO FDX_PartiIslemleri 
             (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, HedefStokKodu, Miktar, EkMaliyet, ToplamMaliyetEtkisi, HedefSafha, IslemYapan, IslemTarihi)
             VALUES 
-            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001-S', 'SASIRTMA_GIRIS', 'LOT-2026-LEYLANDI-001 partisinden şaşırtılarak oluşturuldu. Ek saksı ve torf maliyetleri eklendi.', '150-01-001', '150-01-002', 5000, 20000.0, 60000.0, 'KÜÇÜK_SAKSI', 'Sistem', '2026-02-15')
+            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001', 'SASIRTMA_GIRIS', 'LOT-2026-LEYLANDI-001 partisinden şaşırtılarak oluşturuldu. Ek saksı ve torf maliyetleri eklendi.', '150-01-001', '150-01-002', 5000, 20000.0, 60000.0, 'KÜÇÜK_SAKSI', 'Sistem', '2026-02-15')
         `, { tenantId, cocukPartiId });
 
         await this.db.query(`
             INSERT INTO FDX_PartiIslemleri 
             (TenantId, PartiId, PartiNo, IslemTipi, Aciklama, KaynakStokKodu, FireMiktari, MaliyetTutar, IslemYapan, IslemTarihi)
             VALUES 
-            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001-S', 'FIRE', 'Saksılama sonrası adaptasyon kaybı 20 adet.', '150-01-002', 20, 240.0, 'Sistem', '2026-03-05')
+            (@tenantId, @cocukPartiId, 'LOT-2026-LEYLANDI-001', 'FIRE', 'Saksılama sonrası adaptasyon kaybı 20 adet.', '150-01-002', 20, 240.0, 'Sistem', '2026-03-05')
         `, { tenantId, cocukPartiId });
 
         // 6. Sıcaklık ve Konum Bazlı Kayıtlar (Yeni FDX_SicaklikKayitlari & Legacy)

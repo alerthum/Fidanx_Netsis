@@ -30,8 +30,8 @@ export default function AnalizlerPage() {
                     name: s.StokAdi,
                     currentStock: s.Bakiye,
                     category: s.GrupKodu,
-                    viyolCount: s.Kod1 === 'VIYOL' ? s.Bakiye : 0, // Örnek mantık
-                    cuttingCount: s.Kod1 === 'CELIK' ? s.Bakiye : 0
+                    viyolCount: (s.StokAdi?.toLowerCase().includes('viyol') || s.StokAdi?.toLowerCase().includes('tepsi')) ? s.Bakiye : 0,
+                    cuttingCount: (s.StokAdi?.toLowerCase().includes('çelik') || s.StokAdi?.toLowerCase().includes('celik')) ? s.Bakiye : 0
                 })) : []);
             }
 
@@ -62,8 +62,8 @@ export default function AnalizlerPage() {
 
     const stageCounts: Record<string, number> = {};
     production.forEach(b => {
-        const label = stageMap[b.stage] || b.stage || 'Diğer';
-        stageCounts[label] = (stageCounts[label] || 0) + (b.quantity || 1);
+        const label = stageMap[b.safha] || stageMap[b.stage] || b.safha || b.stage || 'Diğer';
+        stageCounts[label] = (stageCounts[label] || 0) + (Number(b.mevcutMiktar) || Number(b.quantity) || 1);
     });
     const totalProduction = Object.values(stageCounts).reduce((s, v) => s + v, 0) || 1;
 

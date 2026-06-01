@@ -6,14 +6,12 @@ export default function PartilerTab({
     openCostModal,
     openTransplantModal,
     openFireModal,
-    openSatisModal,
     openBarkodModal
 }: {
     batches: any[],
     openCostModal: any,
     openTransplantModal: any,
     openFireModal: any,
-    openSatisModal: any,
     openBarkodModal?: any
 }) {
 
@@ -96,13 +94,6 @@ export default function PartilerTab({
                                                 🔄
                                             </button>
                                             <button
-                                                title="Satış Yap"
-                                                onClick={() => openSatisModal(batch)}
-                                                className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 flex items-center justify-center transition-all shadow-sm hover:shadow active:scale-95"
-                                            >
-                                                🏷️
-                                            </button>
-                                            <button
                                                 title="Fire Kaydı"
                                                 onClick={() => openFireModal(batch)}
                                                 className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition-all shadow-sm hover:shadow active:scale-95"
@@ -173,9 +164,6 @@ export default function PartilerTab({
                                 </button>
                                 <button onClick={() => openTransplantModal(batch)} className="flex-1 py-2.5 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 active:scale-95 transition-all">
                                     🔄 Şaşırtma
-                                </button>
-                                <button onClick={() => openSatisModal(batch)} className="flex-1 py-2.5 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 active:scale-95 transition-all">
-                                    🏷️ Satış
                                 </button>
                                 <button onClick={() => openFireModal(batch)} className="flex-1 py-2.5 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 active:scale-95 transition-all">
                                     💀 Fire

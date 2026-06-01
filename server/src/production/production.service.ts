@@ -189,8 +189,8 @@ export class ProductionService {
         const yeniToplamMaliyet = tasinanKaynakMaliyet + ekMaliyet;
         const yeniBirimMaliyet = miktar > 0 ? yeniToplamMaliyet / miktar : 0;
 
-        // 4.1. Yeni Hedef Parti Oluştur
-        const yeniPartiNo = `${kaynakParti.PartiNo}-S`;
+        // 4.1. Yeni Hedef Parti Oluştur (Parti numarası KESİNLİKLE aynı kalır, StokKodu değişir)
+        const yeniPartiNo = kaynakParti.PartiNo;
         const insertSql = `
             INSERT INTO FDX_BitkiPartileri 
             (TenantId, PartiNo, NetsisStokKodu, BitkiAdi, Safha, Konum, BaslangicMiktar, MevcutMiktar, BirimMaliyet, ToplamMaliyet, KaynakPartiId)

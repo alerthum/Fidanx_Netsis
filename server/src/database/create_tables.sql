@@ -344,7 +344,7 @@ BEGIN
     CREATE TABLE FDX_BitkiPartileri (
         Id INT IDENTITY(1,1) PRIMARY KEY,
         TenantId NVARCHAR(50) NOT NULL,
-        PartiNo NVARCHAR(50) NOT NULL UNIQUE,    
+        PartiNo NVARCHAR(50) NOT NULL,    
         KokPartiNo NVARCHAR(50),
         NetsisStokKodu NVARCHAR(50) NOT NULL,     
         StokAdi NVARCHAR(200),

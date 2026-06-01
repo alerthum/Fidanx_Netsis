@@ -74,15 +74,6 @@ export class ProductionController {
         return this.productionService.fireKaydet(tenantId, id, body);
     }
 
-    // 7. Satış İşlemi
-    @Post('batches/:id/satis')
-    satisYap(
-        @Query('tenantId') tenantId: string,
-        @Param('id') id: string,
-        @Body() body: any
-    ) {
-        return this.productionService.satisYap(tenantId, id, body);
-    }
 
     // 8. Parti Şeceresi (Tam izlenebilirlik)
     @Get('batches/:id/lineage')

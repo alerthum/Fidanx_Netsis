@@ -316,7 +316,7 @@ export default function FinansPage() {
                                         {(totalBankBalance + totalCashBalance).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
                                     <div className="fx-progress-track">
-                                        <div className="fx-progress-bar bg-emerald-500" style={{ width: '85%' }}></div>
+                                        <div className="fx-progress-bar bg-emerald-500" style={{ width: `${Math.min(100, ((totalBankBalance + totalCashBalance) / Math.max(1, totalBankBalance + totalCashBalance + totalMusteriCekleri)) * 100)}%` }}></div>
                                     </div>
                                     <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-400">
                                         <span>Hesap Özetleri</span>
@@ -331,7 +331,7 @@ export default function FinansPage() {
                                         {totalSalesIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
                                     <div className="fx-progress-track">
-                                        <div className="fx-progress-bar bg-blue-500" style={{ width: '100%' }}></div>
+                                        <div className="fx-progress-bar bg-blue-500" style={{ width: `${totalSalesIncome > 0 ? '100%' : '0%'}` }}></div>
                                     </div>
                                     <p className="text-[10px] text-slate-400 font-bold mt-3">Kesilen Toplam Faturalar</p>
                                 </div>
@@ -343,7 +343,7 @@ export default function FinansPage() {
                                         {totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
                                     <div className="fx-progress-track">
-                                        <div className="fx-progress-bar bg-rose-500" style={{ width: `${(totalExpense / totalSalesIncome) * 100}%` }}></div>
+                                        <div className="fx-progress-bar bg-rose-500" style={{ width: `${Math.min(100, (totalExpense / Math.max(1, totalSalesIncome)) * 100)}%` }}></div>
                                     </div>
                                     <p className="text-[10px] text-slate-400 font-bold mt-3">Tüm Girdi & Masraflar</p>
                                 </div>
@@ -355,7 +355,7 @@ export default function FinansPage() {
                                         {netProfit.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
                                     <div className="fx-progress-track">
-                                        <div className={`fx-progress-bar ${netProfit >= 0 ? 'bg-indigo-500' : 'bg-amber-500'}`} style={{ width: '45%' }}></div>
+                                        <div className={`fx-progress-bar ${netProfit >= 0 ? 'bg-indigo-500' : 'bg-amber-500'}`} style={{ width: `${Math.max(5, Math.min(100, (Math.abs(netProfit) / Math.max(1, totalSalesIncome)) * 100))}%` }}></div>
                                     </div>
                                     <p className={`text-[10px] font-bold mt-3 ${netProfit >= 0 ? 'text-indigo-400' : 'text-amber-400'}`}>
                                         {netProfit >= 0 ? 'HEDEFE YAKIN' : 'KRİTİK DURUM'}

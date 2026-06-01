@@ -5,7 +5,7 @@ import TabNavigation from '@/components/uretim/TabNavigation';
 import PartilerTab from '@/components/uretim/PartilerTab';
 import TopluIslemlerTab from '@/components/uretim/TopluIslemlerTab';
 import SeraTab from '@/components/uretim/SeraTab';
-import { ModalWrapper, Input, Label, Select, TransplantModal, SatisModal, FireModal, CostHistoryModal } from '@/components/uretim/Modals';
+import { ModalWrapper, Input, Label, Select, TransplantModal, FireModal, CostHistoryModal } from '@/components/uretim/Modals';
 import MaliyetTab from '@/components/uretim/MaliyetTab';
 import LokasyonlarTab from '@/components/uretim/LokasyonlarTab';
 import BarkodEtiket from '@/components/uretim/BarkodEtiket';
@@ -21,7 +21,7 @@ export default function UretimPage() {
     const [isNewBatchModalOpen, setIsNewBatchModalOpen] = useState(false);
     const [isTransplantModalOpen, setIsTransplantModalOpen] = useState(false);
     const [isCostModalOpen, setIsCostModalOpen] = useState(false);
-    const [isSatisModalOpen, setIsSatisModalOpen] = useState(false);
+
     const [isFireModalOpen, setIsFireModalOpen] = useState(false);
     const [isBarkodModalOpen, setIsBarkodModalOpen] = useState(false);
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
@@ -140,36 +140,6 @@ export default function UretimPage() {
         } catch (err) { alert('Şaşırtma bağlantı hatası'); }
     };
 
-    const handleSatis = async (form: any) => {
-        if (!selectedBatch) return;
-        try {
-            const res = await fetch(`${API_URL}/production/batches/${selectedBatch.id}/satis?tenantId=${tenantId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
-            });
-            if (res.ok) {
-                if (selectedBatch.netsisStokKodu && form.satisAdet > 0) {
-                    try {
-                        await fetch(`${API_URL}/netsis/stocks/consumption`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                aciklama: `FidanX Satış: ${selectedBatch.bitkiAdi} (${selectedBatch.partiNo})`,
-                                items: [{
-                                    stokKodu: selectedBatch.netsisStokKodu,
-                                    miktar: form.satisAdet,
-                                    birimFiyat: form.birimFiyat || 0
-                                }]
-                            })
-                        });
-                    } catch { }
-                }
-                setIsSatisModalOpen(false);
-                fetchData();
-            } else { alert('Satış hatası'); }
-        } catch (err) { alert('Hata'); }
-    }
 
     const handleFire = async (form: any) => {
         if (!selectedBatch) return;
@@ -228,7 +198,6 @@ export default function UretimPage() {
                             openCostModal={openCostFetchAndShow}
                             openTransplantModal={(b: any) => { setSelectedBatch(b); setIsTransplantModalOpen(true); }}
                             openFireModal={(b: any) => { setSelectedBatch(b); setIsFireModalOpen(true); }}
-                            openSatisModal={(b: any) => { setSelectedBatch(b); setIsSatisModalOpen(true); }}
                             openBarkodModal={(b: any) => { setSelectedBatch(b); setIsBarkodModalOpen(true); }}
                         />
                     )}
@@ -301,7 +270,7 @@ export default function UretimPage() {
 
                 {/* Aksiyon Modalları */}
                 <TransplantModal isOpen={isTransplantModalOpen} onClose={() => setIsTransplantModalOpen(false)} batch={selectedBatch} stages={stages} locations={locations} recipes={recipes} onSave={handleTransplant} />
-                <SatisModal isOpen={isSatisModalOpen} onClose={() => setIsSatisModalOpen(false)} batch={selectedBatch} onSave={handleSatis} />
+
                 <FireModal isOpen={isFireModalOpen} onClose={() => setIsFireModalOpen(false)} batch={selectedBatch} onSave={handleFire} />
                 <CostHistoryModal isOpen={isCostModalOpen} onClose={() => setIsCostModalOpen(false)} batch={selectedBatch} />
                 <BarkodEtiket isOpen={isBarkodModalOpen} onClose={() => setIsBarkodModalOpen(false)} batch={selectedBatch} />
